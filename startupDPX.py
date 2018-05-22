@@ -10,6 +10,8 @@ import configparser
 
 import matplotlib.pyplot as plt
 import scipy.signal
+import scipy.optimize
+import scipy.constants
 
 # Global Flags
 DEBUG = False
@@ -18,16 +20,16 @@ def main():
 	# Create object of class and establish connection
 	dpx = Dosepix('/dev/ttyUSB0', 2e6, 'DPXConfigNew.conf')
 
-	# Load settings and activate HV
-	# dpx.initDPX(confBitsFn, OMRCode, peripheryDACcode, THLs, pixelDACFn, binEdgesFn)
+	# while True:
+	#	dpx.DPXReadPixelDACCommand(1)
 
-	# Standard OMR code has to be set prior
-	# dpx.ADCWatch(1, ['Temperature', 'V_ThA', 'V_gnd', 'V_per_bias', 'I_preamp', 'I_dac_pixel', 'I_krum'], cnt=0)
+	dpx.energySpectrumDAC(1, THLhigh=int(dpx.THLs[0], 16), THLlow=1000, THLstep=25, timestep=1, intPlot=True)
+	# dpx.testPulse(1, 10)
+	# dpx.measureToT()
+	# dpx.measureDose(10)
+	# dpx.thresholdEqualization(1, reps=1, intPlot=False, resPlot=True)
 
-	# dpx.measureDose()
-	dpx.thresholdEqualization(1, reps=1, intPlot=False, resPlot=True)
-
-	# dpx.thresholdEqualizationConfig('DPXConfigNew.conf', reps=1, intPlot=False, resPlot=True)
+	# dpx.thresholdEqualizationConfig('DPXConfigNew.conf', reps=1, intPlot=False, resPlot=False)
 
 	# Close connection
 	dpx.close()
@@ -189,6 +191,13 @@ class Dosepix:
 		Enabled = 0b0 << 6,
 		Disabled = 0b1 << 6)
 
+	# = ConfBits =
+	ConfBitsType = namedtuple("ConfBits", "MaskBit TestBit_Analog TestBit_Digital")
+	__ConfBits = ConfBitsType(
+		MaskBit = 0b1 << 2,
+		TestBit_Analog = 0b1 << 1,
+		TestBit_Digital = 0b1 << 0)
+
 	def __init__(self, portName, baudRate, configFn):
 		# Read config
 		self.peripherys = ''
@@ -199,12 +208,6 @@ class Dosepix:
 		self.binEdges = [[]] * 3
 		self.confBits = [[]] * 3
 		self.readConfig(configFn)
-
-		print self.THLs
-		print self.peripherys
-		print self.confBits
-		print self.pixelDAC
-		print self.binEdges
 
 		self.ser = serial.Serial(portName, baudRate)
 		#self.ser.set_buffer_size(rx_size=4096, tx_size=4096)
@@ -284,6 +287,15 @@ class Dosepix:
 				self.DPXReadBinDataDosiModeCommand(i)
 
 	def measureDose(self, measurement_time=120):
+		# Set Dosi Mode in OMR
+		# If OMR code is list
+		if not isinstance(self.OMR, basestring):
+			OMRCode = self.OMR
+			OMRCode[0] = 'DosiMode'
+			self.DPXWriteOMRCommand(slot, OMRCode)
+		else:
+			self.DPXWriteOMRCommand(slot, (int(self.OMR, 16) & ~((0x11) << 22)))
+
 		# = START MEASUREMENT =
 		print 'Measuring the dose!'
 		time.sleep(measurement_time)
@@ -308,6 +320,150 @@ class Dosepix:
 				print np.asarray([list(entry) for entry in dataMatrix[i]])
 				plt.imshow(np.asarray([list(entry) for entry in dataMatrix[i]]))
 				plt.show()
+
+	def measureToT(self, cnt=100):
+		# Set Dosi Mode in OMR
+		# If OMR code is list
+		if not isinstance(self.OMR, basestring):
+			OMRCode = self.OMR
+			OMRCode[0] = 'DosiMode'
+			self.DPXWriteOMRCommand(slot, OMRCode)
+		else:
+			self.DPXWriteOMRCommand(slot, (int(self.OMR, 16) & ~((0x11) << 22)))
+
+		ToTList = []
+		for c in range(cnt):
+			for slot in range(1, 3 + 1):
+				for i in range(3):
+					self.DPXDataResetCommand(slot)
+
+				data = self.DPXReadToTDataDosiModeCommand(slot)
+				data = data[data > 0]
+				ToTList += list(data.flatten())
+
+	def testPulse(self, slot, length, column=0):
+		# Set Polarity to hole and Photon Counting Mode in OMR
+		OMRCode = self.OMR
+		if not isinstance(self.OMR, basestring):
+			OMRCode[3] = 'hole'
+		else:
+			OMRCode = (int(self.OMR, 16) & ~(1 << 17))
+
+		if not isinstance(self.OMR, basestring):
+			OMRCode[0] = 'DosiMode'
+		else:
+			OMRCode = (int(self.OMR, 16) & ~((0x11) << 22)) | (0x10 << 22)
+		
+		self.DPXWriteOMRCommand(slot, '%024x' % OMRCode)
+
+		# Set ConfBits to use test charge on preamp input if pixel is enabled
+		# Only select one column at max
+		confBits = np.zeros((16, 16))
+		confBits.fill(getattr(self.__ConfBits, 'MaskBit'))
+		confBits[column] = [getattr(self.__ConfBits, 'TestBit_Analog')] * 16
+		print confBits
+
+		# confBits = np.asarray( [int(num, 16) for num in textwrap.wrap(self.confBits[slot-1], 2)] )
+		# confBits[confBits != getattr(self.__ConfBits, 'MaskBit')] = getattr(self.__ConfBits, 'TestBit_Analog')
+		self.DPXWriteConfigurationCommand(slot, ''.join(['%02x' % conf for conf in confBits.flatten()]))
+
+		# Measure multiple test pulses and return the average ToT
+		energyRange = np.linspace(0, 100e3, 200)
+		ToTValues = []
+		for energy in energyRange:
+			self.DPXWritePeripheryDACCommand(slot, self.getTestPulseVoltageDAC(slot, energy))
+
+			data = np.zeros((16, 16))
+			for i in range(10):
+				self.DPXDataResetCommand(slot)
+				self.DPXGeneralTestPulse(slot, 40)
+				data += self.DPXReadToTDataDosiModeCommand(slot)
+			data = data / 10
+
+			# Filter zero entries
+			# data = data[data != 0]
+
+			ToTValues.append( data[column] )
+
+		for row in range(16):
+			y = []
+			for ToTValue in ToTValues:
+				# print ToTValue
+				y.append( ToTValue[row])
+			plt.plot(energyRange/1000, y)
+
+		plt.xlabel('Energy (keV)')
+		plt.ylabel('ToT')
+		plt.grid()
+		plt.show()
+
+		# Reset ConfBits
+		self.DPXWriteConfigurationCommand(slot, self.confBits[slot-1])
+
+		# Reset peripheryDACs
+		self.DPXWritePeripheryDACCommand(slot, self.peripherys + self.THLs[slot-1])
+		return
+
+	def energySpectrumDAC(self, slot, THLhigh=int(self.THLs[slot-1], 16), THLlow=1000, THLstep=25, timestep=1, intPlot=False):
+		# Description: Measure cumulative energy spectrum 
+		#              by performing a threshold scan. The
+		#              derivative of this spectrum resembles
+		#              the energy spectrum.
+
+		assert DACHigh <= 8191, "energySpectrumDAC: DACHigh value set too high!"
+
+		# Take data in integration mode: 
+		#     Sum of deposited energy in ToT
+		if not isinstance(self.OMR, basestring):
+			OMRCode[0] = 'IntegrationMode'
+		else:
+			OMRCode = (int(self.OMR, 16) | ((0x11) << 22))
+
+		self.DPXWriteOMRCommand(slot, '%024x' % OMRCode)
+
+		if intPlot:
+			plt.ion()
+			fig, ax = plt.subplots()
+
+			# Empty plot
+			lineCum, = ax.plot(np.nan, np.nan, label='Cumulative')
+			limeDer = ax.plot(np.nan, np.nan, label='Derivative')
+
+			# Settings
+			plt.xlabel('THL (DAC)')
+			plt.ylabel('Deposited energy (ToT)')
+
+			plt.grid()
+
+		# Loop over DAC values
+		THLList = []
+		dataList = []
+		for THL in np.linspace(THLlow, THLhigh, THLstep):
+			THLList.append( THL )
+
+			# Set threshold
+			self.DPXWritePeripheryDACCommand(slot, self.peripherys + THL)
+
+			self.DPXDataResetCommand(slot)
+			time.sleep(timestep)
+			data = self.DPXReadToTDataIntegrationModeCommand(slot).flatten()
+			dataList.append( np.mean(data) )
+
+			# Update plot
+			if intPot:
+				# Cumulative
+				lineCum.set_xdata( THLList )
+				lineCum.set_ydata( dataList )
+				
+				# Derivative
+				lineDer.set_xdata( np.asarray(THLList[:-1]) + 0.5*THLstep)
+				lineDer.set_ydata( diff(dataList) / float(THLstep) )
+
+				fig.canvas.draw()
+
+		# Reset OMR and peripherys
+		self.DPXWriteOMRCommand(slot, self.OMR)
+		self.DPXWritePeripheryDACCommand(slot, self.peripherys + THLs[slot-1])
 
 	# If cnt = 0, loop infinitely
 	def ADCWatch(self, slot, OMRAnalogOutList, cnt=0):
@@ -429,20 +585,67 @@ class Dosepix:
 
 		print '== Threshold equalization of detector %d ==' % slot
 
-		countsDict = self.getTHLLevel(slot, THLlow, THLhigh, THLstep, ['00', '3f'], reps, intPlot)
+		# Set PC Mode in OMR in order to read kVp values
+		# If OMR code is list
+		if not isinstance(self.OMR, basestring):
+			OMRCode = self.OMR
+			OMRCode[0] = 'PCMode'
+			self.DPXWriteOMRCommand(slot, OMRCode)
+		else:
+			self.DPXWriteOMRCommand(slot, (int(self.OMR, 16) & ~((0x11) << 22)) | (0x10 << 22))
 
-		gaussDict, noiseTHL = self.getNoiseLevel(countsDict, THLlow, THLhigh, THLstep, ['00', '3f'], noiseLimit)
+		pixelDACs = ['00', '3f']
+		# pixelDACs = ['%02x' % num for num in np.arange(0, 64, 9)]
+
+		countsDict = self.getTHLLevel(slot, THLlow, THLhigh, THLstep, pixelDACs, reps, intPlot)
+
+		gaussDict, noiseTHL = self.getNoiseLevel(countsDict, THLlow, THLhigh, THLstep, pixelDACs, noiseLimit)
 
 		# Get mean values of Gaussians
-		meanLow = np.mean(np.ma.masked_equal(gaussDict['00'], 0))
-		meanHigh = np.mean(np.ma.masked_equal(gaussDict['3f'], 0))
-		mean = 0.5 * (meanHigh + meanLow)
+		meanDict = {}
+		for pixelDAC in pixelDACs:
+			meanDict[pixelDAC] = np.mean( np.ma.masked_equal(gaussDict[pixelDAC], 0) )
 
-		print meanLow, meanHigh, mean
+		if len(pixelDACs) > 2:
+			def slopeFit(x, m, t):
+				return m*x + t
+			slope = np.zeros((16, 16))
+			offset = np.zeros((16, 16))
+
+		else: 
+			slope = (noiseTHL['00'] - noiseTHL['3f']) / 63.
+			offset = noiseTHL['00']
+
+		x = [int(key, 16) for key in pixelDACs]
+		for pixelX in range(16):
+			for pixelY in range(16):
+				y = []
+				for pixelDAC in pixelDACs:
+					y.append(noiseTHL[pixelDAC][pixelX, pixelY])
+
+				if len(pixelDACs) > 2:
+					popt, pcov = scipy.optimize.curve_fit(slopeFit, x, y)
+					slope[pixelX, pixelY] = abs(popt[0])
+					offset[pixelX, pixelY] = popt[1]
+
+					print popt
+
+				# plt.plot(adjust[pixelX, pixelY], mean, marker='x')
+				if resPlot:
+					plt.plot(x, y, alpha=.5)
+
+		mean = 0.5 * (meanDict['00'] + meanDict['3f'])
+		print meanDict['00'], meanDict['3f'], mean
+
+		if resPlot:
+			plt.xlabel('DAC')
+			plt.ylabel('THL')
+			plt.axhline(y=mean, ls='--')
+			plt.grid()
+			plt.show()
 
 		# Get adjustment value for each pixel
-		slope = (noiseTHL['00'] - noiseTHL['3f']) / 63.
-		adjust = (noiseTHL['00'] - mean) / slope + 0.5
+		adjust = (offset - mean) / slope + 0.5
 		
 		# Consider extreme values
 		adjust[adjust > 63] = 63
@@ -451,27 +654,22 @@ class Dosepix:
 		# Convert to integer
 		adjust = adjust.astype(dtype=int)
 
-		print noiseTHL
-		print adjust
-		print
-
 		# Set new pixelDAC values
 		pixelDACNew = ''.join(['%02x' % entry for entry in adjust.flatten()])
-		print pixelDACNew
 
 		# Repeat procedure to get noise levels
 		countsDictNew = self.getTHLLevel(slot, THLlow, THLhigh, THLstep, pixelDACNew, reps, intPlot)
 
 		gaussDictNew, noiseTHLNew = self.getNoiseLevel(countsDictNew, THLlow, THLhigh, THLstep, pixelDACNew, noiseLimit)
 
-		print noiseTHLNew
-
 		# Plot the results of the equalization
 		if resPlot:
-			for pixelDAC in ['00', '3f']:
-				plt.hist(gaussDict[pixelDAC], bins=30, label='%s' % pixelDAC, alpha=0.5)
+			bins = np.linspace(min(gaussDict['3f']), max(gaussDict['00']), 100)
 
-			plt.hist(gaussDictNew[pixelDACNew], bins=30, label='After equalization', alpha=0.5)
+			for pixelDAC in ['00', '3f']:
+				plt.hist(gaussDict[pixelDAC], bins=bins, label='%s' % pixelDAC, alpha=0.5)
+
+			plt.hist(gaussDictNew[pixelDACNew], bins=bins, label='After equalization', alpha=0.5)
 
 			plt.legend()
 
@@ -480,19 +678,23 @@ class Dosepix:
 
 			plt.show()
 
-		# Find lowest THL
-		THLMin = int(min(gaussDictNew[pixelDACNew]))
-
 		# Create confBits
 		confMask = np.zeros((16, 16)).astype(str)
 		confMask.fill('00')
-		confMask[abs(noiseTHLNew[pixelDACNew] - THLMin) > 10] = '01'
+		confMask[abs(noiseTHLNew[pixelDACNew] - mean) > 10] = '%04x' % getattr(self.__ConfBits, 'MaskBit')
 		confMask = ''.join(confMask.flatten())
 
-		print confMask
+		print
+		print 'Summary:'
+		print 'pixelDACs:', pixelDACNew
+		print 'confMask:', confMask
+		print 'THL:', '%04x' % (mean - 20)
+
+		# Restore OMR values
+		self.DPXWriteOMRCommand(slot, self.OMR)
 
 		# Subtract value from THLMin to guarantee robustness
-		return pixelDACNew, '%04x' % (THLMin - 20), confMask
+		return pixelDACNew, '%04x' % (mean - 20), confMask
 
 	def getTHLLevel(self, slot, THLlow, THLhigh, THLstep=1, pixelDACs=['00', '3f'], reps=1, intPlot=False):
 		NTHL = THLhigh - THLlow
@@ -517,9 +719,14 @@ class Dosepix:
 			
 			# Set pixel DAC values
 			if len(pixelDAC) > 2:
-				self.DPXWritePixelDACCommand(slot, pixelDAC, file=False)
+				pixelCode = pixelDAC
 			else:
-				self.DPXWritePixelDACCommand(slot, pixelDAC*256, file=False)
+				pixelCode = pixelDAC*256
+			self.DPXWritePixelDACCommand(slot, pixelCode, file=False)
+
+			resp = ''
+			while resp != pixelCode:
+				resp = self.DPXReadPixelDACCommand(slot)
 
 			# Dummy readout
 			for j in range(3):
@@ -766,10 +973,29 @@ class Dosepix:
 
 		return self.convertToDecimal(self.getDPXResponse())
 
+	def DPXReadToTDataIntegrationModeCommand(self, slot):
+		self.sendCmd([self.getReceiverFromSlot(slot), self.__subReceiverNone, self.__senderPC, self.__DPXreadToTDataIntegrationModeCommand, self.__commandNoneLength, self.__commandNone, self.__CRC])
+
+		return self.convertToDecimal(self.getDPXResponse())
+
 	def DPXReadToTDatakVpModeCommand(self, slot):
 		self.sendCmd([self.getReceiverFromSlot(slot), self.__subReceiverNone, self.__senderPC, self.__DPXreadToTDatakVpModeCommand, self.__commandNoneLength, self.__commandNone, self.__CRC])
 
 		return self.convertToDecimal(self.getDPXResponse(), 2)
+
+	def DPXGeneralTestPulse(self, slot, length):
+		lengthHex = '%04x' % length
+
+		self.sendCmd([self.getReceiverFromSlot(slot), self.__subReceiverNone, self.__senderPC, self.__DPXgeneralTestPulse, '%06d' % len(lengthHex), lengthHex, self.__CRC])
+
+		return self.getDPXResponse()
+
+	def DPXGeneralMultiTestPulse(self, slot, length):
+		lengthHex = '%04x' % length
+
+		self.sendCmd([self.getReceiverFromSlot(slot), self.__subReceiverNone, self.__senderPC, self.__DPXgeneralMultiTestPulse, '%06d' % len(lengthHex), lengthHex, self.__CRC])
+
+		return self.getDPXResponse()
 
 	# == SUPPORT ==
 	def readConfig(self, configFn):
@@ -832,7 +1058,12 @@ class Dosepix:
 	def writeConfig(self, configFn):
 		config = configparser.ConfigParser()
 		config['General'] = {'peripheryDAC': self.peripherys}
-		config['OMR'] = {'code': self.OMR}
+
+		if not isinstance(self.OMR, basestring):
+			OMRCodeList = ['OperationMode', 'GlobalShutter', 'PLL', 'Polarity', 'AnalogOutSel', 'AnalogInSel', 'OMRDisableColClkGate']
+			config['OMR'] = {OMRCode: self.OMR[i] for i, OMRCode in enumerate(OMRCodeList)}
+		else:
+			config['OMR'] = {'code': self.OMR}
 
 		for i in range(1, 3 + 1):
 			config['Slot%d' % i] = {'pixelDAC': self.pixelDAC[i-1], 'binEdges': self.binEdges[i-1], 'confBits': self.confBits[i-1], 'binEdges': self.binEdges[i-1], 'THL': self.THLs[i-1]}
@@ -913,6 +1144,33 @@ class Dosepix:
 		sys.stdout.write('\r')
 		sys.stdout.write('[%-*s] %d%%' % (int(width), '='*p, perc))
 		sys.stdout.flush()
+
+	def getTestPulseVoltageDAC(self, slot, energy):
+		# Set coarse and fine voltage of test pulse
+		peripheryDACcode = int(self.peripherys + self.THLs[slot-1], 16)
+
+		# Use nominal value of test capacitor
+		C = 5.14e-15
+
+		deltaV = energy * scipy.constants.e / (C * 3.64)
+
+		assert deltaV < 1.275, "TestPulse Voltage: The energy of the test pulse was set too high!"
+
+		# Set coarse voltage to 0
+		voltageDiv = 2.5e-3
+		DACVal = int((1.275 - deltaV) / voltageDiv)
+
+		# Delete current values
+		peripheryDACcode &= ~(0xff << 32)	# coarse
+		peripheryDACcode &= ~(0x1ff << 16)	# fine
+
+		# Adjust only fine voltage
+		peripheryDACcode |= (DACVal << 16)
+		peripheryDACcode |= (0xff << 32)
+		print '%032x' % peripheryDACcode
+		print DACVal
+
+		return '%032x' % peripheryDACcode
 
 if __name__ == '__main__':
 	main()
