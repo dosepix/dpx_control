@@ -12,6 +12,7 @@ import matplotlib.pyplot as plt
 import scipy.signal
 import scipy.optimize
 import scipy.constants
+import cPickle
 
 # Global Flags
 DEBUG = False
@@ -23,8 +24,10 @@ def main():
 	# while True:
 	#	dpx.DPXReadPixelDACCommand(1)
 
-	dpx.energySpectrumDAC(1, THLhigh=int(dpx.THLs[0], 16), THLlow=1000, THLstep=25, timestep=1, intPlot=True)
-	# dpx.testPulse(1, 10)
+	# dpx.energySpectrumTHL(1, THLhigh=int(dpx.THLs[0], 16), THLlow=1000, THLstep=25, timestep=1, intPlot=True)
+	# dpx.energySpectrumTHL(1)
+	# dpx.testPulseSigma(1)
+	dpx.testPulseToT(1, 10)
 	# dpx.measureToT()
 	# dpx.measureDose(10)
 	# dpx.thresholdEqualization(1, reps=1, intPlot=False, resPlot=True)
@@ -341,7 +344,7 @@ class Dosepix:
 				data = data[data > 0]
 				ToTList += list(data.flatten())
 
-	def testPulse(self, slot, length, column=0):
+	def testPulseInit(self, slot, column=0):
 		# Set Polarity to hole and Photon Counting Mode in OMR
 		OMRCode = self.OMR
 		if not isinstance(self.OMR, basestring):
@@ -354,116 +357,279 @@ class Dosepix:
 		else:
 			OMRCode = (int(self.OMR, 16) & ~((0x11) << 22)) | (0x10 << 22)
 		
-		self.DPXWriteOMRCommand(slot, '%024x' % OMRCode)
+		self.DPXWriteOMRCommand(slot, OMRCode)
 
-		# Set ConfBits to use test charge on preamp input if pixel is enabled
-		# Only select one column at max
-		confBits = np.zeros((16, 16))
-		confBits.fill(getattr(self.__ConfBits, 'MaskBit'))
-		confBits[column] = [getattr(self.__ConfBits, 'TestBit_Analog')] * 16
-		print confBits
+		if column == 'all':
+			columnRange = range(16)
+		elif not isinstance(column, basestring):
+			if isinstance(column, int):
+				columnRange = [column]
+			else:
+				columnRange = column
 
-		# confBits = np.asarray( [int(num, 16) for num in textwrap.wrap(self.confBits[slot-1], 2)] )
-		# confBits[confBits != getattr(self.__ConfBits, 'MaskBit')] = getattr(self.__ConfBits, 'TestBit_Analog')
-		self.DPXWriteConfigurationCommand(slot, ''.join(['%02x' % conf for conf in confBits.flatten()]))
+		return columnRange
 
-		# Measure multiple test pulses and return the average ToT
-		energyRange = np.linspace(0, 100e3, 200)
-		ToTValues = []
-		for energy in energyRange:
-			self.DPXWritePeripheryDACCommand(slot, self.getTestPulseVoltageDAC(slot, energy))
-
-			data = np.zeros((16, 16))
-			for i in range(10):
-				self.DPXDataResetCommand(slot)
-				self.DPXGeneralTestPulse(slot, 40)
-				data += self.DPXReadToTDataDosiModeCommand(slot)
-			data = data / 10
-
-			# Filter zero entries
-			# data = data[data != 0]
-
-			ToTValues.append( data[column] )
-
-		for row in range(16):
-			y = []
-			for ToTValue in ToTValues:
-				# print ToTValue
-				y.append( ToTValue[row])
-			plt.plot(energyRange/1000, y)
-
-		plt.xlabel('Energy (keV)')
-		plt.ylabel('ToT')
-		plt.grid()
-		plt.show()
-
+	def testPulseClose(self, slot):
 		# Reset ConfBits
 		self.DPXWriteConfigurationCommand(slot, self.confBits[slot-1])
 
 		# Reset peripheryDACs
 		self.DPXWritePeripheryDACCommand(slot, self.peripherys + self.THLs[slot-1])
+
+	def maskBitsColumn(self, slot, column):
+		# Set ConfBits to use test charge on preamp input if pixel is enabled
+		# Only select one column at max
+		confBits = np.zeros((16, 16))
+		confBits.fill(getattr(self.__ConfBits, 'MaskBit'))
+		confBits[column] = [getattr(self.__ConfBits, 'TestBit_Analog')] * 16
+		# print confBits
+
+		# confBits = np.asarray( [int(num, 16) for num in textwrap.wrap(self.confBits[slot-1], 2)] )
+		# confBits[confBits != getattr(self.__ConfBits, 'MaskBit')] = getattr(self.__ConfBits, 'TestBit_Analog')
+
+		self.DPXWriteConfigurationCommand(slot, ''.join(['%02x' % conf for conf in confBits.flatten()]))
+
+	def testPulseSigma(self, slot, column=[0, 1, 2], N=100):
+		columnRange = self.testPulseInit(slot, column=column)
+
+		fig, ax = plt.subplots()
+
+		energyRange = np.linspace(5e3, 100e3, 20)
+		meanListEnergy, sigmaListEnergy = [], []
+
+		for energy in energyRange:
+			DACval = self.getTestPulseVoltageDAC(slot, energy, True)
+			self.DPXWritePeripheryDACCommand(slot, DACval)
+
+			meanList, sigmaList = [], []
+			print 'E = %.2f keV' % (energy / 1000.)
+			for k, column in enumerate(columnRange):
+				self.maskBitsColumn(slot, column)
+
+				# Record ToT spectrum of pulse
+				dataList = []
+				for n in range(N):
+					self.statusBar(float(k*N + n)/(len(columnRange) * N) * 100 + 1)
+					self.DPXDataResetCommand(slot)
+					self.DPXGeneralTestPulse(slot, 100)
+					dataList.append( self.DPXReadToTDataDosiModeCommand(slot)[column] )
+
+				dataList = np.asarray(dataList)
+				for pixel in range(16):
+					# ax.hist(dataList[:,pixel], bins=30)
+					meanList.append( np.mean(dataList[:,pixel]) )
+					sigmaList.append( np.std(dataList[:,pixel]) )
+					# plt.show()
+
+			print
+			print meanList
+			meanListEnergy.append( meanList )
+			sigmaListEnergy.append( sigmaList )
+
+		meanListEnergy = np.asarray(meanListEnergy)
+		sigmaListEnergy = np.asarray(sigmaListEnergy)
+		# for pixel in range(len(meanListEnergy[0])):
+
+		plt.errorbar(energyRange/1000., [np.mean(item) for item in sigmaListEnergy], xerr=energyRange/1000.*0.18, yerr=np.asarray([np.std(item) for item in sigmaListEnergy])/np.sqrt(len(columnRange)*16), marker='x', ls='')
+
+		# Fit curve
+		#popt, pcov = scipy.optimize.curve_fit(self.energyToToTFitAtan, energyRange/1000., [np.mean(item) for item in meanListEnergy], p0=(3, 8, 50, 1))
+		#perr = np.sqrt( np.diag(pcov) )
+		#print popt, perr/popt*100
+
+		#plt.plot(energyRange/float(1000), self.energyToToTFitAtan(energyRange/float(1000), *popt))
+
+		plt.xlabel('Energy (keV)')
+		plt.ylabel('Standard deviation (ToT)')
+		plt.show()
+
+		self.testPulseClose(slot)
+
+	def testPulseToT(self, slot, length, column='all', paramOutFn='testPulseParams.p'):
+		columnRange = self.testPulseInit(slot, column=column)
+
+		# Measure multiple test pulses and return the average ToT
+		energyRange = np.linspace(5e3, 30e3, 10)
+		energyRangeFit = np.linspace(5e3, 100e3, 1000)
+		# energyRange = np.arange(509, 0, -10)
+
+		paramOutDict = {'a': [], 'b': [], 'c': [], 't': []}
+		for column in  columnRange:
+			self.maskBitsColumn(slot, column)
+
+			ToTValues = []
+			for energy in energyRange:
+				# DACval = self.getTestPulseVoltageDAC(slot, energy)
+				DACval = self.getTestPulseVoltageDAC(slot, energy, True)
+				self.DPXWritePeripheryDACCommand(slot, DACval)
+
+				data = np.zeros((16, 16))
+				for i in range(10):
+					self.DPXDataResetCommand(slot)
+					self.DPXGeneralTestPulse(slot, 1000)
+					data += self.DPXReadToTDataDosiModeCommand(slot)
+				data = data / 10
+
+				# Filter zero entries
+				# data = data[data != 0]
+
+				ToTValues.append( data[column] )
+
+			x = energyRange/float(1000)
+			for row in range(16):
+				y = []
+				for ToTValue in ToTValues:
+					# print ToTValue
+					y.append( ToTValue[row])
+
+				# Fit curve
+				popt, pcov = scipy.optimize.curve_fit(self.energyToToTFitAtan, x, y, p0=(3, 8, 50, 1))
+				perr = np.sqrt( np.diag(pcov) )
+
+				# Store in dictionary
+				a, b, c, t = popt
+				paramOutDict['a'].append( a )
+				paramOutDict['b'].append( b )
+				paramOutDict['c'].append( c )
+				paramOutDict['t'].append( t )
+
+				print popt, perr/popt*100
+
+				plt.plot(x, y, marker='x')
+				plt.plot(energyRangeFit/float(1000), self.energyToToTFitAtan(energyRangeFit/float(1000), *popt))
+
+		# Dump to file
+		cPickle.dump(paramOutDict, open(paramOutFn, 'wb'))
+
+		# Plot
+		plt.xlabel('Energy (keV)')
+		plt.ylabel('ToT')
+		plt.grid()
+		plt.show()
+
+		self.testPulseClose(slot)
 		return
 
-	def energySpectrumDAC(self, slot, THLhigh=int(self.THLs[slot-1], 16), THLlow=1000, THLstep=25, timestep=1, intPlot=False):
+	def energyToToTFitAtan(self, x, a, b, c, d):
+		return np.where(x > b, a*(x - b) + c*np.arctan((x - b)/d), 0)
+
+	def energyToToTFitHyp(self, x, a, b, c, d):
+		return np.where(x > d, a*x + b + float(c)/(x - d), 0)
+
+	def energySpectrumTHL(self, slot, THLhigh=5500, THLlow=4800, THLstep=5, timestep=1, intPlot=True):
 		# Description: Measure cumulative energy spectrum 
 		#              by performing a threshold scan. The
 		#              derivative of this spectrum resembles
 		#              the energy spectrum.
 
-		assert DACHigh <= 8191, "energySpectrumDAC: DACHigh value set too high!"
+		assert THLhigh <= 8191, "energySpectrumDAC: DACHigh value set too high!"
 
 		# Take data in integration mode: 
 		#     Sum of deposited energy in ToT
+		OMRCode = self.OMR
 		if not isinstance(self.OMR, basestring):
-			OMRCode[0] = 'IntegrationMode'
+			OMRCode[0] = 'PCMode'
+			# Select AnalogOut
+			OMRCode[4] = 'V_ThA'
+
 		else:
 			OMRCode = (int(self.OMR, 16) | ((0x11) << 22))
 
-		self.DPXWriteOMRCommand(slot, '%024x' % OMRCode)
+			# Select AnalogOut
+			OMRCode &= ~(0b11111 << 12)
+			OMRCode |= getattr(self.__OMRAnalogOutSel, 'V_ThA')
 
+		self.DPXWriteOMRCommand(slot, OMRCode)
+
+		lastTHL = 0
 		if intPlot:
 			plt.ion()
 			fig, ax = plt.subplots()
+			axTHL = ax.twinx()
 
 			# Empty plot
-			lineCum, = ax.plot(np.nan, np.nan, label='Cumulative')
-			limeDer = ax.plot(np.nan, np.nan, label='Derivative')
+			lineCum, = ax.plot(np.nan, np.nan, label='Cumulative', color='cornflowerblue')
+			lineDer, = ax.plot(np.nan, np.nan, label='Derivative', color='crimson')
+			lineTHL, = axTHL.plot(np.nan, np.nan, label='THL', color='orange')
 
 			# Settings
 			plt.xlabel('THL (DAC)')
-			plt.ylabel('Deposited energy (ToT)')
+			ax.set_ylabel('Deposited energy (ToT)')
+			# axDer.set_ylabel('Derivative (a.u.)')
+			axTHL.set_ylabel('THL (V)')
 
 			plt.grid()
 
 		# Loop over DAC values
 		THLList = []
+		THLVList = []
 		dataList = []
-		for THL in np.linspace(THLlow, THLhigh, THLstep):
-			THLList.append( THL )
-
+		for THL in np.arange(THLlow, THLhigh, THLstep):
 			# Set threshold
-			self.DPXWritePeripheryDACCommand(slot, self.peripherys + THL)
+			self.DPXWritePeripheryDACCommand(slot, self.peripherys + '%04x' % THL)
 
-			self.DPXDataResetCommand(slot)
+			# Measure voltage
+			THLtemp = []
+			for k in range(10):
+				THLval = float(int(self.MCGetADCvalue(), 16))
+				THLtemp.append( THLval )
+
+			if np.mean(THLval) < lastTHL:
+				continue
+			else:
+				lastTHL = np.mean(THLval)
+				THLList.append( THL )
+				THLVList.append(np.mean(THLval))
+
+			# Start frame 
+			# OMRCode[1] = 'ClosedShutter'
+			# self.DPXWriteOMRCommand(slot, OMRCode)
+
+			for k in range(3):
+				self.DPXDataResetCommand(slot)
+
 			time.sleep(timestep)
-			data = self.DPXReadToTDataIntegrationModeCommand(slot).flatten()
+			data = self.DPXReadToTDatakVpModeCommand(slot).flatten() #self.DPXReadToTDataIntegrationModeCommand(slot).flatten()
+			print data
 			dataList.append( np.mean(data) )
 
+			# OMRCode[1] = 'OpenShutter'
+			#self.DPXWriteOMRCommand(slot, OMRCode)
+			# End frame
+
 			# Update plot
-			if intPot:
+			if intPlot:
 				# Cumulative
 				lineCum.set_xdata( THLList )
 				lineCum.set_ydata( dataList )
 				
 				# Derivative
+				dataDer = np.diff(dataList) / float(THLstep)
 				lineDer.set_xdata( np.asarray(THLList[:-1]) + 0.5*THLstep)
-				lineDer.set_ydata( diff(dataList) / float(THLstep) )
+				lineDer.set_ydata( dataDer )
+
+				# Measure threshold voltage
+				lineTHL.set_xdata( THLList )
+				lineTHL.set_ydata( THLVList )
+
+				ax.set_xlim(min(THLList), max(THLList))
+				ax.set_ylim(0.9*min(dataList), 1.1*max(dataList))
+
+				axTHL.set_xlim(min(THLList), max(THLList))
+				axTHL.set_ylim(0.9*min(THLVList), 1.1*max(THLVList))
+
+				if dataDer.size:
+					dataDer *= max(dataList)/max(dataDer)
+					# axDer.set_xlim(min(THLList), max(THLList))
+					# axDer.set_ylim(min(dataDer), max(dataDer))
 
 				fig.canvas.draw()
 
+		raw_input('')
+
 		# Reset OMR and peripherys
 		self.DPXWriteOMRCommand(slot, self.OMR)
-		self.DPXWritePeripheryDACCommand(slot, self.peripherys + THLs[slot-1])
+		self.DPXWritePeripheryDACCommand(slot, self.peripherys + self.THLs[slot-1])
 
 	# If cnt = 0, loop infinitely
 	def ADCWatch(self, slot, OMRAnalogOutList, cnt=0):
@@ -976,7 +1142,7 @@ class Dosepix:
 	def DPXReadToTDataIntegrationModeCommand(self, slot):
 		self.sendCmd([self.getReceiverFromSlot(slot), self.__subReceiverNone, self.__senderPC, self.__DPXreadToTDataIntegrationModeCommand, self.__commandNoneLength, self.__commandNone, self.__CRC])
 
-		return self.convertToDecimal(self.getDPXResponse())
+		return self.convertToDecimal(self.getDPXResponse(), 6)
 
 	def DPXReadToTDatakVpModeCommand(self, slot):
 		self.sendCmd([self.getReceiverFromSlot(slot), self.__subReceiverNone, self.__senderPC, self.__DPXreadToTDatakVpModeCommand, self.__commandNoneLength, self.__commandNone, self.__CRC])
@@ -1145,20 +1311,21 @@ class Dosepix:
 		sys.stdout.write('[%-*s] %d%%' % (int(width), '='*p, perc))
 		sys.stdout.flush()
 
-	def getTestPulseVoltageDAC(self, slot, energy):
+	def getTestPulseVoltageDAC(self, slot, DACVal, energy=False):
 		# Set coarse and fine voltage of test pulse
 		peripheryDACcode = int(self.peripherys + self.THLs[slot-1], 16)
 
-		# Use nominal value of test capacitor
-		C = 5.14e-15
+		if energy:
+			# Use nominal value of test capacitor
+			C = 5.14e-15
 
-		deltaV = energy * scipy.constants.e / (C * 3.64)
+			deltaV = DACVal * scipy.constants.e / (C * 3.62)
 
-		assert deltaV < 1.275, "TestPulse Voltage: The energy of the test pulse was set too high!"
+			assert deltaV < 1.275, "TestPulse Voltage: The energy of the test pulse was set too high!"
 
-		# Set coarse voltage to 0
-		voltageDiv = 2.5e-3
-		DACVal = int((1.275 - deltaV) / voltageDiv)
+			# Set coarse voltage to 0
+			voltageDiv = 2.5e-3
+			DACVal = int((1.275 - deltaV) / voltageDiv)
 
 		# Delete current values
 		peripheryDACcode &= ~(0xff << 32)	# coarse
