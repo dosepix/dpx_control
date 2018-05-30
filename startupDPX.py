@@ -5,6 +5,7 @@ import serial
 import textwrap
 from collections import namedtuple
 import os
+import os.path
 import sys
 import configparser 
 
@@ -21,14 +22,22 @@ def main():
 	# Create object of class and establish connection
 	dpx = Dosepix('/dev/ttyUSB0', 2e6, 'DPXConfigNew.conf')
 
-	# while True:
-	#	dpx.DPXReadPixelDACCommand(1)
+	while True:
+		# print dpx.DPXReadPixelDACCommand(1)
+		# dpx.DPXWriteOMRCommand(1, '0000')
+		print dpx.DPXReadPeripheryDACCommand(1)
+		# print dpx.DPXReadOMRCommand(1)
 
-	# dpx.energySpectrumTHL(1, THLhigh=int(dpx.THLs[0], 16), THLlow=1000, THLstep=25, timestep=1, intPlot=True)
+	# dpx.ADCWatch(1, ['Temperature', 'I_preamp'], cnt=0)
+
+	# dpx.energySpectrumTHL(1, THLhigh=8000, THLlow=int(dpx.THLs[0], 16), THLstep=25, timestep=1, intPlot=True)
+	
+	dpx.ToTtoTHL(1)
 	# dpx.energySpectrumTHL(1)
 	# dpx.testPulseSigma(1)
-	dpx.testPulseToT(1, 10)
+	# dpx.testPulseToT(1, 10)
 	# dpx.measureToT()
+	# dpx.measureToT(slot=1, outFn='ToTMeasurement.p', cnt=3000, intPlot=False)
 	# dpx.measureDose(10)
 	# dpx.thresholdEqualization(1, reps=1, intPlot=False, resPlot=True)
 
@@ -289,15 +298,17 @@ class Dosepix:
 				# Dummy readout
 				self.DPXReadBinDataDosiModeCommand(i)
 
-	def measureDose(self, measurement_time=120):
+	def measureDose(self, measurement_time=120, outFn='doseMeasurement.p'):
 		# Set Dosi Mode in OMR
 		# If OMR code is list
-		if not isinstance(self.OMR, basestring):
-			OMRCode = self.OMR
+		OMRCode = self.OMR
+		if not isinstance(OMRCode, basestring):
 			OMRCode[0] = 'DosiMode'
-			self.DPXWriteOMRCommand(slot, OMRCode)
 		else:
-			self.DPXWriteOMRCommand(slot, (int(self.OMR, 16) & ~((0x11) << 22)))
+			OMRCode = int(OMRCode, 16) & ~((0x11) << 22)
+
+		for slot in range(1, 3 + 1):
+			self.DPXWriteOMRCommand(slot, OMRCode)
 
 		# = START MEASUREMENT =
 		print 'Measuring the dose!'
@@ -307,7 +318,7 @@ class Dosepix:
 		outSlotList = []
 		for i in range(1, 3 + 1):
 			outList = []
-			
+
 			# Loop over bins
 			for col in range(1, 16 + 1):
 				self.DPXWriteColSelCommand(i, 16 - col)
@@ -324,25 +335,128 @@ class Dosepix:
 				plt.imshow(np.asarray([list(entry) for entry in dataMatrix[i]]))
 				plt.show()
 
-	def measureToT(self, cnt=100):
+		# Reset OMR
+		for slot in range(1, 3 + 1):
+			self.DPXWriteOMRCommand(slot, self.OMR)
+
+		# Store data to file
+		outDict = {'Slot%d' % i for i in range(1, 3 + 1)}
+		for i, outSlot in enumerate(outSlotList):
+			outDict['Slot%d' % i] = np.asarray([np.asarray(outSlotBin).flatten() for outSlotBin in outSlot]).T
+
+		self.pickleDump(outDict, outFn)
+
+	# If cnt is set to 0, perform endless loop
+	# Keyboard Interrupts are caught in order to store data afterwards
+	def measureToT(self, slot=1, outFn='ToTMeasurement.p', cnt=100, intPlot=False):
 		# Set Dosi Mode in OMR
 		# If OMR code is list
-		if not isinstance(self.OMR, basestring):
-			OMRCode = self.OMR
+		OMRCode = self.OMR
+		if not isinstance(OMRCode, basestring):
 			OMRCode[0] = 'DosiMode'
-			self.DPXWriteOMRCommand(slot, OMRCode)
 		else:
-			self.DPXWriteOMRCommand(slot, (int(self.OMR, 16) & ~((0x11) << 22)))
+			OMRCode = int(OMRCode, 16) & ~((0x11) << 22)
 
-		ToTList = []
-		for c in range(cnt):
-			for slot in range(1, 3 + 1):
-				for i in range(3):
-					self.DPXDataResetCommand(slot)
+		# Check which slots to read out
+		if isinstance(slot, int):
+			slotList = [slot]
+		elif not isinstance(slot, basestring):
+			slotList = slot
 
-				data = self.DPXReadToTDataDosiModeCommand(slot)
-				data = data[data > 0]
-				ToTList += list(data.flatten())
+		# Set mode in slots
+		for slot in slotList:
+			self.DPXWriteOMRCommand(slot, OMRCode)
+
+		# Init plot
+		if intPlot:
+			plt.ion()
+
+			fig, ax = plt.subplots()
+
+			# Create empty axis
+			line, = ax.plot(np.nan, np.nan, color='k') # , where='post')
+			ax.set_xlabel('ToT')
+			ax.set_ylabel('Counts')
+
+			plt.grid()
+
+			# Init bins and histogram data
+			bins = np.arange(0, 500)
+			histData = np.zeros(len(bins)-1)
+
+			ax.set_xlim(min(bins), max(bins))
+
+		# For KeyboardInterrupt exception
+		print 'Starting ToT Measurement!'
+		print '========================='
+		measStart = time.time()
+		try:
+			ToTDict = {'Slot%d' % slot: [] for slot in slotList}
+
+			c = 0
+			startTime = time.time()
+			while True if (cnt == 0) else (c <= cnt):
+				if intPlot:
+					dataPlot = []
+
+				for slot in slotList:
+					# Reset data registers
+					# self.DPXDataResetCommand(slot)
+
+					# Read data
+					data = self.DPXReadToTDataDosiModeCommand(slot)
+
+					data = data.flatten()
+					# Remove overflow
+					data[data >= 4096] -= 4096
+					if intPlot:
+						dataPlot += data.tolist()
+
+					ToTDict['Slot%d' % slot].append( data.tolist() )
+				
+				if c > 0 and not c % 100:
+					print '%.2f Hz' % (100./(time.time() - startTime))
+					startTime = time.time()
+
+				# Increment loop counter
+				c += 1
+
+				# Update plot every 100 iterations
+				if intPlot:
+					if not c % 100:
+						dataPlot = np.asarray(dataPlot)
+						# Remove empty entries
+						dataPlot = dataPlot[dataPlot > 0]
+
+						hist, bins_ = np.histogram(dataPlot, bins=bins)
+						histData += hist
+						
+						line.set_xdata(bins_[:-1])
+						line.set_ydata(histData)
+
+						# Update plot scale
+						ax.set_ylim(0, 1.1 * max(histData))
+						fig.canvas.draw()
+
+			# Loop finished
+			self.pickleDump(ToTDict, outFn)
+			print 'Measurement time: %.2f min' % ((time.time() - measStart) / 60.)
+			for key in ToTDict.keys():
+				print 'Slot%d: %d events' % (slot, len(np.asarray(ToTDict[key]).flatten()) / 256.)
+
+		except (KeyboardInterrupt, SystemExit):
+			# Store data and plot in files
+			print 'KeyboardInterrupt-Exception: Storing data!'
+			print 'Measurement time: %.2f min' % ((time.time() - measStart) / 60.)
+			for key in ToTDict.keys():
+				print 'Slot%d: %d events' % (slot, len(np.asarray(ToTDict[key]).flatten()) / 256.)
+
+			self.pickleDump(ToTDict, outFn)
+			raise
+
+		# Reset OMR
+		for slot in slotList:
+			self.DPXWriteOMRCommand(slot, self.OMR)
 
 	def testPulseInit(self, slot, column=0):
 		# Set Polarity to hole and Photon Counting Mode in OMR
@@ -394,7 +508,7 @@ class Dosepix:
 
 		fig, ax = plt.subplots()
 
-		energyRange = np.linspace(5e3, 100e3, 20)
+		energyRange = np.linspace(5e3, 100e3, 50)
 		meanListEnergy, sigmaListEnergy = [], []
 
 		for energy in energyRange:
@@ -449,7 +563,7 @@ class Dosepix:
 		columnRange = self.testPulseInit(slot, column=column)
 
 		# Measure multiple test pulses and return the average ToT
-		energyRange = np.linspace(5e3, 30e3, 10)
+		energyRange = np.asarray(list(np.linspace(5e3, 20e3, 30)) + list(np.linspace(20e3, 100e3, 20)))
 		energyRangeFit = np.linspace(5e3, 100e3, 1000)
 		# energyRange = np.arange(509, 0, -10)
 
@@ -497,6 +611,7 @@ class Dosepix:
 
 				plt.plot(x, y, marker='x')
 				plt.plot(energyRangeFit/float(1000), self.energyToToTFitAtan(energyRangeFit/float(1000), *popt))
+				plt.show()
 
 		# Dump to file
 		cPickle.dump(paramOutDict, open(paramOutFn, 'wb'))
@@ -516,7 +631,139 @@ class Dosepix:
 	def energyToToTFitHyp(self, x, a, b, c, d):
 		return np.where(x > d, a*x + b + float(c)/(x - d), 0)
 
-	def energySpectrumTHL(self, slot, THLhigh=5500, THLlow=4800, THLstep=5, timestep=1, intPlot=True):
+	def ToTtoTHL(self, slot, column=0, THLhigh=8000, THLlow=0, THLstep=5):
+		# Description: Generate test pulses and measure their ToT
+		#              values. Afterwards, do a THL-scan in order to
+		#              find the corresponding THL value. Repeat 
+		#              multiple times to find the correlation between
+		#              ToT and THL
+
+		# Take data in DosiMode
+		OMRCode = self.OMR
+		if not isinstance(OMRCode, basestring):
+			OMRCode[0] = 'DosiMode'
+			# Select AnalogOut
+			OMRCode[4] = 'V_ThA'
+		else:
+			OMRCode = (int(OMRCode, 16) & ~((0x11) << 22)) | (0x10 << 22)
+			# Select AnalogOut
+			OMRCode &= ~(0b11111 << 12)
+			OMRCode |= getattr(self.__OMRAnalogOutSel, 'V_ThA')
+		self.DPXWriteOMRCommand(slot, OMRCode)
+
+		self.maskBitsColumn(slot, column)
+
+		# Store results in lists
+		ToTListTotal, ToTErrListTotal = [], []
+		THLListTotal, THLErrListTotal = [], []
+
+		energyRange = np.linspace(100e3, 100e3, 10)
+
+		# Loop over test pulse energies
+		for energy in energyRange:
+			# Set threshold to result from equalization
+			self.DPXWritePeripheryDACCommand(slot, self.peripherys + self.THLs[slot-1])
+
+			# Set test pulse energy
+			DACval = self.getTestPulseVoltageDAC(slot, energy, True)
+			self.DPXWritePeripheryDACCommand(slot, DACval)
+
+			# Generate test pulses
+			dataList = []
+			for i in range(10):
+				self.DPXDataResetCommand(slot)
+				self.DPXGeneralTestPulse(slot, 1000)
+				data = self.DPXReadToTDataDosiModeCommand(slot).flatten()
+				dataList.append( data )
+
+			# Determine energy
+			testPulseToT = np.mean( dataList , axis=0)
+			testPulseToTErr = testPulseToT / np.sqrt( 10 )
+
+			# Store in lists
+			ToTListTotal.append( testPulseToT )
+			ToTErrListTotal.append( testPulseToTErr )
+
+			# Set integrationMode
+			if not isinstance(OMRCode, basestring):
+				OMRCode[0] = 'PCMode'
+			else:
+				OMRCode = (int(OMRCode, 16) | ((0x11) << 22))
+			self.DPXWriteOMRCommand(slot, OMRCode)
+
+			lastTHL = 0
+			THLList = []
+			dataList = []
+			# Loop over THLs
+			for THL in np.arange(THLlow, THLhigh, THLstep):
+				THLmeas = np.mean( [float(int(self.MCGetADCvalue(), 16)) for i in range(3) ] )
+				print THLmeas
+				# if lastTHL > THLmeas:
+				#	continue
+
+				# Set new THL
+				self.DPXWritePeripheryDACCommand(slot, self.peripherys + '%04x' % THL)
+
+				# Generate test pulse and measure ToT in integrationMode
+				dataTemp = np.zeros(16)
+				for i in range(10):
+					self.DPXDataResetCommand(slot)
+					self.DPXGeneralTestPulse(slot, 1000)
+					data = self.DPXReadToTDatakVpModeCommand(slot)[column]
+					dataTemp += data
+				data = dataTemp
+				# data = np.mean(dataTemp)
+				# data = self.DPXReadToTDataDosiModeCommand(slot)[column]
+				# data = self.DPXReadToTDataIntegrationModeCommand(slot)[column]
+				print data
+
+				# Store data in lists
+				THLList.append( THLmeas )
+				dataList.append( data )
+
+				lastTHL = THLmeas
+
+			# Calculate derivative of THL spectrum
+			xDer = np.asarray(THLList[:-1]) + 0.5*THLstep
+			dataDer = [np.diff(data) / float(THLstep) for data in np.asarray(dataList).T]
+
+			# for d in range(16*column)
+			for data in np.asarray(dataList).T:
+				# Skip empty columns
+				if not data.size:
+					continue
+				THLList_, data = zip(*sorted(zip(THLList, data)))
+				plt.plot(THLList_, data)
+				plt.show()
+
+			print xDer
+			print dataDer
+
+			peakList = []
+			peakErrList = []
+			# Find peak in spectrum
+			for data in dataDer:
+				plt.plot(xDer, data)
+				plt.show()
+				popt, pcov = scipy.optimize.curve_fit(self.normal, xDer, data)
+				perr = np.sqrt( np.diag(pcov) )
+				peakList.append( popt[1] )
+				peakErrList.append( perr[1] )
+
+			THLListTotal.append( peakList )
+			THLErrListTotal.append( peakErrList )
+
+		# Show results in plot
+		fig, ax = plt.subplots()
+		for i in range(ToTListTotal.size):
+			ax.errorbar(ToTListTotal[i], THLListTotal[i], xerr=ToTErrListTotal[i], yerr=THLErrListTotal[i], color=self.getColor('Blues', ToTListTotal.size, i))
+
+		# TODO: Perform fit
+		plt.show()
+
+		return
+
+	def energySpectrumTHL(self, slot, THLhigh=8000, THLlow=6000, THLstep=5, timestep=1, intPlot=True):
 		# Description: Measure cumulative energy spectrum 
 		#              by performing a threshold scan. The
 		#              derivative of this spectrum resembles
@@ -527,13 +774,13 @@ class Dosepix:
 		# Take data in integration mode: 
 		#     Sum of deposited energy in ToT
 		OMRCode = self.OMR
-		if not isinstance(self.OMR, basestring):
-			OMRCode[0] = 'PCMode'
+		if not isinstance(OMRCode, basestring):
+			OMRCode[0] = 'IntegrationMode'
 			# Select AnalogOut
 			OMRCode[4] = 'V_ThA'
 
 		else:
-			OMRCode = (int(self.OMR, 16) | ((0x11) << 22))
+			OMRCode = (int(OMRCode, 16) | ((0x11) << 22))
 
 			# Select AnalogOut
 			OMRCode &= ~(0b11111 << 12)
@@ -574,12 +821,12 @@ class Dosepix:
 				THLval = float(int(self.MCGetADCvalue(), 16))
 				THLtemp.append( THLval )
 
-			if np.mean(THLval) < lastTHL:
-				continue
-			else:
-				lastTHL = np.mean(THLval)
-				THLList.append( THL )
-				THLVList.append(np.mean(THLval))
+			# if np.mean(THLval) < lastTHL:
+			#	continue
+			# else:
+			#	lastTHL = np.mean(THLval)
+			THLList.append( THL )
+			THLVList.append(np.mean(THLval))
 
 			# Start frame 
 			# OMRCode[1] = 'ClosedShutter'
@@ -589,9 +836,10 @@ class Dosepix:
 				self.DPXDataResetCommand(slot)
 
 			time.sleep(timestep)
-			data = self.DPXReadToTDatakVpModeCommand(slot).flatten() #self.DPXReadToTDataIntegrationModeCommand(slot).flatten()
+			#data = self.DPXReadToTDatakVpModeCommand(slot).flatten() 
+			data = self.DPXReadToTDataIntegrationModeCommand(slot).flatten()
 			print data
-			dataList.append( np.mean(data) )
+			dataList.append( data[7] ) # np.mean(data) )
 
 			# OMRCode[1] = 'OpenShutter'
 			#self.DPXWriteOMRCommand(slot, OMRCode)
@@ -653,7 +901,10 @@ class Dosepix:
 
 			# Select AnalogOut
 			print 'OMR Manipulation:'
-			OMRCode_ = int(self.OMR, 16)
+			if type(self.OMR) is list:
+				OMRCode_ = self.OMRListToHex(self.OMR)
+			OMRCode_ = int(OMRCode_, 16)
+
 			OMRCode_ &= ~(0b11111 << 12)
 			OMRCode_ |= getattr(self.__OMRAnalogOutSel, OMRAnalogOut)
 			self.DPXWriteOMRCommand(slot, hex(OMRCode_).split('0x')[-1])
@@ -692,7 +943,10 @@ class Dosepix:
 				for i, OMRAnalogOut in enumerate(OMRAnalogOutList):
 
 					# Select AnalogOut
-					OMRCode_ = int(self.OMR, 16) & ~(0b11111 << 12)
+					if type(self.OMR) is list:
+						OMRCode_ = self.OMRListToHex(self.OMR)
+					OMRCode_ = int(OMRCode_, 16)
+					OMRCode_ = OMRCode_ & ~(0b11111 << 12)
 					OMRCode_ |= getattr(self.__OMRAnalogOutSel, OMRAnalogOut)
 					print hex(OMRCode_).split('0x')[-1]
 					self.DPXWriteOMRCommand(slot, hex(OMRCode_).split('0x')[-1])
@@ -1036,22 +1290,27 @@ class Dosepix:
 		return self.getDPXResponse()
 
 	# === DPX SECTION ===
+	def OMRListToHex(self, OMRCode):
+		OMRCodeList = OMRCode
+		OMRTypeList = [self.__OMROperationMode,
+		self.__OMRGlobalShutter,
+		self.__OMRPLL,
+		self.__OMRPolarity,
+		self.__OMRAnalogOutSel,
+		self.__OMRAnalogInSel,
+		self.__OMRDisableColClkGate]
+
+		OMRCode = 0x000000
+		for i, OMR in enumerate(OMRCodeList):
+			OMRCode |= getattr(OMRTypeList[i], OMR)
+
+		OMRCode = hex(OMRCode).split('0x')[-1]
+
+		return OMRCode
+
 	def DPXWriteOMRCommand(self, slot, OMRCode):
 		if type(OMRCode) is list:
-			OMRCodeList = OMRCode
-			OMRTypeList = [self.__OMROperationMode,
-			self.__OMRGlobalShutter,
-			self.__OMRPLL,
-			self.__OMRPolarity,
-			self.__OMRAnalogOutSel,
-			self.__OMRAnalogInSel,
-			self.__OMRDisableColClkGate]
-
-			OMRCode = 0x000000
-			for i, OMR in enumerate(OMRCodeList):
-				OMRCode |= getattr(OMRTypeList[i], OMR)
-
-			OMRCode = hex(OMRCode).split('0x')[-1]
+			OMRCode = self.OMRListToHex(OMRCode)
 
 		self.sendCmd([self.getReceiverFromSlot(slot), self.__subReceiverNone, self.__senderPC, self.__DPXwriteOMRCommand, '%06d' % len(OMRCode), OMRCode, self.__CRC])
 
@@ -1266,6 +1525,52 @@ class Dosepix:
 
 		self.ser.write(self.__endOfTransmission.encode())
 
+	def getBinEdges(self, slot, energyDict, paramDict, transposePixelMatrix=False):
+		a, b, c, t = paramDict['a'], paramDict['b'], paramDict['c'], paramDict['t']
+		grayCode = [0, 1, 3, 2, 6, 4, 5, 7, 15, 13, 12, 14, 10, 11, 9, 8]
+
+		if slot == 0:
+			energyType = 'free'
+		elif slot == 1:
+			energyType = 'Al'
+		else:
+			energyType = 'Sn'
+
+		binEdgeString = ''
+		for pixel in range(256):
+			if self.isBig(pixel):
+				energyList = energyDict['large'][energyType]
+			else:
+				energyList = energyDict['large'][energyType]
+
+			energyList = np.asarray()
+
+			# Convert to ToT
+			ToTList = self.energyToToT(energyList, a[pixel], b[pixel], c[pixel], d[pixel])
+
+			for binEdge in range(16):
+				grayC = grayCode[binEdge]
+				ToT = int( ToTList[binEdge] )
+
+				binEdgeString += ('%04x' % grayC)
+				binEdgeString += ('%012x' % ToT)
+
+		return binEdgeString
+
+	def isLarge(self, pixel):
+		if ( (pixel - 1) % 16 == 0 ) or ( pixel % 16 == 0 ) or ( (pixel + 1) % 16 == 0 ) or ( (pixel + 2) % 16 == 0 ):
+			return False
+		return True
+
+	def energyToToTAtan(self, x, a, b, c, t):
+		return np.where(x > b, a*(x - b) + c*np.arctan((x - b)/t), np.nan)
+
+	def energyToToT(self, x, a, b, c, t, atan=False):
+		if atan:
+			return EnergyToToTAtan(x, a, b, c, t)
+		else:
+			return np.where(x > t, a*x + b + float(c)/(x - t), np.nan)
+
 	def getResponse(self):
 		res = self.ser.readline()
 		if DEBUG:
@@ -1273,7 +1578,9 @@ class Dosepix:
 		return res
 
 	def getDPXResponse(self):
-		res = self.getResponse()
+		res = ''
+		while not res:
+			res = self.getResponse()
 
 		if DEBUG:
 			print 'Length:', res[11:17]
@@ -1311,6 +1618,24 @@ class Dosepix:
 		sys.stdout.write('[%-*s] %d%%' % (int(width), '='*p, perc))
 		sys.stdout.flush()
 
+	def pickleDump(self, outDict, outFn):
+		# Check if file already exists
+		while os.path.isfile(outFn):
+			outFnFront = outFn.split('.')[0]
+			outFnFrontSplit = outFnFront.split('_')
+			if len(outFnFrontSplit) >= 2:
+				if outFnFrontSplit[-1].isdigit():
+					fnNum = int( outFnFrontSplit[-1] ) + 1
+					outFn = ''.join(outFnFrontSplit[:-1]) + '_' + str(fnNum) + '.p'
+				else:
+					outFn = outFnFront + '_1.p'
+			else:
+				outFn = outFnFront + '_1.p'
+
+
+		with open(outFn, 'w') as f:
+			cPickle.dump(outDict, f)
+
 	def getTestPulseVoltageDAC(self, slot, DACVal, energy=False):
 		# Set coarse and fine voltage of test pulse
 		peripheryDACcode = int(self.peripherys + self.THLs[slot-1], 16)
@@ -1338,6 +1663,15 @@ class Dosepix:
 		print DACVal
 
 		return '%032x' % peripheryDACcode
+
+	def normal(self, x, A, mu, sigma):
+		return A * np.exp(-(x - mu)/(2 * sigma**2))
+
+	def getColor(self, c, N, idx):
+		import matplotlib as mpl
+		cmap = mpl.cm.get_cmap(c)
+		norm = mpl.colors.Normalize(vmin=0.0, vmax=N - 1)
+		return cmap(norm(idx))
 
 if __name__ == '__main__':
 	main()
