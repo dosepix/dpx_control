@@ -27,13 +27,47 @@ def main():
 	# return
 
 	data = np.asarray( x['Slot%d' % slot] )
+	dataTotal = data.flatten()
+	dataTotal = dataTotal[dataTotal > 0]
 
-	plt.hist(data.flatten(), bins=np.arange(1000))
+	hist, bins = np.histogram(dataTotal, bins=np.arange(0, 1000, 1))
+	plt.semilogy(bins[:-1], hist)
+	plt.show()
+	# hist = getFFT(bins[:-1], hist, bins[1] - bins[0], plot=True)
+
+	# Find all peaks
+	peakIdx = peakutils.indexes(hist, thres=.00001, min_dist=40)
+	# Difference of peaks
+	print np.diff( bins[peakIdx] )
+
+	figPeak, axPeak = plt.subplots()
+	# axPeak.set_yscale("log", nonposy='clip')
+	axPeak.plot(np.arange(1, len(peakIdx) + 1), bins[peakIdx], marker='x', ls='', color='cornflowerblue')
+	popt, pcov = scipy.optimize.curve_fit(linear, np.arange(1, len(peakIdx) + 1), bins[peakIdx])
+	print popt, np.sqrt( np.diag(pcov) )
+	plt.plot(np.arange(1, len(peakIdx) + 1), linear(np.arange(1, len(peakIdx) + 1), *popt), color='cornflowerblue')
+
+	axPeak.set_xlabel('Peak Index')
+	axPeak.set_ylabel('ToT')
+	axPeak.grid()
+
+	# Logarithmic energy spectrum
+	fig, ax = plt.subplots()
+	ax.set_yscale("log", nonposy='clip')
+	ax.step(bins[:-1], hist, where='post')
+	# Peak positions
+	ax.plot(bins[peakIdx], hist[peakIdx], marker='x', ls='')
+
+	ax.set_xlabel('ToT')
+	ax.set_ylabel('Counts')
+
+	ax.grid(which='both')
 	plt.show()
 
+
 	plotCorrected(data)
-	return
 	print getPixelShift(data)
+	return
 
 def plotCorrected(data):
 	d = cPickle.load(open('testPulseParams.p', 'r'))
@@ -48,7 +82,7 @@ def plotCorrected(data):
 	peak = []
 	pixelList = []
 
-	for pixel in range(256):
+	for pixel in range(16):
 		if not isLarge(pixel):
 			continue
 
@@ -58,10 +92,14 @@ def plotCorrected(data):
 		a, b, c, t = aList[pixel], bList[pixel], cList[pixel], tList[pixel]
 
 		# Make histogram
-		hist, bins = np.histogram(pixelData, bins=np.arange(0, 4093, 1))
+		hist, bins = np.histogram(pixelData, bins=np.arange(0, 1000, 1))
 
 		# Convert to energy
-		binsEnergy = ToTtoEnergy(bins, a, b, c, t)
+		binsEnergy = []
+		for bi in bins:
+			binsEnergy.append( ToTtoEnergy([bi], a, b, c, t) )
+		binsEnergy = np.asarray( binsEnergy )
+
 		binsEnergyList.append( binsEnergy )
 		histList.append( hist )
 
@@ -81,6 +119,7 @@ def plotCorrected(data):
 
 		pixelList.append( pixel )
 
+	print 'Uncorrected energy spectrum'
 	plt.semilogy(binsEnergyList[0][:-1], np.sum(histList, axis=0))
 	plt.show()
 
@@ -95,9 +134,12 @@ def plotCorrected(data):
 		peakIdx = peakutils.indexes(histList[i], thres=.005, min_dist=40)
 		binsDiff = binsEnergy[peakIdx]
 
-		# plt.plot(peak[:len(peakIdx)], binsEnergy[peakIdx][:len(peak)] / peak[:len(peakIdx)] ) 
-		popt, pcov = scipy.optimize.curve_fit(linear, binsEnergy[peakIdx][:len(peak)], peak[:len(peakIdx)] / binsEnergy[peakIdx][:len(peak)] )
+		plt.plot(peak[:len(peakIdx)], binsEnergy[peakIdx][:len(peak)] / peak[:len(peakIdx)] ) 
+		print binsEnergy[peakIdx][:len(peak)]
+		print peak[:len(peakIdx)]/binsEnergy[peakIdx][:len(peak)]
+		popt, pcov = scipy.optimize.curve_fit(linear, binsEnergy[peakIdx][:len(peak)].flatten(), (peak[:len(peakIdx)] / binsEnergy[peakIdx][:len(peak)]).flatten() )
 		perr = np.sqrt( np.diag(pcov) )
+
 		# plt.plot( binsEnergy[peakIdx], linear(binsEnergy[peakIdx], *popt))
 
 		pixelData = data[pixelList[i]]
@@ -114,9 +156,11 @@ def plotCorrected(data):
 		eventList *= linear(eventList, *popt)
 
 		eventListTotal += list( eventList )
+	plt.show()
 
 	# Make histogram
-	hist, bins = np.histogram(eventListTotal, bins=np.arange(0, 4095, 0.5))
+	print 'Corrected energy spectrum'
+	hist, bins = np.histogram(eventListTotal, bins=np.arange(0, 4095, 1))
 	plt.semilogy(bins[:-1], hist)
 
 	plt.show()
@@ -297,17 +341,34 @@ def getFFT(x, y, deltaX, plot=True):
 	freq = np.fft.rfftfreq(len(x), deltaX)
 	freqAmplitude = np.fft.rfft(y)
 
+	bandpassH = (0., 0.)
+	bandpassV = (-np.infty, 5)
+
 	if plot:
-		plt.plot(freq, freqAmplitude / max(freqAmplitude))
+		plt.semilogy(freq, np.abs(np.real(freqAmplitude)))
+		plt.semilogy(freq, np.abs(np.imag(freqAmplitude)))
+		plt.axvspan(bandpassH[0], bandpassH[1], color='gray', alpha=.5)
+		plt.axhspan(bandpassV[0], bandpassV[1], color='gray', alpha=.7)
+		plt.xlabel('Frequency (a.u.)')
+		plt.ylabel('FFT (a.u.)')
+		plt.grid(which='both')
+
+		plt.xlim(min(freq), max(freq))
+		plt.ylim(min(freqAmplitude), max(freqAmplitude))
 		plt.show()
 
-	freqAmplitude[freqAmplitude < 0.2] = 0
+	freqAmplitude[freqAmplitude < 5] = 0
+	# freqAmplitude[~np.logical_or(freq < bandpassH[0], freq > bandpassH[1])] = 0
+	# freqAmplitude[~np.logical_or(freqAmplitude < bandpassV[0], freqAmplitude > bandpassV[1])] = 0
 
 	# Inverse FFT
 	amplitude = np.fft.irfft( freqAmplitude )
 	
 	if plot:
-		plt.plot(np.arange(len(amplitude)), amplitude)
+		plt.semilogy(np.arange(len(amplitude)), amplitude)
+		plt.xlabel('ToT')
+		plt.ylabel('Counts (a.u.)')
+		plt.grid(which='both')
 		plt.show()
 	
 	return amplitude
