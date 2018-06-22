@@ -11,6 +11,7 @@ import configparser
 import yaml
 
 import matplotlib.pyplot as plt
+import matplotlib as mpl
 import scipy.signal
 import scipy.optimize
 import scipy.constants
@@ -46,30 +47,39 @@ def main():
 		print
 	'''
 
+	# dpx.getPixelSlopes(1, I_pixeldac=0.)
+
+	# dpx.meanSigmaMatrixPlot('pixelDAC_3.p', (0, 1., 15), (0, 63, 15))
+	# dpx.meanSigmaLinePlot('pixelDAC_3.p', (0, 1., 15), (0, 63, 15))
+
 	#while True:
 		# print dpx.DPXReadPixelDACCommand(1)
 		# dpx.DPXWriteOMRCommand(1, '0000')
 		# print dpx.DPXReadPeripheryDACCommand(1)
 		# print dpx.DPXReadOMRCommand(1)
 
-	# dpx.ADCWatch(1, ['Temperature', 'I_preamp'], cnt=0)
-
+	# dpx.ADCWatch(1, ['V_ThA', 'V_TPref_fine', 'V_TPref_coarse', 'V_TPbufout', 'V_TPbufin', 'V_cascode_bias', 'Temperature'], cnt=0)
+	# return
+	# dpx.ADCWatch(1, ['V_ThA', 'V_TPref_fine', 'V_casc_preamp', 'V_fbk', 'V_TPref_coarse', 'V_gnd', 'I_preamp', 'I_disc1', 'I_disc2', 'V_TPbufout', 'V_TPbufin', 'I_krum', 'I_dac_pixel', 'V_bandgap', 'V_casc_krum', 'V_per_bias', 'V_cascode_bias', 'Temperature', 'I_preamp'], cnt=0)
 	# dpx.energySpectrumTHL(1, THLhigh=8000, THLlow=int(dpx.THLs[0], 16), THLstep=25, timestep=1, intPlot=True)
 	
-	# dpx.measureTHL(1)
+	# dpx.measureADC(1, AnalogOut='V_cascode_bias', perc=True, ADChigh=0.06, ADClow=0., ADCstep=0.00001, N=1)
+	# dpx.ToTtoTHL_pixelDAC(slot=1, THLstep=1, I_pixeldac=0.0001, valueLow=200, valueHigh=200, valueCount=1, energy=False, plot=False)
 
-	# dpx.ToTtoTHL(1)
-	dpx.energySpectrumTHL(1)
-	#dpx.testPulseDosi(1)
+	# dpx.energySpectrumTHL(1)
+	# dpx.measureToT(1)
+	# dpx.testPulseDosi(1)
 	# dpx.testPulseSigma(1)
 	# dpx.testPulseToT(1, 10)
 
-	# dpx.measureToT(1)
-	# dpx.measureToT(slot=1, outFn='ToTMeasurement.p', cnt=3000, intPlot=False)
 	# dpx.measureDose(measurement_time=120)
 	# dpx.thresholdEqualization(1, reps=1, intPlot=False, resPlot=True)
 
-	# dpx.thresholdEqualizationConfig('DPXConfigNew_temp.conf', reps=1, intPlot=False, resPlot=True)
+	# dpx.measureIntegration()
+	dpx.temperatureWatch(1)
+
+	# dpx.measureTHL(1, fn='THLCalib.p', plot=False)
+	# dpx.thresholdEqualizationConfig('DPXConfigNew.conf', I_pixeldac=0.195, reps=1, intPlot=False, resPlot=True)
 
 	# Close connection
 	dpx.close()
@@ -257,19 +267,24 @@ class Dosepix:
 		self.initDPX()
 
 		# Load THL calibration data
-		if os.path.isfile('THLCalib.p'):
-			d = cPickle.load(open('THLCalib.p', 'rb'))
-			self.voltCalib = np.asarray(d['Volt']) / max(d['Volt'])
-			self.THLCalib = np.asarray(d['THL'])
-		else:
-			self.voltCalib = None
-			self.THLCalib = None
+		assert os.path.isfile('THLCalib.p'), 'Need THL Calibration file THLCalib.p!'
+		d = cPickle.load(open('THLCalib.p', 'rb'))
+		self.voltCalib = np.asarray(d['Volt']) / max(d['Volt'])
+		self.THLCalib = np.asarray(d['ADC'])
 
-		self.THLEdgesLow = [0, 804, 1313, 1827, 2342, 2833, 3360, 3872, 4388, 4889, 5410, 5918, 6446, 6961, 7464, 7992]
-		self.THLEdgesHigh = [511, 1023, 1535, 2047, 2559, 3071, 3583, 4095, 4607, 5119, 5631, 6143, 6655, 7167, 7679, 8190]
+		self.THLEdgesLow, self.THLEdgesHigh = self.THLCalibToEdges(d)
+		print self.THLEdgesLow, self.THLEdgesHigh
+
+		# self.THLEdgesLow = [0, 804, 1313, 1827, 2342, 2833, 3360, 3872, 4388, 4889, 5410, 5918, 6446, 6961, 7464, 7992]
+		# self.THLEdgesHigh = [511, 1023, 1535, 2047, 2559, 3071, 3583, 4095, 4607, 5119, 5631, 6143, 6655, 7167, 7679, 8190]
+		
+		# Combine
 		self.THLEdges = []
 		for i in range(len(self.THLEdgesLow)):
 			self.THLEdges += list( np.arange(self.THLEdgesLow[i], self.THLEdgesHigh[i] + 1) )
+
+	def __del__(self):
+		self.close()
 
 	# === MAIN FUNCTIONS ===
 	def initDPX(self):
@@ -425,6 +440,46 @@ class Dosepix:
 			for col in range(16):
 				self.DPXWriteColSelCommand(i, 16 - col)
 				self.DPXReadBinDataDosiModeCommand(i)
+
+	def measureIntegration(self, measurement_time=10, outFn='integrationMeasurement.p'):
+		# Set Integration Mode in OMR
+		# If OMR code is list
+		OMRCode = self.OMR
+		if not isinstance(OMRCode, basestring):
+			OMRCode[0] = 'IntegrationMode'
+		else:
+			OMRCode = int(OMRCode, 16) & ((0x11) << 22)
+
+		for slot in range(1, 3 + 1):
+			self.DPXWriteOMRCommand(slot, OMRCode)
+
+		slot = 1
+		for c in range(10):
+			# Reset data registers
+			self.DPXDataResetCommand(slot)
+			data = self.DPXReadToTDataIntegrationModeCommand(slot)
+
+			# Start frame 
+			OMRCode[1] = 'ClosedShutter'
+			self.DPXWriteOMRCommand(slot, OMRCode)
+																							  
+			# = START MEASUREMENT =
+			print 'Measuring the dose!'
+			# time.sleep(measurement_time)
+
+			# outDict = {}
+			# Read data
+			data = self.DPXReadToTDataIntegrationModeCommand(slot)
+			print data
+			# outDict['Slot%d' % slot] = data.flatten()
+
+			# End frame 
+			OMRCode[1] = 'OpenShutter'
+			self.DPXWriteOMRCommand(slot, OMRCode)
+
+			# print outDict
+		if outFn:
+			self.pickleDump(outDict, outFn)
 
 	# If cnt is set to 0, perform endless loop
 	# Keyboard Interrupts are caught in order to store data afterwards
@@ -700,7 +755,8 @@ class Dosepix:
 				'''
 
 		# Dump to file
-		cPickle.dump(paramOutDict, open(paramOutFn, 'wb'))
+		if paramOutFn:
+			cPickle.dump(paramOutDict, open(paramOutFn, 'wb'))
 
 		# Plot
 		plt.xlabel('Energy (keV)')
@@ -783,6 +839,44 @@ class Dosepix:
 
 	def energyToToTFitHyp(self, x, a, b, c, d):
 		return np.where(x > d, a*x + b + float(c)/(x - d), 0)
+
+	def ToTtoTHL_pixelDAC(self, slot=1, THLstep=1, I_pixeldac=0.1, valueLow=0, valueHigh=460, valueCount=460, energy=False, plot=False):
+
+		pixelDACs = ['00', '3f']
+
+		# Set I_pixeldac
+		if I_pixeldac:
+			dPeripherys = self.splitPerihperyDACs(self.peripherys + self.THLs[0], perc=True)
+			dPeripherys['I_pixeldac'] = I_pixeldac
+			code = self.periheryDACsDictToCode(dPeripherys, perc=True)
+			self.peripherys = code[:-4]
+			self.DPXWritePeripheryDACCommand(slot, code)
+
+		dMeas = {}
+		slopeDict = {'slope': []}
+
+		for column in range(16):
+			for pixelDAC in pixelDACs:
+				# Set pixel DAC values
+				self.DPXWritePixelDACCommand(slot, pixelDAC*256, file=False)
+
+				d = self.ToTtoTHL(slot=slot, column=column, THLstep=THLstep, valueLow=valueLow, valueHigh=valueHigh, valueCount=valueCount, energy=energy, plot=plot)
+
+				# Get THL positions
+				dMeas[pixelDAC] = d['THL']
+
+			# Get slope
+			slope = (dMeas['00'] - dMeas['3f']) / 63.
+
+			print 'Pixel slope for column %d:' % column
+			print slope
+			print 'Mean slope: %.2f +/- %.2f' % (np.mean(slope), np.std(slope))
+
+			slopeDict['slope'].append( slope )
+
+		self.pickleDump(slopeDict, 'pixelSlopes.p')
+
+		return slope
 
 	def ToTtoTHL(self, slot=1, column=0, THLstep=1, valueLow=0, valueHigh=460, valueCount=460, energy=False, plot=False, outFn='ToTtoTHL.p'):
 		# Description: Generate test pulses and measure their ToT
@@ -871,12 +965,12 @@ class Dosepix:
 			# THLRange = np.arange(THLlow, THLhigh, THLstep)
 			# THLRange = self.THLCalib[np.logical_and(self.THLCalib > THLlow, self.THLCalib < THLhigh)]
 			THLRange = np.asarray(self.THLEdges)
-			THLRange = THLRange[np.logical_and(THLRange > THLlow, THLRange < THLhigh)]
+			THLRange = THLRange[np.logical_and(THLRange >= THLlow, THLRange <= THLhigh)]
 
 			# Do a fast measurement to estimate the position of the edge for each pixel
 			THLFastList = []
 			dataFastList = []
-			THLFastStep = 100
+			THLFastStep = 50
 			NPulses = 30		# Has to be less than 256
 
 			for cnt, THL in enumerate(THLRange[::THLFastStep]):
@@ -886,7 +980,7 @@ class Dosepix:
 				# Start measurement
 				self.DPXDataResetCommand(slot)
 				for i in range(NPulses):
-					self.DPXGeneralTestPulse(slot, THLFastStep)
+					self.DPXGeneralTestPulse(slot, 1000)
 				data = self.DPXReadToTDatakVpModeCommand(slot)[column]
 				data[data > NPulses] = NPulses
 
@@ -915,7 +1009,8 @@ class Dosepix:
 			meanTHL = np.mean( dataFastDer )
 
 			# Set THL range to new estimated region
-			THLRange = THLRange[abs(THLRange - meanTHL) < 100]
+			THLRange = THLRange[np.logical_and(THLRange >= min(dataFastDer) - THLFastStep, THLRange <= max(dataFastDer) + THLFastStep)] 
+			# THLRange = THLRange[abs(THLRange - meanTHL) < 3 * THLFastStep]
 
 			# Do a slow but precise measurement with small THL steps
 			for cnt, THL in enumerate(THLRange[::THLstep]):
@@ -954,12 +1049,15 @@ class Dosepix:
 			peakErrList = []
 			# Transpose to access data of each pixel
 			for data in np.asarray(dataList).T:
-				THLListFit = np.linspace(min(THLList), max(THLList), 1000)
+				# Convert to corrected THL
+				THLListCorr = [list(THLRange).index(elm) for elm in THLList]
+
+				THLListFit = np.linspace(min(THLListCorr), max(THLListCorr), 1000)
 
 				# Perform erf-Fit
-				p0 = [100., THLList[int(len(THLList) / 2.)], 3.]
+				p0 = [100., THLListCorr[int(len(THLListCorr) / 2.)], 3.]
 				try:
-					popt, pcov = scipy.optimize.curve_fit(self.erfFit, THLList, data, p0=p0)
+					popt, pcov = scipy.optimize.curve_fit(self.erfFit, THLListCorr, data, p0=p0)
 					perr = np.sqrt(np.diag(pcov))
 					print popt
 				except:
@@ -986,15 +1084,18 @@ class Dosepix:
 				if plot:
 					try:
 						dataFilt = scipy.signal.savgol_filter(data, windowLength, 3)
-						plt.plot(THLList, dataFilt)
-						plt.plot(*self.getDerivative(THLList, dataFilt))
+						plt.plot(THLListCorr, dataFilt)
+						plt.plot(*self.getDerivative(THLListCorr, dataFilt))
 					except:
 						pass
 
 					plt.plot(THLListFit, self.erfFit(THLListFit, *popt), ls='-')
 					plt.plot(THLListFit, self.normalErf(THLListFit, *popt), ls='-')
-					plt.plot(THLList, data, marker='x', ls='')
+					plt.plot(THLListCorr, data, marker='x', ls='')
 					plt.show()
+
+			# Convert back to THL
+			peakList = [THLRange[int(peak + 0.5)] + (peak % 1) for peak in peakList]
 
 			THLListTotal.append( peakList )
 			THLErrListTotal.append( peakErrList )
@@ -1011,17 +1112,18 @@ class Dosepix:
 		print ToTListTotal
 		print ToTErrListTotal
 
-		# Show results in plot
-		fig, ax = plt.subplots()
-		for i in range(len(THLListTotal)):
-			ax.errorbar(THLListTotal[i], ToTListTotal[i], xerr=THLErrListTotal[i], yerr=ToTErrListTotal[i], color=self.getColor('Blues', len(ToTListTotal), i), marker='x')
+		if plot:
+			# Show results in plot
+			fig, ax = plt.subplots()
+			for i in range(len(THLListTotal)):
+				ax.errorbar(THLListTotal[i], ToTListTotal[i], xerr=THLErrListTotal[i], yerr=ToTErrListTotal[i], color=self.getColor('Blues', len(ToTListTotal), i), marker='x')
 
-		ax.grid()
-		plt.xlabel('THL (DAC)')
-		plt.ylabel('ToT')
+			ax.grid()
+			plt.xlabel('THL (DAC)')
+			plt.ylabel('ToT')
 
-		# TODO: Perform fit
-		plt.show()
+			# TODO: Perform fit
+			plt.show()
 
 		# Save to pickle file
 		if outFn:
@@ -1030,7 +1132,7 @@ class Dosepix:
 
 			self.pickleDump(d, outFn)
 
-		return
+		return d
 
 	def getDerivative(self, x, y):
 		deltaX = x[1] - x[0]
@@ -1043,7 +1145,7 @@ class Dosepix:
 	def normalErf(self, x, a, b, c):
 		return 0.56419*a*np.exp(-(x-b)**2/(c**2)) + 0.5
 
-	def energySpectrumTHL(self, slot=1, THLhigh=4975, THLlow=5000, THLstep=1, timestep=1, intPlot=True):
+	def energySpectrumTHL(self, slot=1, THLhigh=4975, THLlow=2000, THLstep=1, timestep=0.1, intPlot=True, outFn='energySpectrumTHL.p', slopeFn='pixelSlopes.p'):
 		# Description: Measure cumulative energy spectrum 
 		#              by performing a threshold scan. The
 		#              derivative of this spectrum resembles
@@ -1051,7 +1153,7 @@ class Dosepix:
 
 		THLhigh = int(self.THLs[slot-1], 16)	
 
-		assert THLhigh <= 8191, "energySpectrumDAC: DACHigh value set too high!"
+		assert THLhigh <= 8191, "energySpectrumTHL: THLHigh value set too high!"
 
 		# Take data in integration mode: 
 		#     Sum of deposited energy in ToT
@@ -1077,6 +1179,9 @@ class Dosepix:
 			fig, ax = plt.subplots()
 			axDer = ax.twinx()
 
+			ax.set_yscale("log", nonposy='clip')
+			# axDer.set_yscale("log", nonposy='clip')
+
 			# Empty plot
 			lineCum, = ax.plot(np.nan, np.nan, label='Cumulative', color='cornflowerblue')
 			lineDer, = axDer.plot(np.nan, np.nan, label='Derivative', color='crimson')
@@ -1089,6 +1194,49 @@ class Dosepix:
 			# axTHL.set_ylabel('THL (V)')
 
 			plt.grid()
+
+		# Also use pixelDACs?
+		if slopeFn and THLstep == 1:
+			if os.path.isfile(slopeFn):
+				slopes = np.reshape(cPickle.load( open(slopeFn, 'rb') )['slope'], (16, 16))
+				# Remove values with large slope...
+				slopes[slopes > 3] = np.nan
+				# ...and replace with mean
+				slopes[np.isnan(slopes)] = np.nanmean( slopes )
+
+				# Mean slope
+				slopeMean = np.mean( slopes.flatten() )
+				print 'SlopeMean:'
+				print slopeMean
+
+				# pixelDAC commands
+				# Start each pixel at 0x1f
+				pixelDACs = ['1f' * 256]
+				THLOffsets = [[0]*256]
+				for m in reversed(range(1, int(1./slopeMean) + 1)):
+					pixelDAC = np.asarray( [0x1f + 1./slope * 1./m for slope in slopes.flatten()], dtype=int )
+
+					offset = np.reshape([(pixelDAC[i] - 0x1f) * slopes.flatten()[i] for i in range(len(pixelDAC))], (16, 16))
+					THLOffsets.append( offset )
+
+					# Check if pixel is within range
+					pixelDAC[pixelDAC < 0] = 0
+					pixelDAC[pixelDAC > 63] = 63
+					# Convert to string
+					pixelDACs.append( ''.join(['{:02x}'.format(item) for item in pixelDAC]) )
+
+				print pixelDACs
+
+				# THLOffsets = [ np.reshape([(int(1./slope * m) - 0x1f) * slope for slope in slopes.flatten()], (16, 16)) for m in range(int(1./slopeMean)) ]
+
+				print 'THLOffsets:'
+				print THLOffsets
+				print
+
+			else:
+				pixelDACs = [None]
+		else:
+			pixelDACs = [None]
 
 		# Loop over DAC values
 		THLList = []
@@ -1110,94 +1258,236 @@ class Dosepix:
 			self.DPXWriteColSelCommand(slot, col)
 			self.DPXReadBinDataDosiModeCommand(slot)
 
-		# Measure time
-		startTime = time.time()
-		for THL in THLRange[::THLstep]:
-			# Set threshold
-			self.DPXWritePeripheryDACCommand(slot, self.peripherys + '%04x' % THL)
+		# Create dictionary to store data
+		pixelDataList = []
 
-			THLList.append( THL )
+		# Catch keyboardInterrupt exception if necessary
+		measStart = time.time()
 
-			# Start frame 
-			# OMRCode[1] = 'ClosedShutter'
-			# self.DPXWriteOMRCommand(slot, OMRCode)
-			
-			# Wait to accumulate data
-			time.sleep(timestep)
-
-			pixelData = []
-			# Loop over pixel columns
-			for col in range(16):
-				self.DPXWriteColSelCommand(slot, col) 
-				data = np.sum(self.DPXReadBinDataDosiModeCommand(slot), axis=1)
-
-				# Reject small pixels
-				data = data[2:-2]
-
-				# Gather in pixel matrix
-				pixelData.append( data )
-
-			# Scale data with readout time
-			pixelData = np.asarray(pixelData) / float(time.time() - startTime)
-
-			# After readout, new measurement begins
+		try:
+			# Measure time
 			startTime = time.time()
+			for THL in THLRange[::THLstep]:
+				# Convert THL to corrected THL value
+				THL = list( THLRange ).index(THL)
 
-			# Flatten and sum data to get total number of events
-			data = pixelData.flatten()[-55]
-			print data
-			dataList.append( np.sum(data) )
+				# Set threshold
+				self.DPXWritePeripheryDACCommand(slot, self.peripherys + '%04x' % THL)
 
-			# OMRCode[1] = 'OpenShutter'
-			# self.DPXWriteOMRCommand(slot, OMRCode)
-			# End frame
+				for i, pixelDAC in enumerate(pixelDACs):
+					# THL matrix for all pixels
+					THLArray = np.zeros((16, 16))
+					THLArray.fill( THL )
 
-			# Update plot
-			if intPlot:
-				if len(THLList[1:]) < windowLength:
-					continue
+					if pixelDAC:
+						self.DPXWritePixelDACCommand(slot, pixelDAC)
+						THLArray = np.asarray( THLArray ) + np.reshape(THLOffsets[i] , (16, 16))
+
+					THLList.append( THLArray.flatten() )
+
+					# Start frame 
+					# OMRCode[1] = 'ClosedShutter'
+					# self.DPXWriteOMRCommand(slot, OMRCode)
 					
-				print windowLength
-				print dataList
+					self.DPXDataResetCommand(slot)
 
-				dataFilt = scipy.signal.savgol_filter(dataList, windowLength, 3)
+					# Wait to accumulate data
+					time.sleep(timestep)
 
-				THLList_ = np.arange(len(THLList[1:]))
+					pixelData = []
 
-				# Cumulative
-				lineCum.set_xdata( THLList_ )
-				lineCum.set_ydata( dataFilt[1:] )
-				
-				# Derivative
-				dataDer = np.diff(dataFilt[1:])
-				lineDer.set_xdata( np.asarray(THLList_[:-1]) + 0.5)
-				lineDer.set_ydata( dataDer )
+					# Loop over pixel columns
+					for col in range(16):
+						self.DPXWriteColSelCommand(slot, col) 
+						data = np.sum(self.DPXReadBinDataDosiModeCommand(slot), axis=1)
 
-				# Measure threshold voltage
-				# lineTHL.set_xdata( THLList )
-				# lineTHL.set_ydata( THLVList )
+						# Gather in pixel matrix
+						pixelData.append( data )
 
-				ax.set_xlim(min(THLList_), max(THLList_))
-				ax.set_ylim(0.9*min(dataFilt[1:]), 1.1*max(dataFilt[1:]))
+					# Scale data with readout time
+					pixelData = np.asarray(pixelData) / float(time.time() - startTime)
 
-				# axTHL.set_xlim(min(THLList), max(THLList))
-				# axTHL.set_ylim(0.9*min(THLVList), 1.1*max(THLVList))
+					if intPlot:
+						# Large pixels only
+						plotData = pixelData[:,range(2, 14)]
 
-				if dataDer.size:
-					dataDer *= max(dataFilt)/max(dataDer)
-					axDer.set_xlim(min(THLList_), max(THLList_))
-					axDer.set_ylim(0.9*min(dataDer[1:]), 1.1*max(dataDer[1:]))
+					# After readout, new measurement begins
+					startTime = time.time()
 
-				fig.canvas.draw()
+					# Flatten and sum data to get total number of events
+					data = pixelData.flatten()
+					print data
+					pixelDataList.append( data )
 
-		raw_input('')
+					# OMRCode[1] = 'OpenShutter'
+					# self.DPXWriteOMRCommand(slot, OMRCode)
+					# End frame
+
+					# Update plot
+					pixel = -55
+					if intPlot:
+						# Plot only one pixel
+						dataList.append( plotData.flatten()[pixel] )
+
+						if len(THLList[1:]) < windowLength:
+							continue
+
+						dataFilt = scipy.signal.savgol_filter(dataList[1:], windowLength, 3)
+
+						THLList_ = np.arange(len(np.asarray(THLList[1:])[:,pixel]))
+
+						# Cumulative
+						lineCum.set_xdata( THLList_ )
+						lineCum.set_ydata( dataFilt )
+						
+						# Derivative
+						dataDer = np.diff( dataFilt )
+						lineDer.set_xdata( np.asarray(THLList_[:-1]) + 0.5)
+						lineDer.set_ydata( dataDer )
+
+						# Measure threshold voltage
+						# lineTHL.set_xdata( THLList )
+						# lineTHL.set_ydata( THLVList )
+
+						ax.set_xlim(min(THLList_), max(THLList_))
+						ax.set_ylim(0.9*min(dataFilt), 1.1*max(dataFilt))
+
+						# axTHL.set_xlim(min(THLList), max(THLList))
+						# axTHL.set_ylim(0.9*min(THLVList), 1.1*max(THLVList))
+
+						if dataDer.size:
+							dataDer *= max(dataFilt)/max(dataDer)
+							axDer.set_xlim(min(THLList_), max(THLList_))
+							axDer.set_ylim(0.9*min(dataDer[1:]), 1.1*max(dataDer[1:]))
+
+						fig.canvas.draw()
+
+			# PixelDataList to dictionary
+			pixelDict = {i: {'THL': np.asarray(THLList)[:,i][1:], 'data': np.asarray(pixelDataList)[:,i]} for i in range(256)}
+
+			# Save to file
+			self.pickleDump(pixelDict, outFn)
+			raw_input('')
+
+		except (KeyboardInterrupt, SystemExit):
+			# Store data and plot in files
+			print 'KeyboardInterrupt-Exception: Storing data!'
+			print 'Measurement time: %.2f min' % ((time.time() - measStart) / 60.)
+
+			# PixelDataList to dictionary
+			pixelDict = {i: {'THL': np.asarray(THLList)[:,i], 'data': np.asarray(pixelDataList)[:,i]} for i in range(256)}
+
+			self.pickleDump(pixelDict, outFn)
+			raise
 
 		# Reset OMR and peripherys
 		self.DPXWriteOMRCommand(slot, self.OMR)
 		self.DPXWritePeripheryDACCommand(slot, self.peripherys + self.THLs[slot-1])
 
+	def temperatureWatch(self, slot, cnt=1000, fn='TemperatureToT.p'):
+		# Interactive plot
+		plt.ion()
+		fig, ax = plt.subplots(1, 2, figsize=(13, 5), gridspec_kw = {'width_ratios': [1, 1]})
+
+		# ax0 label
+		ax[0].set_xlabel('Time (s)')
+		ax[0].set_ylabel('Temperature (DAC)')
+
+		# ax1 label
+		ax[1].set_xlabel(r'$\mu_\mathrm{ToT}$')
+		ax[1].set_ylabel('Temperature (DAC)')
+
+		# Temperature over time
+		line, = ax[0].plot(np.nan, np.nan)
+		# Correlation plot
+		lineCorrList = []
+		for i in range(16):
+			lineCorr, = ax[1].plot(np.nan, np.nan, color=self.getColor('viridis', 16, i))
+			lineCorrList.append( lineCorr )
+
+		if type(self.OMR) is list:
+			OMRCode_ = self.OMRListToHex(self.OMR)
+		OMRCode_ = int(OMRCode_, 16)
+
+		OMRCode_ &= ~(0b11111 << 12)
+		OMRCode_ |= getattr(self.__OMRAnalogOutSel, 'Temperature')
+		self.DPXWriteOMRCommand(slot, hex(OMRCode_).split('0x')[-1])
+
+		logDict = {'time': [], 'temp': [], 'tempErr': [], 'ToT': [], 'ToTErr': []}
+
+		# Init test pulses
+		self.testPulseInit(slot, column=0)
+		self.maskBitsColumn(slot, 0)
+
+		# Choose constant energy
+		energy = 40.e3
+		DACval = self.getTestPulseVoltageDAC(slot, energy, True)
+		self.DPXWritePeripheryDACCommand(slot, DACval)
+		Npulses = 100
+
+		try:
+			# Loop over measurements
+			startTime = time.time()
+			for c in range( cnt ):
+				# Time
+				logDict['time'].append( time.time() - startTime )
+
+				# Measure temperature at start
+				TList = []
+				for i in range(100):
+					TList.append( float(int(self.MCGetADCvalue(), 16)) )
+
+				'''
+				if np.mean(TList) < 1594:
+					# If detector gets too warm, PLL clock
+					# gets out of sync
+					break
+				'''
+
+				# Temperature
+				logDict['temp'].append( np.mean(TList) )
+				logDict['tempErr'].append( np.std(TList) / np.sqrt(100) )
+
+				# Plot
+				line.set_xdata(logDict['time'])
+				line.set_ydata(logDict['temp'])
+				ax[0].set_xlim(min(logDict['time']), max(logDict['time']))
+				ax[0].set_ylim(0.95*min(logDict['temp']), 1.05*max(logDict['temp']))
+
+				# Test pulses
+				dataList = []
+				for i in range(Npulses):
+					self.DPXDataResetCommand(slot)
+					self.DPXGeneralTestPulse(slot, 1000)
+					dataList.append( self.DPXReadToTDataDosiModeCommand(slot)[0] )
+				dataMean = np.mean(dataList, axis=0)
+				dataErr = np.std(dataList, axis=0) / np.sqrt( Npulses )
+
+				logDict['ToT'].append( dataMean )
+				logDict['ToTErr'].append( dataErr )
+
+				# Correlation plot
+				for i in range(16):
+					lineCorrList[i].set_xdata(np.asarray(logDict['ToT'])[:,i])
+					lineCorrList[i].set_ydata(logDict['temp'])
+
+				ax[1].set_xlim(0.99*np.min(logDict['ToT']), 1.01*np.max(logDict['ToT']))
+				ax[1].set_ylim(0.95*min(logDict['temp']), 1.05*max(logDict['temp']))
+
+				fig.canvas.draw()
+
+			if fn:
+				self.pickleDump(logDict, 'temperatureToT.p')
+
+		except (KeyboardInterrupt, SystemExit):
+			# Store data and plot in files
+			print 'KeyboardInterrupt'
+			if fn:
+				self.pickleDump(logDict, 'temperatureToT.p')
+			raise
+
 	# If cnt = 0, loop infinitely
-	def ADCWatch(self, slot, OMRAnalogOutList, cnt=0):
+	def ADCWatch(self, slot, OMRAnalogOutList, cnt=0, fn='ADCWatch.p'):
 		# Interactive plot
 		plt.ion()
 		fig, ax = plt.subplots()
@@ -1236,7 +1526,7 @@ class Dosepix:
 
 			startVal = float(np.mean(meanList))
 			startDict[OMRAnalogOut] = startVal
-			dataDict['data'] = [1.]
+			dataDict['data'] = [startVal]
 
 			# Time
 			currTime = time.time() - startTime
@@ -1278,20 +1568,20 @@ class Dosepix:
 					# Set values in dict
 					OMRAnalogOutDict[OMRAnalogOut]['time'].append(currTime)
 
-					OMRAnalogOutDict[OMRAnalogOut]['data'].append(currVal/startDict[OMRAnalogOut])
+					OMRAnalogOutDict[OMRAnalogOut]['data'].append(currVal)
 
 					# Refresh line
 					lineDict[OMRAnalogOut].set_xdata(OMRAnalogOutDict[OMRAnalogOut]['time'])
 
 					if len(OMRAnalogOutDict[OMRAnalogOut]['data']) > 21:
-						lineDict[OMRAnalogOut].set_ydata(scipy.signal.savgol_filter( OMRAnalogOutDict[OMRAnalogOut]['data'], 21, 5))
+						lineDict[OMRAnalogOut].set_ydata(scipy.signal.savgol_filter(np.asarray(OMRAnalogOutDict[OMRAnalogOut]['data'])/startDict[OMRAnalogOut], 21, 5))
 					else: 
-						lineDict[OMRAnalogOut].set_ydata(OMRAnalogOutDict[OMRAnalogOut]['data'])
+						lineDict[OMRAnalogOut].set_ydata(np.asarray(OMRAnalogOutDict[OMRAnalogOut]['data'])/startDict[OMRAnalogOut])
 
 				# Scale plot axes
 				plt.xlim(min([min(OMRAnalogOutDict[key]['time']) for key in OMRAnalogOutDict.keys()]), max([max(OMRAnalogOutDict[key]['time']) for key in OMRAnalogOutDict.keys()]))
 
-				plt.ylim(min([min(OMRAnalogOutDict[key]['data']) for key in OMRAnalogOutDict.keys()]), max([max(OMRAnalogOutDict[key]['data']) for key in OMRAnalogOutDict.keys()]))
+				plt.ylim(min([min(np.asarray(OMRAnalogOutDict[key]['data'])/startDict[OMRAnalogOut]) for key in OMRAnalogOutDict.keys()]), max([max(np.asarray(OMRAnalogOutDict[key]['data'])/startDict[OMRAnalogOut]) for key in OMRAnalogOutDict.keys()]))
 
 				fig.canvas.draw()
 				loopCnt += 1
@@ -1299,30 +1589,54 @@ class Dosepix:
 			except (KeyboardInterrupt, SystemExit):
 				# Store data and plot in files
 				print 'KeyboardInterrupt'
+				if fn:
+					self.pickleDump(OMRAnalogOutDict, fn)
 				raise
 
-	def measureTHL(self, slot, THLhigh=8191, THLlow=0, THLstep=1, N=10):
+		if fn:
+			self.pickleDump(OMRAnalogOutDict, fn)
+
+	def measureTHL(self, slot, fn=None, plot=False):
+		if not fn:
+			fn = 'THLCalib.p'
+		self.measureADC(slot, AnalogOut='V_ThA', perc=False, ADChigh=8191, ADClow=0, ADCstep=1, N=1, fn=fn, plot=plot)
+
+	def measureADC(self, slot, AnalogOut='V_ThA', perc=False, ADChigh=8191, ADClow=0, ADCstep=1, N=1, fn=None, plot=False):
 		# Display execution time at the end
 		startTime = time.time()
 
-		# Select V_ThA for AnalogOut
+		# Select AnalogOut
 		if type(self.OMR) is list:
 			OMRCode_ = self.OMRListToHex(self.OMR)
 		OMRCode_ = int(OMRCode_, 16)
 
 		OMRCode_ &= ~(0b11111 << 12)
-		OMRCode_ |= getattr(self.__OMRAnalogOutSel, 'V_ThA')
+		OMRCode_ |= getattr(self.__OMRAnalogOutSel, AnalogOut)
 		self.DPXWriteOMRCommand(slot, hex(OMRCode_).split('0x')[-1])
 
-		THLList = np.arange(THLlow, THLhigh, THLstep)
-		THLVoltMean = []
-		THLVoltErr = []
-		print 'Measuring THL voltage!'
-		for cnt, THL in enumerate(THLList):
-			self.statusBar(float(cnt)/len(THLList) * 100 + 1)
+		# Get peripherys
+		dPeripherys = self.splitPerihperyDACs(self.peripherys + self.THLs[0], perc=perc)
+
+		if AnalogOut == 'V_cascode_bias':
+			AnalogOut = 'V_casc_reset'
+		elif AnalogOut == 'V_per_bias':
+			AnalogOut = 'V_casc_preamp'
+
+		ADCList = np.arange(ADClow, ADChigh, ADCstep)
+		ADCVoltMean = []
+		ADCVoltErr = []
+		print 'Measuring ADC!'
+		for cnt, ADC in enumerate(ADCList):
+			self.statusBar(float(cnt)/len(ADCList) * 100 + 1)
 			
 			# Set threshold
-			self.DPXWritePeripheryDACCommand(slot, self.peripherys + '%04x' % THL)
+			# self.DPXWritePeripheryDACCommand(slot, self.peripherys + '%04x' % ADC)
+
+			# Set value in peripherys
+			dPeripherys[AnalogOut] = ADC
+			code = self.periheryDACsDictToCode(dPeripherys, perc=perc)
+			self.peripherys = code[:-4]
+			self.DPXWritePeripheryDACCommand(slot, code)
 
 			# Measure multiple times
 			ADCValList = []
@@ -1330,25 +1644,64 @@ class Dosepix:
 				ADCVal = float(int(self.MCGetADCvalue(), 16))
 				ADCValList.append( ADCVal )
 
-			THLVoltMean.append( np.mean(ADCValList) )
-			THLVoltErr.append( np.std(ADCValList)/np.sqrt(N) )
+			ADCVoltMean.append( np.mean(ADCValList) )
+			ADCVoltErr.append( np.std(ADCValList)/np.sqrt(N) )
 
-		plt.errorbar(THLList, THLVoltMean, yerr=THLVoltErr, marker='x')
-		plt.show()
+		if plot:
+			plt.errorbar(ADCList, ADCVoltMean, yerr=ADCVoltErr, marker='x')
+			plt.show()
 
 		# Sort lists
-		THLVoltMeanSort, THLListSort = zip(*sorted(zip(THLVoltMean, THLList)))
-		print THLListSort
-		plt.plot(THLVoltMeanSort, THLListSort)
-		plt.show()
+		ADCVoltMeanSort, ADCListSort = zip(*sorted(zip(ADCVoltMean, ADCList)))
+		# print THLListSort
+		if plot:
+			plt.plot(ADCVoltMeanSort, ADCListSort)
+			plt.show()
 
-		cPickle.dump({'Volt': THLVoltMeanSort, 'THL': THLListSort}, open('THLCalib.p', 'wb'))
+		d = {'Volt': ADCVoltMean, 'ADC': ADCList}
+		if fn:
+			self.pickleDump(d, fn)
+		else:
+			self.pickleDump(d, 'ADCCalib.p')
 
 		print 'Execution time: %.2f min' % ((time.time() - startTime)/60.)
 
-	def thresholdEqualizationConfig(self, configFn, reps=1, intPlot=False, resPlot=True):
+	def THLCalibToEdges(self, THLDict):
+		volt, thl = THLDict['Volt'], THLDict['ADC']
+
+		# Sort by THL
+		thl, volt = zip(*sorted(zip(thl, volt)))
+		diff = abs(np.diff(volt))
+		edges = np.argwhere(diff > 200).flatten() + 1
+
+		x = np.asarray( thl[:edges[0]] )
+		y = np.asarray( volt[:edges[0]] )
+
+		THLEdgesLow = [0]
+		THLEdgesHigh = [x[-1]]
+		for i in range(len(edges) - 1):
+			x_, y_ = x, y
+			x = np.asarray( thl[edges[i]:edges[i+1]] )
+			y = np.asarray( volt[edges[i]:edges[i+1]] )
+
+			x = x[y > max(y_)]
+			y = y[y > max(y_)]
+
+			THLEdgesLow.append( x[0] )
+			THLEdgesHigh.append( x[-1] )
+
+		x_ = np.asarray( thl[edges[-1]:] )
+		y_ = np.asarray( volt[edges[-1]:] )
+		x_ = x_[y_ > max(y)]
+		y_ = y_[y_ > max(y)]
+		THLEdgesLow.append( x_[0] )
+		THLEdgesHigh.append( x_[-1] )
+
+		return THLEdgesLow, THLEdgesHigh
+
+	def thresholdEqualizationConfig(self, configFn, reps=1, I_pixeldac=0.21, intPlot=False, resPlot=True):
 		for i in range(1, 3 + 1):
-			pixelDAC, THL, confMask = self.thresholdEqualization(i, reps, intPlot, resPlot)
+			pixelDAC, THL, confMask = self.thresholdEqualization(slot=i, reps=reps, I_pixeldac=I_pixeldac, intPlot=intPlot, resPlot=resPlot)
 
 			# Set values
 			self.pixelDAC[i-1] = pixelDAC
@@ -1357,9 +1710,13 @@ class Dosepix:
 
 		self.writeConfig(configFn)
 
-	def thresholdEqualization(self, slot, reps=1, intPlot=False, resPlot=True):
-		THLlow, THLhigh = 5150, 5450
-		NTHL = THLhigh - THLlow
+	def thresholdEqualization(self, slot, reps=1, I_pixeldac=0.5, intPlot=False, resPlot=True):
+		# THLlow, THLhigh = 5120, 5630
+		THLlow, THLhigh = 4000, 8000
+		# THLRange = np.arange(THLlow, THLhigh, 1) 
+		THLRange = np.asarray(self.THLEdges)
+		THLRange = THLRange[np.logical_and(THLRange >= THLlow, THLRange <= THLhigh)]
+
 		THLstep = 1
 		noiseLimit = 3
 		spacing = 2
@@ -1376,17 +1733,27 @@ class Dosepix:
 		else:
 			self.DPXWriteOMRCommand(slot, (int(self.OMR, 16) & ~((0x11) << 22)) | (0x10 << 22))
 
-		pixelDACs = ['00', '3f']
-		# pixelDACs = ['%02x' % num for num in np.arange(0, 64, 9)]
+		# Set I_pixeldac
+		d = self.splitPerihperyDACs(self.peripherys + self.THLs[0], perc=True)
+		d['I_pixeldac'] = I_pixeldac
+		code = self.periheryDACsDictToCode(d, perc=True)
+		self.peripherys = code[:-4]
+		self.DPXWritePeripheryDACCommand(slot, code)
 
-		countsDict = self.getTHLLevel(slot, THLlow, THLhigh, THLstep, pixelDACs, reps, intPlot)
+		# Perform equalization
+		if I_pixeldac <= 0.2:
+			# Linear dependence:
+			# Start and end points are sufficient
+			pixelDACs = ['00', '3f']
+		else:
+			# Nonlinear dependence
+			pixelDACs = ['%02x' % int(num) for num in np.linspace(0, 63, 9)]
 
-		gaussDict, noiseTHL = self.getNoiseLevel(countsDict, THLlow, THLhigh, THLstep, pixelDACs, noiseLimit)
+		countsDict = self.getTHLLevel(slot, THLRange, pixelDACs, reps, intPlot)
+		gaussDict, noiseTHL = self.getNoiseLevel(countsDict, THLRange, pixelDACs, noiseLimit)
 
-		# Get mean values of Gaussians
-		meanDict = {}
-		for pixelDAC in pixelDACs:
-			meanDict[pixelDAC] = np.mean( np.ma.masked_equal(gaussDict[pixelDAC], 0) )
+		# Transform values to indices and get meanDict
+		meanDict, noiseTHL = self.valToIdx(pixelDACs, THLRange, gaussDict, noiseTHL)
 
 		if len(pixelDACs) > 2:
 			def slopeFit(x, m, t):
@@ -1399,6 +1766,10 @@ class Dosepix:
 			offset = noiseTHL['00']
 
 		x = [int(key, 16) for key in pixelDACs]
+		if len(pixelDACs) > 2:
+			# Store fit functions in list
+			polyCoeffList = []
+
 		for pixelX in range(16):
 			for pixelY in range(16):
 				y = []
@@ -1406,15 +1777,26 @@ class Dosepix:
 					y.append(noiseTHL[pixelDAC][pixelX, pixelY])
 
 				if len(pixelDACs) > 2:
-					popt, pcov = scipy.optimize.curve_fit(slopeFit, x, y)
-					slope[pixelX, pixelY] = abs(popt[0])
-					offset[pixelX, pixelY] = popt[1]
+					x, y = np.asarray(x), np.asarray(y)
+					# Remove nan values
+					notNanIdx = np.isfinite(x) & np.isfinite(y)
 
-					print popt
+					# Perform polyfit
+					polyCoeff = np.polynomial.polynomial.polyfit(x[notNanIdx], y[notNanIdx], 3)
+					polyCoeffList.append( polyCoeff )
+
+					polyFit = np.polynomial.polynomial.Polynomial(polyCoeff)
 
 				# plt.plot(adjust[pixelX, pixelY], mean, marker='x')
 				if resPlot:
-					plt.plot(x, y, alpha=.5)
+					# Add offset to getColor to get rid of bright colors
+					plt.plot(x, y, alpha=.5, color=self.getColor('Blues', 5 + 256, pixelX * 16 + pixelY + 5))
+
+					if len(pixelDACs) > 2:
+						plt.plot(x, y, alpha=.5, color=self.getColor('Blues', 5 + 256, pixelX * 16 + pixelY + 5), ls='', marker='x')
+
+						xFit = np.linspace(min(x), max(x), 1000)
+						plt.plot(xFit, polyFit(xFit), ls='-', color=self.getColor('Blues', 5 + 256, pixelX * 16 + pixelY + 5))
 
 		mean = 0.5 * (meanDict['00'] + meanDict['3f'])
 		print meanDict['00'], meanDict['3f'], mean
@@ -1426,10 +1808,34 @@ class Dosepix:
 			plt.grid()
 			plt.show()
 
-		# Get adjustment value for each pixel
-		adjust = (offset - mean) / slope + 0.5
-		
+		if len(pixelDACs) == 2:
+			# Get adjustment value for each pixel
+			adjust = np.asarray( (offset - mean) / slope + 0.5 )
+		else:
+			# Get intersection of fit function and mean value
+			# Describe mean in terms of a polynomial of 3rd grade
+			polyMean = [mean, 0., 0., 0.]
+			adjust = np.zeros(256)
+
+			for pixel in range(256):
+				polyCoeff = polyCoeffList[pixel]
+
+				if np.any(np.isnan(polyCoeff)):
+					adjust[pixel] = 0
+				else:
+					roots = np.asarray( np.polynomial.polynomial.polyroots(polyCoeff - polyMean) )
+					roots = roots[np.logical_and(roots <= 63, roots >= 0)]
+					if list(roots):
+						adjust[pixel] = roots[0]
+					else:
+						adjust[pixel] = 0
+
+					print adjust[pixel]
+				
+			adjust = np.reshape(adjust, (16, 16))
+
 		# Consider extreme values
+		adjust[np.isnan(adjust)] = 0
 		adjust[adjust > 63] = 63
 		adjust[adjust < 0] = 0
 
@@ -1440,9 +1846,12 @@ class Dosepix:
 		pixelDACNew = ''.join(['%02x' % entry for entry in adjust.flatten()])
 
 		# Repeat procedure to get noise levels
-		countsDictNew = self.getTHLLevel(slot, THLlow, THLhigh, THLstep, pixelDACNew, reps, intPlot)
+		countsDictNew = self.getTHLLevel(slot, THLRange, pixelDACNew, reps, intPlot)
 
-		gaussDictNew, noiseTHLNew = self.getNoiseLevel(countsDictNew, THLlow, THLhigh, THLstep, pixelDACNew, noiseLimit)
+		gaussDictNew, noiseTHLNew = self.getNoiseLevel(countsDictNew, THLRange, pixelDACNew, noiseLimit)
+
+		# Transform values to indices
+		meanDictNew, noiseTHLNew = self.valToIdx([pixelDACNew], THLRange, gaussDictNew, noiseTHLNew)
 
 		# Plot the results of the equalization
 		if resPlot:
@@ -1466,20 +1875,280 @@ class Dosepix:
 		confMask[abs(noiseTHLNew[pixelDACNew] - mean) > 10] = '%04x' % getattr(self.__ConfBits, 'MaskBit')
 		confMask = ''.join(confMask.flatten())
 
+		# Find center point of next sawtooth in THL curve
+		# in negative direction of THL
+		THLNew = THLRange[int(mean)]
+
+		# Calculate centers of edge intervals
+		edgesCenter = np.asarray([ 0.5 * (self.THLEdgesHigh[k] + self.THLEdgesLow[k]) for k in range(len(self.THLEdgesLow)) ])
+
+		# Eliminate values larger than THLNew
+		edgesCenter = edgesCenter[edgesCenter <= THLNew]
+
+		# Get closest center value to THLNew
+		THLNew = min(edgesCenter, key=lambda x:abs(x-THLNew))
+
 		print
 		print 'Summary:'
 		print 'pixelDACs:', pixelDACNew
 		print 'confMask:', confMask
-		print 'THL:', '%04x' % (mean - 20)
+		print 'THL:', '%04x' % THLNew
 
 		# Restore OMR values
 		self.DPXWriteOMRCommand(slot, self.OMR)
 
 		# Subtract value from THLMin to guarantee robustness
-		return pixelDACNew, '%04x' % (mean - 20), confMask
+		return pixelDACNew, '%04x' % THLNew, confMask
 
-	def getTHLLevel(self, slot, THLlow, THLhigh, THLstep=1, pixelDACs=['00', '3f'], reps=1, intPlot=False):
-		NTHL = THLhigh - THLlow
+	def THSEqualization(self, slot):
+		# Set PC Mode in OMR in order to read kVp values
+		# If OMR code is list
+		if not isinstance(self.OMR, basestring):
+			OMRCode = self.OMR
+			OMRCode[0] = 'PCMode'
+			self.DPXWriteOMRCommand(slot, OMRCode)
+		else:
+			self.DPXWriteOMRCommand(slot, (int(self.OMR, 16) & ~((0x11) << 22)) | (0x10 << 22))
+
+		# Get THLRange
+		THLlow, THLhigh = 4000, 8000
+		# THLRange = np.arange(THLlow, THLhigh, 1) 
+		THLRange = np.asarray(self.THLEdges)
+		THLRange = THLRange[np.logical_and(THLRange >= THLlow, THLRange <= THLhigh)]
+
+		# Transform peripheryDAC values to dictionary
+		print self.peripherys + self.THLs[0]
+		d = self.splitPerihperyDACs(self.peripherys + self.THLs[0], perc=True)
+
+		minIpixeldac, maxIpixeldac, NIpixeldac = 0, 1., 15
+		minDAC, maxDAC, NDAC = 0, 63, 15
+
+		I_pixeldacList = np.linspace(minIpixeldac, maxIpixeldac, NIpixeldac)
+		pixelDACs = ['%02x' % elm for elm in np.asarray(np.linspace(minDAC, maxDAC, NDAC), dtype=int)]
+		stdList = []
+
+		# Store results in dicts
+		gaussDicts = {}
+
+		for idx, I_pixeldac in enumerate( I_pixeldacList ):
+			# Change pixelDAC step value
+			d['I_pixeldac'] = I_pixeldac
+			code = self.periheryDACsDictToCode(d, perc=True)
+			print code
+
+			# Set peripheryDACs
+			self.peripherys = code[:-4]
+			self.DPXWritePeripheryDACCommand(slot, code)
+
+			# Set pixelDACs to maximum value
+			# pixelDACs = ['00']
+			countsDict = self.getTHLLevel(slot, THLRange, pixelDACs, reps, intPlot)
+			gaussDict, noiseTHL = self.getNoiseLevel(countsDict, THLRange, pixelDACs, noiseLimit)
+			meanDict, noiseTHL = self.valToIdx(pixelDACs, THLRange, gaussDict, noiseTHL)
+			gaussCorrDict = {pixelDAC: [list(THLRange).index(elm) if elm else np.nan for elm in gaussDict[pixelDAC]] for pixelDAC in pixelDACs}
+
+			# Add to I_pixeldac-dict
+			gaussDicts[I_pixeldac] = gaussCorrDict
+
+			# Add standard deviation to list
+			# stdList.append( np.std(dic) )
+
+		# Save to file
+		self.pickleDump({'mean': meanMatrix, 'sigma': sigmaMatrix}, 'pixelDAC.p')
+
+		return
+
+	def meanSigmaLinePlot(self, fn, pIpixeldac, pPixelDAC):
+		d = cPickle.load( open(fn, 'rb') )
+		meanMatrix, sigmaMatrix = d['mean'], d['sigma']
+		meanMatrix, sigmaMatrix = meanMatrix, sigmaMatrix
+
+		# Ipixeldac params
+		minIpixeldac, maxIpixeldac, NIpixeldac = pIpixeldac
+		# pixelDAC params
+		minDAC, maxDAC, NDAC = pPixelDAC
+
+		# Create x-axis
+		pixelDAC = np.linspace(minDAC, maxDAC, NDAC)
+
+		figMean = plt.figure(figsize=(7, 7))
+		axMean = figMean.add_axes([0.1, 0.14, 0.7, 0.8])
+		axCBarMean = figMean.add_axes([0.85, 0.1, 0.05, 0.8])
+		figSigma = plt.figure(figsize=(7, 7))
+		axSigma = figSigma.add_axes([0.1, 0.14, 0.7, 0.8])
+		axCBarSigma = figSigma.add_axes([0.85, 0.1, 0.05, 0.8])
+
+		for row in range(len(meanMatrix)):
+			axMean.plot(pixelDAC, meanMatrix[row], color=self.getColor('viridis', len(meanMatrix), row))
+			axSigma.plot(pixelDAC, sigmaMatrix[row], color=self.getColor('viridis', len(meanMatrix), row))
+
+		self.getColorBar(axCBarMean, minIpixeldac*100, maxIpixeldac*100, NIpixeldac, label=r'$I_{\mathrm{pixelDAC}}$ (%)', rotation=0)
+		self.getColorBar(axCBarSigma, minIpixeldac*100, maxIpixeldac*100, NIpixeldac, label=r'$I_{\mathrm{pixelDAC}}$ (%)', rotation=0)
+
+		# Labels
+		axMean.set_xlabel('PixelDAC')
+		axMean.set_ylabel(r'$\mu_{\mathrm{THL}}$ (THL)')
+
+		axSigma.set_xlabel('PixelDAC')
+		axSigma.set_ylabel(r'$\sigma_{\mathrm{THL}}$ (THL)')
+
+		figMean.show()
+		figSigma.show()
+
+		# Init plot
+		# fig = plt.figure(figsize=(7, 4))
+		# ax = fig.add_axes([0.1, 0.14, 0.7, 0.8])
+		# Add colorbar later
+		# axCBar = fig.add_axes([0.85, 0.1, 0.05, 0.8])
+
+		# ax.hist(gaussCorrDict[pixelDAC], label=str(I_pixeldac), bins=np.arange(0, 1500, 5), alpha=0.5, color=self.getColor('viridis', len(I_pixeldacList), idx))
+
+		# Add colorbar
+		# self.getColorBar(axCBar, I_pixeldacList[0]*100, I_pixeldacList[-1]*100, N=len(I_pixeldacList), label=r'I_pixelDAC (\%)')
+
+		# Standard deviation plot
+		# figStd, axStd = plt.subplots()
+		# axStd.plot(I_pixeldacList, stdList)
+
+		# figStd.show()
+		raw_input('')
+
+		return
+
+	def meanSigmaMatrixPlot(self, fn, pIpixeldac, pPixelDAC):
+		from mpl_toolkits.axes_grid1 import make_axes_locatable
+
+		d = cPickle.load( open(fn, 'rb') )
+		meanMatrix = d['mean']
+		print meanMatrix
+		sigmaMatrix = d['sigma']
+
+		figMean, axMean = plt.subplots()
+		figSigma, axSigma = plt.subplots()
+
+		# Ipixeldac params
+		minIpixeldac, maxIpixeldac, NIpixeldac = pIpixeldac
+		# pixelDAC params
+		minDAC, maxDAC, NDAC = pPixelDAC
+
+		# Calculate bin widths
+		wIpixeldac = float(maxIpixeldac - minIpixeldac) / NIpixeldac
+		wDAC = float(maxDAC - minDAC) / NDAC
+
+		# Sigma plot
+		im = axSigma.imshow(sigmaMatrix.T, extent=[minIpixeldac - 0.5*wIpixeldac, maxIpixeldac + 0.5*wIpixeldac, minDAC - 0.5*wDAC, maxDAC + 0.5*wDAC], aspect='auto')
+		divider = make_axes_locatable(axSigma)
+		caxSigma = divider.append_axes('right', size='5%', pad=0.1)
+		figSigma.colorbar(im, cax=caxSigma)
+		axSigma.set_xlabel('I_pixeldac'), axSigma.set_ylabel('pixelDAC')
+		figSigma.show()
+
+		# Mean plot
+		im = axMean.imshow(meanMatrix.T, extent=[minIpixeldac - 0.5*wIpixeldac, maxIpixeldac + 0.5*wIpixeldac, minDAC - 0.5*wDAC, maxDAC + 0.5*wDAC], aspect='auto')
+		divider = make_axes_locatable(axMean)
+		caxMean = divider.append_axes('right', size='5%', pad=0.1)
+		figMean.colorbar(im, cax=caxMean)
+		axMean.set_xlabel('I_pixeldac'), axMean.set_ylabel('pixelDAC')
+		figMean.show()
+
+		raw_input('')
+
+	# Get information about the slope THL/pixelDAC for each pixel.
+	# Notice that the slope is only linear for I_pixeldac values 
+	# about less than 20%. 
+	def getPixelSlopes(self, slot, I_pixeldac=0.2):
+		if not isinstance(I_pixeldac, list, ):
+			I_pixeldacList = [I_pixeldac]
+		else:
+			I_pixeldacList = I_pixeldac
+
+		assert max(I_pixeldacList) <= 0.2, "I_pixeldac has to be set less than or equal 20% to ensure linearity of the pixels."
+
+		# Set PC Mode in OMR in order to read kVp values
+		# If OMR code is list
+		if not isinstance(self.OMR, basestring):
+			OMRCode = self.OMR
+			OMRCode[0] = 'PCMode'
+			self.DPXWriteOMRCommand(slot, OMRCode)
+		else:
+			self.DPXWriteOMRCommand(slot, (int(self.OMR, 16) & ~((0x11) << 22)) | (0x10 << 22))
+
+		# Get THLRange
+		THLlow, THLhigh = 4000, 8000
+		# THLRange = np.arange(THLlow, THLhigh, 1) 
+		THLRange = np.asarray(self.THLEdges)
+		THLRange = THLRange[np.logical_and(THLRange >= THLlow, THLRange <= THLhigh)]
+
+		# Only use first and last pixelDAC values
+		pixelDACs = ['00', '3f']
+
+		# Transform peripheryDAC values to dictionary
+		print self.peripherys + self.THLs[0]
+		dPeripherys = self.splitPerihperyDACs(self.peripherys + self.THLs[0], perc=True)
+
+		# Init plot
+		fig = plt.figure(figsize=(7, 4))
+		ax = fig.add_axes([0.1, 0.14, 0.7, 0.8])
+		# Add colorbar later
+		axCBar = fig.add_axes([0.85, 0.1, 0.05, 0.8])
+
+		slopeList = []
+		# Loop over I_pixeldacs
+		for idx, I_pixeldac in enumerate( I_pixeldacList ):
+			# Set I_pixeldac in peripherys
+			dPeripherys['I_pixeldac'] = I_pixeldac
+			code = self.periheryDACsDictToCode(dPeripherys, perc=True)
+			self.peripherys = code[:-4]
+			self.DPXWritePeripheryDACCommand(slot, code)
+
+			# Get noise levels for each pixel
+			countsDict = self.getTHLLevel(slot, THLRange, pixelDACs, 1, False)
+			gaussDict, noiseTHL = self.getNoiseLevel(countsDict, THLRange, pixelDACs, 1)
+			meanDict, noiseTHL = self.valToIdx(pixelDACs, THLRange, gaussDict, noiseTHL)
+
+			# Get slope for each pixel
+			slope = (noiseTHL['00'] - noiseTHL['3f']) / 63.
+			slopeList.append( slope )
+			offset = noiseTHL['00']
+
+			slope = np.nan_to_num( slope )
+			print slope
+
+			# Show histogram of slopes
+			color = self.getColor('viridis', len(I_pixeldacList), idx)
+			hist, bins = np.histogram(slope) # , bins=np.linspace(0., .15, 30))
+			ax.plot(bins[:-1], hist, drawstyle='steps', color=color, alpha=0.5)
+			ax.axvline(x=np.nanmean(slope))
+			ax.axvline(x=np.nanmean(slope)+np.nanstd(slope), ls='--', color=color)
+			ax.axvline(x=np.nanmean(slope)-np.nanstd(slope), ls='--', color=color)
+
+		# Add colorbar
+		self.getColorBar(axCBar, I_pixeldacList[0]*100, I_pixeldacList[-1]*100, N=len(I_pixeldacList), label=r'$I_\mathrm{pixelDAC}$ (%)')
+
+		plt.show()
+		if len(slopeList) == 1:
+			return slopeList[0]
+		else:
+			return slopeList
+
+	def valToIdx(self, pixelDACs, THLRange, gaussDict, noiseTHL):
+		# Transform values to indices
+		meanDict = {}
+		for pixelDAC in pixelDACs:
+			d = [list(THLRange).index(elm) if elm else np.nan for elm in gaussDict[pixelDAC] ]
+			meanDict[pixelDAC] = np.mean(d)
+
+			for pixelX in range(16):
+				for pixelY in range(16):
+					elm = noiseTHL[pixelDAC][pixelX, pixelY]
+					if elm:
+						noiseTHL[pixelDAC][pixelX, pixelY] = list(THLRange).index(elm)
+					else:
+						noiseTHL[pixelDAC][pixelX, pixelY] = np.nan
+
+		return meanDict, noiseTHL
+
+	def getTHLLevel(self, slot, THLRange, pixelDACs=['00', '3f'], reps=1, intPlot=False):
 		countsDict = {}
 
 		# Interactive plot showing pixel noise
@@ -1520,7 +2189,26 @@ class Dosepix:
 			# Noise measurement
 			# Loop over THL values
 			print 'Loop over THLs'
-			for cnt, THL in enumerate( range(THLlow, THLhigh, THLstep) ):
+
+			# Fast loop
+			countsList = []
+			THLRangeFast = THLRange[::10]
+			for cnt, THL in enumerate(THLRangeFast):
+				self.DPXWritePeripheryDACCommand(slot, self.peripherys + ('%04x' % THL))
+				self.DPXDataResetCommand(slot)
+				time.sleep(0.001)
+
+				# Read ToT values into matrix
+				countsList.append( self.DPXReadToTDatakVpModeCommand(slot).flatten() )
+
+			countsList = np.asarray( countsList ).T
+			THLRangeFast = [ THLRangeFast[item[0][0]] if np.any(item) else np.nan for item in [np.argwhere(counts > 3) for counts in countsList] ]
+
+			# Precise loop
+			THLRangeSlow = THLRange[np.logical_and(THLRange >= (np.nanmin(THLRangeFast) - 10), THLRange <= np.nanmax(THLRangeFast))]
+
+			NTHL = len(THLRangeSlow)
+			for cnt, THL in enumerate( THLRangeSlow ):
 				self.statusBar(float(cnt)/NTHL * 100 + 1)
 
 				# Repeat multiple times since data is noisy
@@ -1545,7 +2233,7 @@ class Dosepix:
 
 		return countsDict
 
-	def getNoiseLevel(self, countsDict, THLlow, THLhigh, THLstep=1, pixelDACs=['00', '3f'], noiseLimit=3):
+	def getNoiseLevel(self, countsDict, THLRange, pixelDACs=['00', '3f'], noiseLimit=3):
 		if isinstance(pixelDACs, basestring):
 			pixelDACs = [pixelDACs]
 
@@ -1558,7 +2246,10 @@ class Dosepix:
 		for pixelDAC in pixelDACs:
 			for pixelX in range(16):
 				for pixelY in range(16):
-					for THL in range(THLlow, THLhigh, THLstep):
+					for idx, THL in enumerate(THLRange):
+						if not THL in countsDict[pixelDAC].keys():
+							continue
+
 						if countsDict[pixelDAC][THL][pixelX, pixelY] >= noiseLimit and noiseTHL[pixelDAC][pixelX, pixelY] == 0:
 								noiseTHL[pixelDAC][pixelX, pixelY] = THL
 
@@ -2070,7 +2761,7 @@ class Dosepix:
 			print 'percent:'
 		else:
 			print 'DAC:'
-		print yaml.dump(d, indent=4, default_flow_style = False)
+		print yaml.dump(d, indent=4, default_flow_style=False)
 		print 
 
 		return d
@@ -2099,7 +2790,7 @@ class Dosepix:
 		code |= (int(d['I_pixeldac'] * percEightBit) << 120 - 8)
 		code |= (int(d['V_casc_reset'] * percEightBit) << 128 - 8)
 
-		return hex(code).split('0x')[-1]
+		return hex(code).split('0x')[-1][:-1]
 
 	def getTHLfromVolt(self, V):
 		return self.THLCalib[abs(V - self.voltCalib).argmin()]
@@ -2115,6 +2806,26 @@ class Dosepix:
 		cmap = mpl.cm.get_cmap(c)
 		norm = mpl.colors.Normalize(vmin=0.0, vmax=N - 1)
 		return cmap(norm(idx))
+
+	def getColorBar(self, ax, cbMin, cbMax, N=20, label=None, rotation=90):
+		# Plot colorbar
+		from matplotlib.colors import ListedColormap
+		cmap = mpl.cm.get_cmap('viridis', N)
+		norm = mpl.colors.Normalize(vmin=cbMin, vmax=cbMax)
+		cBar = mpl.colorbar.ColorbarBase(ax, cmap=cmap, norm=norm, orientation='vertical')
+
+		# cBar.ax.invert_yaxis()
+		cBar.formatter.set_powerlimits((0, 0))
+		cBar.ax.yaxis.set_offset_position('right')
+		cBar.update_ticks()
+
+		labels = np.linspace(cbMin, cbMax, N + 1)
+		locLabels = np.linspace(cbMin, cbMax, N)
+		loc = labels + abs(labels[1] - labels[0])*.5
+		cBar.set_ticks(loc)
+		cBar.ax.set_yticklabels(['%.1f' % loc for loc in locLabels], rotation=rotation, verticalalignment='center')
+		cBar.outline.set_visible(False)
+		cBar.set_label(label)
 
 if __name__ == '__main__':
 	main()
