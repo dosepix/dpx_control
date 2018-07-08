@@ -5,7 +5,8 @@ import scipy.optimize
 import cPickle
 
 INFILE = 'ADCWatch_5.p'
-WINDOW = 300
+OUTDIR = 'plotADCWatch/'
+WINDOW = 200
 
 def main():
 	# Load dictionary from file
@@ -44,10 +45,11 @@ def main():
 		minX, maxX = min(tempData[:length]/tempData[0]), max(tempData[:length]/tempData[0])
 		ax[1].plot((minX, maxX), linear(np.asarray([minX, maxX]), *popt))
 
-		ax[1].set_xlabel('Temperature (normed)')
-		ax[1].set_ylabel(key + ' (normed)')
+		ax[1].set_xlabel('Temperature (normalized)')
+		ax[1].set_ylabel(key + ' (normalized)')
 
 		plt.tight_layout()
+		plt.savefig(OUTDIR + '%s.pdf' % key)
 		plt.show()
 
 def running_mean(x, N):

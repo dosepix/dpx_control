@@ -7,7 +7,7 @@ from itertools import groupby
 from operator import itemgetter
 
 def main():
-	fn = 'energySpectrumTHL_13.p'
+	fn = 'THL_1520/energySpectrumTHL_Am.p'
 	d = cPickle.load(open(fn, 'rb'))
 
 	fig, ax = plt.subplots(2, 1)

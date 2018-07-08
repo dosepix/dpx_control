@@ -5,11 +5,13 @@ import matplotlib.pyplot as plt
 import scipy.optimize 
 import scipy.odr
 
-ENERGYLIST = [25, 30, 40, 50, 75, 100, 125, 148]
-INFILELIST = ['temperatureToT_%d.p' % energy for energy in ENERGYLIST] 
+ENERGYLIST = [25, 50, 75, 100, 125] #[25, 30, 40, 50, 75, 100, 125, 148]
+INFILELIST = ['temperatures_no_sensor/temperatureToT_col0_%d.p' % energy for energy in ENERGYLIST] # ['temperatureToT_col0_%d.p' % energy for energy in ENERGYLIST] 
+OUTDIR = 'plotTemperatureToT'
 CUTTEMP = 0
 OFFSETTEMP = 1570
-PLOT = False
+PLOT = True
+SAVE = True
 
 def main():
 	offsetList, offsetErrList = [], []
@@ -37,8 +39,8 @@ def main():
 		try:
 			popt, pcov = scipy.optimize.curve_fit(heating, time, temp, sigma=tempErr, p0=(600, 200, 1590, 1., 1., 1540, 1550))
 			timeFit = np.linspace(min(time), max(time), 1000)
-			if PLOT:
-				ax[0].plot(timeFit, heating(timeFit, *popt), color='cornflowerblue', alpha=.7)
+			# if PLOT:
+			#	ax[0].plot(timeFit, heating(timeFit, *popt), color='cornflowerblue', alpha=.7)
 		except:
 			pass
 
@@ -78,8 +80,12 @@ def main():
 		if PLOT:
 			ax[1].set_ylim(0.99 * min(temp), 1.01 * max(temp))
 
-			plt.title(INFILE)
+			title = INFILE.split('.')[0]
+
+			plt.title(title)
 			plt.tight_layout()
+			if SAVE:
+				plt.savefig(OUTDIR + '/%s.pdf' % title)
 			plt.show()
 
 	offsetList, slopeList = np.asarray( offsetList ).T, np.asarray( slopeList ).T
@@ -160,6 +166,8 @@ def main():
 
 		axMeanStd[0].set_title('Pixel #%d' % i)
 		plt.tight_layout()
+		if SAVE:
+			plt.savefig(OUTDIR + '/pixel%s.pdf' % i)
 		plt.show()
 	
 def getData(fn):
