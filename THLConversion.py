@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 import cPickle
 from scipy.optimize import fsolve, root
 import scipy.special
+import seaborn as sns
 
 INFILE = 'THL_1394/ToTMeasurement_Am.p'
 CALIBFILE = 'ToTtoTHLParams.p'
@@ -71,7 +72,8 @@ def main():
 		muList = [bins[:-1][np.argmax(hist)], 2200]
 		sigmaList = [20, 20] # ToTtoEnergy([mean+sig], a, b, c, t)[0] - mu
 
-		energyList = [59.5409, 26.3446]
+		# energyList = [59.5409, 26.3446]
+		energyList = [58.3, 26.129]
 		THLList = []
 
 		try:
@@ -121,7 +123,7 @@ def main():
 			ax[0].set_yscale("log", nonposy='clip')
 			ax[1].set_yscale("log", nonposy='clip')
 			ax[2].set_yscale("log", nonposy='clip')
-			plt.tight_layout()
+	 		plt.tight_layout()
 			plt.show()
 
 	# Store parameter dictionary to file
