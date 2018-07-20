@@ -24,7 +24,7 @@ DEBUG = False
 
 def main():
 	# Create object of class and establish connection
-	dpx = Dosepix('/dev/ttyUSB0', 2e6, 'DPXConfigNew.conf')
+	dpx = Dosepix('/dev/tty.usbserial-A501RDZN', 2e6, 'DPXConfigNew.conf')
 
 	'''
 	# Read peripheryDAC values from config
@@ -65,7 +65,7 @@ def main():
 	
 	# dpx.measureADC(1, AnalogOut='V_cascode_bias', perc=True, ADChigh=0.06, ADClow=0., ADCstep=0.00001, N=1)
 	# dpx.ToTtoTHL_pixelDAC(slot=1, THLstep=1, I_pixeldac=0.0001, valueLow=200, valueHigh=200, valueCount=1, energy=False, plot=False)
-	dpx.ToTtoTHL(slot=1, column='all', THLstep=1, valueLow=22e3, valueHigh=50e3, valueCount=20, energy=True, plot=False, outFn='ToTtoTHL.p')
+	dpx.ToTtoTHL(slot=1, column=0, THLstep=1, valueLow=5e3, valueHigh=50e3, valueCount=20, energy=True, plot=True, outFn='ToTtoTHL.p')
 
 	# dpx.energySpectrumTHL(1)
 	# dpx.measureToT(1)
@@ -268,21 +268,24 @@ class Dosepix:
 		self.initDPX()
 
 		# Load THL calibration data
-		assert os.path.isfile('THLCalib.p'), 'Need THL Calibration file THLCalib.p!'
-		d = cPickle.load(open('THLCalib.p', 'rb'))
-		self.voltCalib = np.asarray(d['Volt']) / max(d['Volt'])
-		self.THLCalib = np.asarray(d['ADC'])
+                try:
+                    assert os.path.isfile('THLCalib.p'), 'Need THL Calibration file THLCalib.p!'
+                    d = cPickle.load(open('THLCalib.p', 'rb'))
+                    self.voltCalib = np.asarray(d['Volt']) / max(d['Volt'])
+                    self.THLCalib = np.asarray(d['ADC'])
 
-		self.THLEdgesLow, self.THLEdgesHigh, self.THLFitParams = self.THLCalibToEdges(d)
-		print self.THLEdgesLow, self.THLEdgesHigh
+                    self.THLEdgesLow, self.THLEdgesHigh, self.THLFitParams = self.THLCalibToEdges(d)
+                    print self.THLEdgesLow, self.THLEdgesHigh
 
-		# self.THLEdgesLow = [0, 804, 1313, 1827, 2342, 2833, 3360, 3872, 4388, 4889, 5410, 5918, 6446, 6961, 7464, 7992]
-		# self.THLEdgesHigh = [511, 1023, 1535, 2047, 2559, 3071, 3583, 4095, 4607, 5119, 5631, 6143, 6655, 7167, 7679, 8190]
-		
-		# Combine
-		self.THLEdges = []
-		for i in range(len(self.THLEdgesLow)):
-			self.THLEdges += list( np.arange(self.THLEdgesLow[i], self.THLEdgesHigh[i] + 1) )
+                    # self.THLEdgesLow = [0, 804, 1313, 1827, 2342, 2833, 3360, 3872, 4388, 4889, 5410, 5918, 6446, 6961, 7464, 7992]
+                    # self.THLEdgesHigh = [511, 1023, 1535, 2047, 2559, 3071, 3583, 4095, 4607, 5119, 5631, 6143, 6655, 7167, 7679, 8190]
+                    
+                    # Combine
+                    self.THLEdges = []
+                    for i in range(len(self.THLEdgesLow)):
+                            self.THLEdges += list( np.arange(self.THLEdgesLow[i], self.THLEdgesHigh[i] + 1) )
+                except:
+                    pass
 
 	def __del__(self):
 		self.close()
@@ -892,7 +895,7 @@ class Dosepix:
 		# Set low level to zero and high level to noise limit
 		# for the coarse measurement
 		THLlow = 0
-		THLhigh = 5408 # int(self.THLs[slot-1], 16)
+		THLhigh = int(self.THLs[slot-1], 16)
 
 		# Set AnalogOut to V_ThA
 		OMRCode = self.OMR
@@ -1050,7 +1053,7 @@ class Dosepix:
 					# Generate test pulse and measure ToT in integrationMode
 					# dataTemp = np.zeros(16)
 					self.DPXDataResetCommand(slot)
-					for i in range(30):
+					for i in range(NPulses):
 						self.DPXGeneralTestPulse(slot, 1000)
 					data = self.DPXReadToTDatakVpModeCommand(slot)[column]
 					# print data
@@ -1075,9 +1078,9 @@ class Dosepix:
 					THLListFit = np.linspace(min(THLListCorr), max(THLListCorr), 1000)
 
 					# Perform erf-Fit
-					p0 = [100., THLListCorr[int(len(THLListCorr) / 2.)], 3.]
+					p0 = [THLListCorr[int(len(THLListCorr) / 2.)], 3.]
 					try:
-						popt, pcov = scipy.optimize.curve_fit(self.erfFit, THLListCorr, data, p0=p0)
+                                                popt, pcov = scipy.optimize.curve_fit(lambda x, b, c: self.erfFit(x, NPulses, b, c), THLListCorr, data, p0=p0)
 						perr = np.sqrt(np.diag(pcov))
 						print popt
 					except:
@@ -1090,10 +1093,10 @@ class Dosepix:
 					# a: Amplitude
 					# b: x-offset
 					# c: scale
-					a, b, c = popt
+					b, c = popt
 					peakList.append( b )
 					# Convert to sigma
-					peakErrList.append( perr[2] / np.sqrt(2) )
+					peakErrList.append( perr[1] / np.sqrt(2) )
 
 					# Savitzky-Golay filter the data
 					# Ensure odd window length
@@ -1110,8 +1113,8 @@ class Dosepix:
 						except:
 							pass
 
-						plt.plot(THLListFit, self.erfFit(THLListFit, *popt), ls='-')
-						plt.plot(THLListFit, self.normalErf(THLListFit, *popt), ls='-')
+						plt.plot(THLListFit, self.erfFit(THLListFit, NPulses, b, c), ls='-')
+						plt.plot(THLListFit, self.normalErf(THLListFit, NPulses, b, c), ls='-')
 						plt.plot(THLListCorr, data, marker='x', ls='')
 						plt.show()
 
@@ -1931,6 +1934,7 @@ class Dosepix:
 		confMask[abs(noiseTHLNew[pixelDACNew] - mean) > 10] = '%04x' % getattr(self.__ConfBits, 'MaskBit')
 		confMask = ''.join(confMask.flatten())
 
+                '''
 		# Find center point of next sawtooth in THL curve
 		# in negative direction of THL
 		THLNew = THLRange[int(mean)]
@@ -1943,6 +1947,9 @@ class Dosepix:
 
 		# Get closest center value to THLNew
 		THLNew = min(edgesCenter, key=lambda x:abs(x-THLNew))
+                '''
+                # THLNew = self.THLEdges[list(THLRange).index(int(self.getTHLfromVolt(mean))) - 20]
+                THLNew = int(np.mean(gaussDictNew[pixelDACNew]) - 20)
 
 		print
 		print 'Summary:'
