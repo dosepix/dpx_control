@@ -5,8 +5,9 @@ import matplotlib.pyplot as plt
 import scipy.optimize 
 import scipy.odr
 
-ENERGYLIST = [25, 50, 75, 100, 125] #[25, 30, 40, 50, 75, 100, 125, 148]
-INFILELIST = ['temperatures_no_sensor/temperatureToT_col0_%d.p' % energy for energy in ENERGYLIST] # ['temperatureToT_col0_%d.p' % energy for energy in ENERGYLIST] 
+# ENERGYLIST = [25, 50, 75, 100, 125] #[25, 30, 40, 50, 75, 100, 125, 148]
+# INFILELIST = ['temperatures_no_sensor/temperatureToT_col0_%d.p' % energy for energy in ENERGYLIST] # ['temperatureToT_col0_%d.p' % energy for energy in ENERGYLIST] 
+INFILELIST = ['temperatureToT_16.p']
 OUTDIR = 'plotTemperatureToT'
 CUTTEMP = 0
 OFFSETTEMP = 1570
@@ -70,7 +71,8 @@ def main():
 			ToTFit = np.asarray( [np.min(ToT), np.max(ToT)] )
 			if PLOT:
 				ax[1].errorbar(ToT[i], temp, xerr=ToTErr[i], yerr=tempErr, color=getColor('tab20', len(ToT), i), marker='x', ls='')
-				ax[1].plot(ToTFit, linear(popt, ToTFit), color=getColor('tab20', len(ToT), i))
+				ax[1].plot(ToTFit, linear(popt, ToTFit), color=getColor('tab20', len(ToT), i), label=str(i))
+			plt.legend()
 
 		if PLOT:
 			ax[1].axhline(y=OFFSETTEMP, ls='--')
