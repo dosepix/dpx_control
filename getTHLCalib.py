@@ -11,7 +11,7 @@ OUTDIR = 'THLCalibPlots/'
 SAVE = True
 
 def main():
-	d = cPickle.load(open('THLCalib_3.p', 'rb'))
+	d = cPickle.load(open('THLCalibration/THLCalib_6.p', 'rb'))
 	volt = d['Volt']
 	thl = d['ADC']
 	print d.keys()

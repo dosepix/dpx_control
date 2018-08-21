@@ -11,60 +11,88 @@ PARAMSFILE = 'ToTtoEnergy.p'
 SLOT = 1
 
 def main():
-	data = np.asarray( cPickle.load( open(INFILE, 'rb') )['Slot%d' % SLOT] ).T
-	params = cPickle.load( open(PARAMSFILE, 'rb') )
+    paramsDict = cPickle.load( open(PARAMSFILE, 'rb') )
+    data = np.asarray( cPickle.load( open(INFILE, 'rb') )['Slot%d' % slot] ).T
 
-        binsTotal = np.arange(4095)
-        totalData = []
+    totalData = ToTtoEnergy(data, paramsDict, slot=SLOT)
+    if OUTFILE:
+        cPickle.dump(totalData, open(OUTFILE, 'wb'))
 
-        plt.hist(data.flatten(), bins=300)
+def getToTtoEnergy(data, params, slot=1, use_hist=False):
+    binsTotal = np.arange(4095)
+    totalData = []
+
+    # plt.hist(data.flatten(), bins=300)
+    # plt.show()
+
+    for pixel in params.keys():
+        p = params[pixel]
+        a, b, c, t, h, k = p['a'], p['b'], p['c'], p['t'], p['h'], p['k']
+        # print h, k
+
+        if not use_hist:
+            pixelData = data[pixel]
+            pixelData = pixelData[pixelData > 0]
+            # pixelData = pixelData[pixelData < 250]
+
+            hist, bins = np.histogram(pixelData, bins=binsTotal) # int(max(pixelData) - min(pixelData)))
+
+            # Get rid of empty entries
+            bins = bins[:-1][hist > 0]
+            hist = hist[hist > 0]
+        else:
+            bins, hist = data['bins'][pixel], data['hist'][pixel]
+            
+            # Remove zeros
+            if bins[0] == 0:
+                bins = bins[1:]
+                hist = hist[1:]
+                
+            cond = (hist > 0)
+            cond = np.append(cond, True)
+            bins = bins[cond]
+            hist = hist[hist > 0]
+            
+            bins, hist = np.asarray(bins, dtype=int), np.asarray(hist, dtype=int)
+
+        # plt.step(bins[:-1], hist, where='post')
+        # plt.show()
+
+        # Convert bins to energy
+        binsEnergy = ToTtoEnergy(bins, a, b, c, t, h, k)
+
+        # Convert single entries
+        if not use_hist:
+            totalData += list( ToTtoEnergy(pixelData, a, b, c, t, h, k) )
+        else:
+            histEnergy = []
+            for b in range(len(binsEnergy[:-1])):
+                if hist[b]:
+                    histEnergy += [binsEnergy[b]] * hist[b]
+            totalData += list(histEnergy)
+
+        plt.step(binsEnergy[:-1], hist, where='post')
+        plt.xlim(0, 65)
         plt.show()
 
-	for pixel in params.keys():
-		p = params[pixel]
-		a, b, c, t, h, k = p['a'], p['b'], p['c'], p['t'], p['h'], p['k']
-		print h, k
+    totalData = np.asarray( totalData )
+    print totalData
+    totalData = totalData[np.logical_and(totalData > 0, totalData < 65)]
+    hist, bins = np.histogram(totalData, bins=500) # np.linspace(15, 65, 300))
+    # Get rid of empty entries
+    bins = bins[:-1][hist > 10]
+    hist = hist[hist > 10]
 
-                pixelData = data[pixel]
-                pixelData = pixelData[pixelData > 0]
-                # pixelData = pixelData[pixelData < 250]
+    plt.step(bins, hist, where='post')
+    plt.xlabel('Energy (keV)')
+    plt.ylabel('Counts')
+    sns.despine(top=True, right=True, offset=0, trim=False)
 
-		hist, bins = np.histogram(pixelData, bins=binsTotal) # int(max(pixelData) - min(pixelData)))
-                # plt.step(bins[:-1], hist, where='post')
-                # plt.show()
-
-                # Get rid of empty entries
-                bins = bins[:-1][hist > 0]
-                hist = hist[hist > 0]
-
-		# Convert bins to energy
-		binsEnergy = ToTtoEnergy(bins, a, b, c, t, h, k)
-
-                # Convert single entries
-                totalData += list( ToTtoEnergy(pixelData, a, b, c, t, h, k) )
-
-		# plt.step(binsEnergy, hist, where='post')
-		# plt.show()
-
-        totalData = np.asarray( totalData )
-        totalData = totalData[totalData > 0]
-        hist, bins = np.histogram(totalData, bins=500) # np.linspace(15, 65, 300))
-        # Get rid of empty entries
-        bins = bins[:-1][hist > 0]
-        hist = hist[hist > 0]
-
-        plt.step(bins, hist, where='post')
-        plt.xlabel('Energy (keV)')
-        plt.ylabel('Counts')
-        sns.despine(top=True, right=True, offset=0, trim=False)
-
-        if OUTFILE:
-                cPickle.dump(totalData, open(OUTFILE, 'wb'))
-        plt.show()
-
+    plt.show()
+    return totalData
+        
 def ToTtoEnergy(x, a, b, c, t, h, k):
 	return h * (b + 1./(4 * a) * (2*x + np.pi*c + np.sqrt(16 * a * c * t + (2 * x + np.pi * c)**2))) + k
 
 if __name__ == '__main__':
 	main()
-

@@ -11,97 +11,120 @@ SIMPLE = True
 ENERGY_CONV = 'ToTtoEnergy.p'
 
 def main():
-	# Get filename from argument parser
-	ap = argparse.ArgumentParser(description='Process some integers.')
-	ap.add_argument('-fn', '--filename', type=str, help='File to plot', required=True)
-	args = ap.parse_args()
+    # Get filename from argument parser
+    ap = argparse.ArgumentParser(description='Process some integers.')
+    ap.add_argument('-fn', '--filename', type=str, help='File to plot', required=True)
+    args = ap.parse_args()
 
-	# Load data from dict
-	d = cPickle.load( open(args.filename, 'rb') )
+    # Load data from dict
+    d = cPickle.load( open(args.filename, 'rb') )
 
-	if ENERGY_CONV:
-		convDict = cPickle.load( open(ENERGY_CONV, 'rb') )
-	else:
-		convDict = None
-	
-	# Results dict
-	resDict = {}
+    if ENERGY_CONV:
+        convDict = cPickle.load( open(ENERGY_CONV, 'rb') )
+    else:
+        convDict = None
 
-	for col in d.keys():
-		THL, THLErr = np.asarray(d[col]['THL']), np.asarray(d[col]['THLErr'])
-		ToT, ToTErr = np.asarray(d[col]['ToT']), np.asarray(d[col]['ToTErr'])
+    resDict = plotToTtoTHL(d, convDict=convDict)
+    cPickle.dump(resDict, open('ToTtoTHLParams.p', 'wb'))
 
-		THLErr[THLErr > 100] = np.nan
-		ToTErr[ToTErr > 30] = np.nan
-		print THL
-		print ToT
+def plotToTtoTHL(d, convDict=None):
+    # Results dict
+    resDict = {}
 
-		fig, ax = plt.subplots()
-		if convDict:
-			figEn, axEn = plt.subplots()
-			figSig, axSig = plt.subplots()
+    for col in d.keys():
+        THL, THLErr = np.asarray(d[col]['THL']), np.asarray(d[col]['THLErr'])
+        ToT, ToTErr = np.asarray(d[col]['ToT']), np.asarray(d[col]['ToTErr'])
 
-		for pixel in range(16):
-			# Sort data by THL
-			THL_, THLErr_, ToT_, ToTErr_ = zip(*sorted(zip(THL[pixel], THLErr[pixel], ToT[pixel], ToTErr[pixel])))
+        THLErr[THLErr > 100] = np.nan
+        ToTErr[ToTErr > 30] = np.nan
+        # print THL
+        # print ToT
 
-			# Fit
-			if ATAN:
-				p0 = (-0.4, max(THL_), -30, 50) 
-				bounds = ((-0.6, -np.inf, -50, 10), (-0.2, np.inf, -10, 200))
-			elif SIMPLE:
-				p0 = (-0.4, max(THL_), -30, 50) 
-				bounds = ((-0.6, -np.inf, -50, 10), (-0.2, np.inf, -10, 200))
-			else:
-				p0 = (-0.4, 1000, 30, max(THL_))
-				bounds = (4*[-np.inf], 4*[np.inf])
+        fig, ax = plt.subplots()
+        if convDict:
+            figEn, axEn = plt.subplots()
+            figSig, axSig = plt.subplots()
 
-			popt, pcov = scipy.optimize.curve_fit(EnergyToToT, THL_, ToT_, p0=p0, bounds=bounds)
-			a, b, c, t = popt
-			paramDict = {'a': a, 'b': b, 'c': c, 't': t}
-			resDict[col*16 + pixel] = paramDict
-			print popt, np.sqrt(np.diag(pcov))
-			print
-			THLFit = np.linspace(min(THL_), max(THL_), 1000)
-			ToTFit = EnergyToToT(THLFit, *popt)
-				
-			# Plot
-			ax.errorbar(THL_, ToT_, xerr=THLErr_, yerr=ToTErr_, marker='x', color=getColor('Blues', 16 + 5, pixel + 5), ls='')
-			ax.plot(THLFit, ToTFit, color=getColor('Blues', 16 + 5, pixel + 5))
-			ax.set_xlabel(r'$\mathrm{THL}_\mathrm{corr}$')
-			ax.set_ylabel('ToT')
+        # Fit
+        if ATAN:
+            p0 = [-0.4, 0, -30, 50]
+            bounds = ((-0.6, -np.inf, -50, 10), (-0.2, np.inf, -10, 200))
+        elif SIMPLE:
+            p0 = [-0.4, 0, -30, 50] 
+            bounds = [[-np.inf]*4, [np.inf]*4] 
+            # bounds = ((-0.6, -np.inf, -50, 10), (-0.2, np.inf, -10, 200))
+        else:
+            p0 = [-0.4, 1000, 30, 0]
+            bounds = (4*[-np.inf], 4*[np.inf])
 
-			# Energy plot
-			if convDict:
-				try:
-					# ToT vs. Energy
-					params = convDict[col + pixel]
-					h, k = params['h'], params['k']
-					axEn.errorbar(np.asarray(THL_)*h + k, ToT_, xerr=np.asarray(THLErr_)*h, yerr=ToTErr_, marker='x', color=getColor('Blues', 16 + 5, pixel + 5), ls='')
-					axEn.plot(THLFit*h + k, ToTFit, color=getColor('Blues', 16 + 5, pixel + 5))
-					axEn.set_xlabel('Energy (keV)')
-					axEn.set_ylabel('ToT')
+        for pixel in range(16):
+            # Sort data by THL
+            THL_, THLErr_, ToT_, ToTErr_ = zip(*sorted(zip(THL[pixel], THLErr[pixel], ToT[pixel], ToTErr[pixel])))
+            if not ATAN and not SIMPLE:
+                p0[-1] = np.nanmax(THL_)
+            else:
+                p0[1] = np.nanmax(THL_)
+            
+            # Filter outliers
+            meanTHL, stdTHL = np.nanmean(THL_), np.nanstd(THL_)
+            # print meanTHL, stdTHL
+            THL_, THLErr_, ToT_, ToTErr_ = np.asarray(THL_), np.asarray(THLErr_), np.asarray(ToT_), np.asarray(ToTErr_)
+            filtCond = THL_ <= 3000 # abs(THL_ - meanTHL) <= 3 * stdTHL
+            THLErr_, ToT_, ToTErr_ = THLErr_[filtCond], ToT_[filtCond], ToTErr_[filtCond]
+            THL_ = THL_[filtCond]
+            
+            try:
+                popt, pcov = scipy.optimize.curve_fit(EnergyToToT, THL_, ToT_, p0=p0, bounds=bounds)
+            except:
+                popt = p0
+            a, b, c, t = popt
+            paramDict = {'a': a, 'b': b, 'c': c, 't': t}
+            resDict[col*16 + pixel] = paramDict
+            # print popt, np.sqrt(np.diag(pcov))
+            # print
+            THLFit = np.linspace(min(THL_), max(THL_), 1000)
+            ToTFit = EnergyToToT(THLFit, *popt)
 
-					# Std vs. Energy
-					axSig.plot(np.asarray(THL_)*h + k, np.asarray(ToTErr_) / np.asarray(ToT_), color=getColor('Blues', 16 + 5, pixel + 5))
-				except:
-					continue
+            # Plot
+            ax.errorbar(THL_, ToT_, xerr=THLErr_, yerr=ToTErr_, marker='x', color=getColor('Blues', 16 + 5, pixel + 5), ls='')
+            ax.plot(THLFit, ToTFit, color=getColor('Blues', 16 + 5, pixel + 5))
+            ax.set_xlabel(r'$\mathrm{THL}_\mathrm{corr}$')
+            ax.set_ylabel('ToT')
 
-		sns.despine(fig=fig, top=True, right=True, offset=False, trim=True)
-		fig.show()
-		sns.despine(fig=figEn, top=True, right=True, offset=False, trim=True)
-		figEn.show()
-		sns.despine(fig=figSig, top=True, right=True, offset=False, trim=True)
-		figSig.show()
+            # Energy plot
+            if convDict:
+                try:
+                    # ToT vs. Energy
+                    params = convDict[col + pixel]
+                    h, k = params['h'], params['k']
+                    axEn.errorbar(np.asarray(THL_)*h + k, ToT_, xerr=np.asarray(THLErr_)*h, yerr=ToTErr_, marker='x', color=getColor('Blues', 16 + 5, pixel + 5), ls='')
+                    axEn.plot(THLFit*h + k, ToTFit, color=getColor('Blues', 16 + 5, pixel + 5))
+                    axEn.set_xlabel('Energy (keV)')
+                    axEn.set_ylabel('ToT')
 
-		raw_input('')
-		plt.close(fig)
-		plt.close(figEn)
-		plt.close(figSig)
+                    # Std vs. Energy
+                    axSig.plot(np.asarray(THL_)*h + k, np.asarray(ToTErr_) / np.asarray(ToT_), color=getColor('Blues', 16 + 5, pixel + 5))
+                except:
+                    continue
 
-	print resDict
-	cPickle.dump(resDict, open('ToTtoTHLParams.p', 'wb'))
+        fig.suptitle('Column #%d' % col)
+        sns.despine(fig=fig, top=True, right=True, offset=False, trim=True)
+        if convDict:
+            sns.despine(fig=figEn, top=True, right=True, offset=False, trim=True)
+            figEn.show()
+            sns.despine(fig=figSig, top=True, right=True, offset=False, trim=True)
+            figSig.show()
 
+        plt.show()
+            
+        plt.close(fig)
+        if convDict:
+            plt.close(figEn)
+            plt.close(figSig)
+
+    # print resDict
+    return resDict
+    
 def EnergyToToTAtan(x, a, b, c, t):
 	return np.where(x < b, a*(x - b) + c*np.arctan((x - b)/t), 0)
 
