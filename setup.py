@@ -19,5 +19,4 @@ setup(name='dpx_func_python',
 		'pyserial',
 		'pyyaml',
 		'configparser',
-		'curses',
 	])
