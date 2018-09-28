@@ -4,6 +4,17 @@ import curses_gui
 import sys
 import dpx_func_python
 
+import json
+import zerormc
+
+addr = 'tcp://127.0.0.1:4242'
+s = zerorpc.Server(dpx_func_python.Dosepix(None, None, None))
+s.bind(addr)
+print('Started server on: {}'.format(addr))
+s.run()
+
+sys.exit()
+
 options = ['THL Equalization', 'Measure ToT', 'Measure Dose', 'Measure Integration', 'Measure THL', 'Measure Temperature', 'Exit']
 functions = []
 

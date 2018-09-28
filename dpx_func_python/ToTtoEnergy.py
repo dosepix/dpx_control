@@ -18,7 +18,7 @@ def main():
     if OUTFILE:
         cPickle.dump(totalData, open(OUTFILE, 'wb'))
 
-def getToTtoEnergy(data, params, slot=1, use_hist=False):
+def getToTtoEnergy(data, params, slot=1, use_hist=False, plot=True, save=None):
     binsTotal = np.arange(4095)
     totalData = []
 
@@ -71,10 +71,21 @@ def getToTtoEnergy(data, params, slot=1, use_hist=False):
                     histEnergy += [binsEnergy[b]] * hist[b]
             totalData += list(histEnergy)
 
-        plt.step(binsEnergy[:-1], hist, where='post')
-        plt.title('Pixel #%d' % pixel)
-        plt.xlim(0, 65)
-        plt.show()
+        if plot:
+            plt.step(binsEnergy[:-1], hist, where='post')
+            plt.title('Pixel #%d' % pixel)
+            plt.xlabel('Energy (keV)')
+            plt.ylabel('Counts')
+            plt.xlim(0, 65)
+            if False: # save is not None:
+                outFn = ''
+                if '.' in save:
+                    outFn = save.split('.')[0]
+                else:
+                    outFn = save
+                outFn += '_pixel%d.png' % pixel
+                plt.savefig(outFn)
+            plt.show()
 
     totalData = np.asarray( totalData )
     print totalData
@@ -88,7 +99,9 @@ def getToTtoEnergy(data, params, slot=1, use_hist=False):
     plt.xlabel('Energy (keV)')
     plt.ylabel('Counts')
     sns.despine(top=True, right=True, offset=0, trim=False)
-
+    
+    if save is not None:
+        plt.savefig(save)
     plt.show()
     return totalData
         

@@ -172,29 +172,39 @@ def plotTemperature(tempDict, offsettemp=1570, plot=False, outdir=None):
         energyCond = (energy_ == energy)
         time, temp, tempErr, ToT, ToTErr = time_[energyCond], temp_[energyCond], tempErr_.T[energyCond].T, ToT_.T[energyCond].T, ToTErr_.T[energyCond].T
         
-        fig, ax = plt.subplots(1, 2, figsize=(12, 3), sharey=True)
+        fig, ax = plt.subplots(1, 2, figsize=(12, 5), sharey=True)
 
         # Loop over pixels
         meanList, stdList = [], []
         realMeanList, realStdList = [], []
         
         # print ToT, calibSlopeList, calibOffsetList
-        for i in range(16): # len(ToT)):
+        for i in range(len(ToT)):
             realToT = getRealToT(ToT[i], np.asarray(temp), offsettemp, calibSlopeList[i], calibOffsetList[i])
             # print realToT
 
             # ax.hist(realToT, color=getColor('tab20', 16, i))
-            ax[0].plot(ToT[i], temp, color=getColor('tab20', 16, i), alpha=.5)
-            ax[1].plot(realToT, temp, color=getColor('tab20', 16, i))
+            ax[0].plot(ToT[i], temp, color=getColor('tab20', 16, i % 16), alpha=.5)
+            ax[1].plot(realToT, temp, color=getColor('tab20', 16, i % 16))
 
             # Calculate mean and std
             realMeanList.append( np.mean(realToT) ), realStdList.append( np.std(realToT) )
             meanList.append( np.mean(ToT[i]) ), stdList.append( np.std(ToT[i]) )
+            
         meanListTotal.append( meanList )
         realMeanListTotal.append( realMeanList )
         stdListTotal.append( stdList )
         realStdListTotal.append( realStdList )
 
+        ax[0].set_title('Before correction')
+        ax[1].set_title('After correction')
+        ax[0].set_xlabel(r'$\mu_{\mathrm{ToT}}$')
+        ax[0].set_ylabel(r'Temperature (DAC)')
+        ax[1].set_xlabel(r'$\mu_{\mathrm{ToT}}$')
+
+        ax[0].set_xlim(0, 800)
+        ax[1].set_xlim(0, 800)
+        plt.tight_layout()
         plt.show()
         plt.clf()
 

@@ -24,15 +24,15 @@ import hickle
 GUI = False
 
 # Global Flags
-DEBUG = False
+DEBUG = True
 
 # Important files
-THL_CALIB_FILE = 'THLCalib.hck'
+THL_CALIB_FILE = 'THLCalibration/THLCalib_22.p'
 PARAMS_FILE = None # 'testCalibFactors.p'
 
 def main():
     # Create object of class and establish connection
-    dpx = Dosepix('/dev/ttyUSB0', 2e6, 'DPXConfig.conf')
+    dpx = Dosepix('/dev/ttyUSB0', 2e6, 'Configurations/DPXConfig_22.conf')
 
     '''
     # Read peripheryDAC values from config
@@ -69,7 +69,7 @@ def main():
     # dpx.ADCWatch(1, ['V_ThA', 'V_TPref_fine', 'V_TPref_coarse', 'V_TPbufout', 'V_TPbufin', 'V_cascode_bias', 'Temperature'], cnt=0)
     # return
     # dpx.ADCWatch(1, ['V_ThA', 'V_TPref_fine', 'V_casc_preamp', 'V_fbk', 'V_TPref_coarse', 'V_gnd', 'I_preamp', 'I_disc1', 'I_disc2', 'V_TPbufout', 'V_TPbufin', 'I_krum', 'I_dac_pixel', 'V_bandgap', 'V_casc_krum', 'V_per_bias', 'V_cascode_bias', 'Temperature', 'I_preamp'], cnt=0)
-    # dpx.energySpectrumTHL(1, THLhigh=8000, THLlow=int(dpx.THLs[0], 16), THLstep=25, timestep=1, intPlot=True)
+    # dpx.energySpectrumTHL(1, THLhigh=8000, THLlow=int(dpx.THLs[0], 16) - 500, THLstep=25, timestep=1, intPlot=True)
     
     # dpx.measureADC(1, AnalogOut='V_cascode_bias', perc=True, ADChigh=0.06, ADClow=0., ADCstep=0.00001, N=1)
     # dpx.ToTtoTHL_pixelDAC(slot=1, THLstep=1, I_pixeldac=0.0001, valueLow=200, valueHigh=200, valueCount=1, energy=False, plot=False)
@@ -87,7 +87,7 @@ def main():
     # dpx.temperatureWatch(slot=1, column='all', frames=1000, energyRange=(25.e3, 25.e3), fn='TemperatureToT_DPX22_125keV.p', intplot=True)
 
     # dpx.measureTHL(1, fn='THLCalib.p', plot=False)
-    # dpx.thresholdEqualizationConfig('Configurations/DPXConfig_12.conf', I_pixeldac=None, reps=1, intPlot=False, resPlot=True)
+    # dpx.thresholdEqualizationConfig('DPXConfig.conf', I_pixeldac=None, reps=1, intPlot=False, resPlot=True)
 
     # Close connection
     dpx.close()
@@ -260,6 +260,23 @@ class Dosepix:
         TestBit_Digital = 0b1 << 0)
 
     def __init__(self, portName, baudRate, configFn):
+        self.portName = portName
+        self.baudRate = baudRate
+        self.configFn = configFn
+
+        if GUI:
+            self.getSettingsGUI()
+            self.portName, self.baudRate, self.configFn = setSettingsGUI()
+
+        self.getConfigDPX(self.portName, self.baudRate, self.configFn)
+
+    def getSettingsGUI(self):
+        serialPorts = getSerialPorts(self)
+
+    def setSettingsGUI(self):
+        return None, None, None
+
+    def getConfigDPX(self, portName, baudRate, configFn):
         # Read config
         self.peripherys = ''
         self.OMR = ''
@@ -268,7 +285,7 @@ class Dosepix:
         self.pixelDAC = [[]] * 3
         self.binEdges = [[]] * 3
  
-        if not os.path.isfile(configFn):
+        if not os.path.isfile(self.configFn):
             print 'Config file not found. Please run THL equalization first. Using standard values.'
             self.peripherys = 'dc310bc864508230768080ff0064'
             self.OMR = '39ffc0'
@@ -277,9 +294,9 @@ class Dosepix:
             self.pixelDAC = [['0']*512] * 3
             self.binEdges = [['0']*1024] * 3
         else:
-            self.readConfig(configFn)
+            self.readConfig(self.configFn)
 
-        self.ser = serial.Serial(portName, baudRate)
+        self.ser = serial.Serial(self.portName, self.baudRate)
         assert self.ser.is_open, 'Error: Could not establish serial connection!'
 
         self.initDPX()
@@ -1082,7 +1099,7 @@ class Dosepix:
 
                 # Determine corresponding ToT value
                 testPulseToT = np.mean( dataList , axis=0)
-                testPulseToTErr = testPulseToT / np.sqrt( NToT )
+                testPulseToTErr = np.std(dataList, axis=0) / np.sqrt( NToT )
                 print 'Test Pulse ToT:'
                 print testPulseToT
 
@@ -1317,7 +1334,7 @@ class Dosepix:
         #              derivative of this spectrum resembles
         #              the energy spectrum.
 
-        THLhigh = int(self.THLs[slot-1], 16)    
+        THLhigh = int(self.THLs[slot-1], 16)
 
         assert THLhigh <= 8191, "energySpectrumTHL: THLHigh value set too high!"
 
@@ -3144,6 +3161,35 @@ class Dosepix:
         cBar.ax.set_yticklabels(['%.1f' % loc for loc in locLabels], rotation=rotation, verticalalignment='center')
         cBar.outline.set_visible(False)
         cBar.set_label(label)
+
+    # https://stackoverflow.com/questions/12090503/listing-available-com-ports-with-python
+    def getSerialPorts(self):
+        """ Lists serial port names
+
+            :raises EnvironmentError:
+                On unsupported or unknown platforms
+            :returns:
+                A list of the serial ports available on the system
+        """
+        if sys.platform.startswith('win'):
+            ports = ['COM%s' % (i + 1) for i in range(256)]
+        elif sys.platform.startswith('linux') or sys.platform.startswith('cygwin'):
+            # this excludes your current terminal "/dev/tty"
+            ports = glob.glob('/dev/tty[A-Za-z]*')
+        elif sys.platform.startswith('darwin'):
+            ports = glob.glob('/dev/tty.*')
+        else:
+            raise EnvironmentError('Unsupported platform')
+
+        result = []
+        for port in ports:
+            try:
+                s = serial.Serial(port)
+                s.close()
+                result.append(port)
+            except (OSError, serial.SerialException):
+                pass
+        return result
 
 if __name__ == '__main__':
     main()

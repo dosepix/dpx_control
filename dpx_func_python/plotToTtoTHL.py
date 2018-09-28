@@ -27,7 +27,7 @@ def main():
     resDict = plotToTtoTHL(d, convDict=convDict)
     cPickle.dump(resDict, open('ToTtoTHLParams.p', 'wb'))
 
-def plotToTtoTHL(d, convDict=None):
+def plotToTtoTHL(d, convDict=None, save=None):
     # Results dict
     resDict = {}
 
@@ -103,7 +103,9 @@ def plotToTtoTHL(d, convDict=None):
                     axEn.set_ylabel('ToT')
 
                     # Std vs. Energy
-                    axSig.plot(np.asarray(THL_)*h + k, np.asarray(ToTErr_) / np.asarray(ToT_), color=getColor('Blues', 16 + 5, pixel + 5))
+                    axSig.plot(np.asarray(THL_)*h + k, np.asarray(ToTErr_), color=getColor('Blues', 16 + 5, pixel + 5))
+                    axSig.set_xlabel('Energy (keV)')
+                    axSig.set_ylabel(r'$\Delta$ToT')
                 except:
                     continue
 
@@ -115,6 +117,14 @@ def plotToTtoTHL(d, convDict=None):
             sns.despine(fig=figSig, top=True, right=True, offset=False, trim=True)
             figSig.show()
 
+        if save is not None:
+            outFn = ''
+            if '.' in save:
+                outFn = save.split('.')[0]
+            else:
+                outFn = save
+            outFn += '_col%d.svg' % col
+            fig.savefig(outFn)
         plt.show()
             
         plt.close(fig)
