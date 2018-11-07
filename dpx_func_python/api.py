@@ -31,11 +31,15 @@ class DPXapi(object):
 
     def connectDPX(self):
         self.dpxObj = dpx.Dosepix('/dev/ttyUSB0', 2e6, 'DPXConfig.conf')
+        self.dpxObj.setGUI()
         return str('Success!')
 
     def test(self):
         # return 'Test'
         return [1, 2, 3]
+
+    def measureToT():
+        return
 
     @zerorpc.stream
     def testPlot(self):

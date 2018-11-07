@@ -17,7 +17,7 @@ def main():
     for INFILE in INFILELIST:
         plotTemperature(INFILE)
     
-def plotTemperature(tempDict, offsettemp=1570, plot=False, outdir=None):
+def plotTemperature(tempDict, offsettemp=1570, cuttemp=0, plot=False, outdir=None):
     offsetList, offsetErrList = [], []
     slopeList, slopeErrList = [], []
 
@@ -29,6 +29,11 @@ def plotTemperature(tempDict, offsettemp=1570, plot=False, outdir=None):
         # Filter data by energies
         energyCond = (energy_ == energy)
         time, temp, tempErr, ToT, ToTErr = time_[energyCond], temp_[energyCond], tempErr_.T[energyCond].T, ToT_.T[energyCond].T, ToTErr_.T[energyCond].T
+
+	cuttempCond = (temp >= cuttemp)
+	time, tempErr, temp = time[cuttempCond], tempErr[cuttempCond], temp[cuttempCond]
+	ToT = [ToT[i][cuttempCond] for i in range(256)]
+	ToTErr = [ToTErr[i][cuttempCond] for i in range(256)]
         
         # = Plot =
         if plot:
@@ -138,8 +143,8 @@ def plotTemperature(tempDict, offsettemp=1570, plot=False, outdir=None):
         slopeList_ = np.asarray(slopeList[i])
         slopeList_ = slopeList_[~np.isnan(slopeList_)]
 
-        popt, perr = scipy.optimize.curve_fit(lambda x, m, t: m*x + t, offsetList_, 1./slopeList_)
         try:
+	    popt, perr = scipy.optimize.curve_fit(lambda x, m, t: m*x + t, offsetList_, 1./slopeList_)
             if plot:
                 plt.plot(offsetList[i], popt[0]*offsetList_ + popt[1], color=getColor('tab20', len(ToT), i))
         except:
@@ -152,17 +157,21 @@ def plotTemperature(tempDict, offsettemp=1570, plot=False, outdir=None):
         plt.xlabel('Offset (ToT)')
         plt.ylabel('Slope (ToT/DAC)')
         plt.tight_layout()
+        plt.savefig(outdir + '/slope_vs_offset.pdf')
         plt.show()
         
         # Histogram of slope and offset distribution
         plt.hist(calibSlopeList, bins=50)
         plt.xlabel('Slope (ToT/DAC)')
         plt.ylabel('Counts')
+        plt.savefig(outdir + '/slope_hist.pdf')
         plt.show()
         
         plt.hist(calibOffsetList, bins=50)
         plt.xlabel('Offset (ToT)')
         plt.ylabel('Counts')
+        plt.savefig(outdir + '/offset_hist.pdf')
+        plt.show()
 
     # Check goodness of fit
     meanListTotal, stdListTotal = [], []
@@ -273,6 +282,9 @@ def heating(x, tmax, toff, Tmax, tau1, tau2, offset1, offset2):
 
 def getRealToT(x, T, Toff, m, t):
     return -(t*(Toff - T) + x) / (m*(Toff - T) - 1)
+
+def simWrongToT(x, T, Toff, m, t):
+    return x + (T - Toff)*(m*x + t)
 
 def getColor(c, N, idx):
     import matplotlib as mpl

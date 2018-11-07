@@ -24,15 +24,15 @@ import hickle
 GUI = False
 
 # Global Flags
-DEBUG = True
+DEBUG = False
 
 # Important files
-THL_CALIB_FILE = 'THLCalibration/THLCalib_22.p'
+THL_CALIB_FILES = ['THLCalibration/THLCalib_%d.p' % slot for slot in [22, 6, 109]]
 PARAMS_FILE = None # 'testCalibFactors.p'
 
 def main():
     # Create object of class and establish connection
-    dpx = Dosepix('/dev/ttyUSB0', 2e6, 'Configurations/DPXConfig_22.conf')
+    dpx = Dosepix('/dev/ttyUSB0', 2e6, 'DPXConfig_22_6_109.conf')
 
     '''
     # Read peripheryDAC values from config
@@ -76,7 +76,9 @@ def main():
     # dpx.ToTtoTHL(slot=1, column='all', THLstep=1, valueLow=1.5e3, valueHigh=30e3, valueCount=20, energy=True, plot=False, outFn='ToTtoTHL.p')
 
     # dpx.energySpectrumTHL(1)
-    dpx.measureToT(1, intPlot=True)
+    dpx.measureToT(slot=[1, 2, 3], intPlot=True, storeEmpty=True, logTemp=True)
+    # dpx.TPtoToT(slot=1, column='all')
+
     # dpx.testPulseDosi(1)
     # dpx.testPulseSigma(1)
     # dpx.testPulseToT(1, 10)
@@ -84,16 +86,19 @@ def main():
     # dpx.measureDose(measurement_time=120)
 
     # dpx.measureIntegration()
-    # dpx.temperatureWatch(slot=1, column='all', frames=1000, energyRange=(25.e3, 25.e3), fn='TemperatureToT_DPX22_125keV.p', intplot=True)
+    # dpx.temperatureWatch(slot=2, column='all', frames=1000, energyRange=(125.e3, 125.e3), fn='TemperatureToT_Dennis1_75keV.p', intplot=True)
 
-    # dpx.measureTHL(1, fn='THLCalib.p', plot=False)
-    # dpx.thresholdEqualizationConfig('DPXConfig.conf', I_pixeldac=None, reps=1, intPlot=False, resPlot=True)
+    # dpx.measureTHL(1, fn='THLCalib_6.p', plot=False)
+    # dpx.thresholdEqualizationConfig('DPXConfig_22_6_109.conf', I_pixeldac=None, reps=1, intPlot=False, resPlot=True)
 
     # Close connection
     dpx.close()
     return
 
 class Dosepix:
+    # === FLAGS ===
+    USE_GUI = False
+
     # === CONSTANTS ===
     __startOfTransmission   = unichr(0x02)
     __endOfTransmission     = unichr(0x03) 
@@ -276,6 +281,12 @@ class Dosepix:
     def setSettingsGUI(self):
         return None, None, None
 
+    def setGUI(self):
+        self.USE_GUI = True
+
+    def unsetGUI(self):
+        self.USE_GUI = False
+
     def getConfigDPX(self, portName, baudRate, configFn):
         # Read config
         self.peripherys = ''
@@ -302,33 +313,40 @@ class Dosepix:
         self.initDPX()
 
         # If no THL calibration file is present
-        if THL_CALIB_FILE is None:
+        if THL_CALIB_FILES is None:
             print 'Warning: No THL calibration file set! Functions using the THL edges won\'t be usuable'
             return
 
         # Load THL calibration data
-        if not os.path.isfile(THL_CALIB_FILE):
-            print 'Need the specified THL Calibration file %s!' % THL_CALIB_FILE
-            self.THLEdgesLow = None # [   0,  662, 1175, 1686, 2193, 2703, 3215, 3728, 4241, 4751, 5263, 5777, 6284, 6784, 7312]
-            self.THLEdgesHigh = None # [ 388,  889, 1397, 1904, 2416, 2927, 3440, 3952, 4464, 4976, 5488, 5991, 6488, 7009, 8190]
-            self.THLEdges = None
+        self.voltCalib, self.THLCalib = [], []
+        self.THLEdgesLow, self.THLEdgesHigh = [], []
+        self.THLFitParams = []
+        self.THLEdges = []
+        for THL_CALIB_FILE in THL_CALIB_FILES:
+            if not os.path.isfile(THL_CALIB_FILE):
+                print 'Need the specified THL Calibration file %s!' % THL_CALIB_FILE
+                self.THLEdgesLow.append( None ) # [   0,  662, 1175, 1686, 2193, 2703, 3215, 3728, 4241, 4751, 5263, 5777, 6284, 6784, 7312]
+                self.THLEdgesHigh.append( None ) # [ 388,  889, 1397, 1904, 2416, 2927, 3440, 3952, 4464, 4976, 5488, 5991, 6488, 7009, 8190]
+                self.THLEdges.append( None )
 
-        else:
-            if THL_CALIB_FILE.endswith('.p'):
-                d = cPickle.load(open(THL_CALIB_FILE, 'rb'))
             else:
-                d = hickle.load(THL_CALIB_FILE)
+                if THL_CALIB_FILE.endswith('.p'):
+                    d = cPickle.load(open(THL_CALIB_FILE, 'rb'))
+                else:
+                    d = hickle.load(THL_CALIB_FILE)
 
-            self.voltCalib = np.asarray(d['Volt']) / max(d['Volt'])
-            self.THLCalib = np.asarray(d['ADC'])
+                self.voltCalib.append( np.asarray(d['Volt']) / max(d['Volt']) )
+                self.THLCalib.append( np.asarray(d['ADC']) )
 
-            self.THLEdgesLow, self.THLEdgesHigh, self.THLFitParams = self.THLCalibToEdges(d)
-            print self.THLEdgesLow, self.THLEdgesHigh
-            
-            # Combine
-            self.THLEdges = []
-            for i in range(len(self.THLEdgesLow)):
-                self.THLEdges += list( np.arange(self.THLEdgesLow[i], self.THLEdgesHigh[i] + 1) )
+                THLLow, THLHigh, THLFitParams = self.THLCalibToEdges(d)
+                self.THLEdgesLow.append(THLLow), self.THLEdgesHigh.append(THLHigh), self.THLFitParams.append(THLFitParams)
+                print self.THLEdgesLow[-1], self.THLEdgesHigh[-1]
+                
+                # Combine
+                THLEdges = []
+                for i in range(len(self.THLEdgesLow[-1])):
+                    THLEdges += list( np.arange(self.THLEdgesLow[-1][i], self.THLEdgesHigh[-1][i] + 1) )
+                self.THLEdges.append( THLEdges ) 
 
     def __del__(self):
         self.close()
@@ -613,7 +631,9 @@ class Dosepix:
     # ToT is measured in endless loop. The data is written to file after 'cnt' frames 
     # were processed. Additionally, Keyboard Interrupts are caught in order
     # to store data afterwards. 
-    def measureToT(self, slot=1, outDir='ToTMeasurement/', cnt=10000, storeEmpty=False, intPlot=False):
+    # If storeEmpty flag is set, empty frames are stored, otherwise discarded.
+    # If logTemp flag is set, current chip temperature is stored with each frame.
+    def measureToT(self, slot=1, outDir='ToTMeasurement/', cnt=10000, storeEmpty=False, logTemp=False, intPlot=False):
         # Set Dosi Mode in OMR
         # If OMR code is list
         OMRCode = self.OMR
@@ -631,6 +651,20 @@ class Dosepix:
         # Set mode in slots
         for slot in slotList:
             self.DPXWriteOMRCommand(slot, OMRCode)
+
+        # Set ADC out to temperature if requested
+        if logTemp:
+            tempDict = {'temp': [], 'time': []}
+
+            if type(self.OMR) is list:
+                OMRCode_ = self.OMRListToHex(self.OMR)
+            else:
+                OMRCode_ = self.OMR
+            OMRCode_ = int(OMRCode_, 16)
+
+            OMRCode_ &= ~(0b11111 << 12)
+            OMRCode_ |= getattr(self.__OMRAnalogOutSel, 'Temperature')
+            self.DPXWriteOMRCommand(slot, hex(OMRCode_).split('0x')[-1])
 
         # Init plot
         if intPlot:
@@ -682,8 +716,13 @@ class Dosepix:
                         # data = data[256:]
 
                         data = data.flatten()
+                        # Discard empty frame?
+                        if not np.any(data) and not storeEmpty:
+                            continue
+
                         # Remove overflow
                         data[data >= 4096] -= 4096
+
                         if intPlot:
                             data_ = data
                             data_ = data_[[self.isLarge(pixel) for pixel in range(256)]]
@@ -691,6 +730,12 @@ class Dosepix:
 
                         ToTDict['Slot%d' % slot].append( data.tolist() )
                     
+                    # Measure temperature?
+                    if logTemp:
+                        temp = float(int(self.MCGetADCvalue(), 16))
+                        tempDict['temp'].append( temp )
+                        tempDict['time'].append( time.time() - measStart )
+
                     if c > 0 and not c % 100:
                         print '%.2f Hz' % (100./(time.time() - startTime))
                         startTime = time.time()
@@ -718,6 +763,8 @@ class Dosepix:
 
                 # Loop finished
                 self.pickleDump(ToTDict, '%s/%s' % (outDir, outFn))
+                if logTemp:
+                    self.pickleDump(tempDict, '%s/%s_temp' % (outDir, outFn.split('.p')[0]) + '.p')
                 print 'Measurement time: %.2f min' % ((time.time() - measStart) / 60.)
                 for key in ToTDict.keys():
                     print 'Slot%d: %d events' % (slot, len(np.asarray(ToTDict[key]).flatten()) / 256.)
@@ -730,6 +777,8 @@ class Dosepix:
                 print 'Slot%d: %d events' % (slot, len(np.asarray(ToTDict[key]).flatten()) / 256.)
 
             self.pickleDump(ToTDict, '%s/%s' % (outDir, outFn))
+            if logTemp:
+                self.pickleDump(tempDict, '%s/%s_temp' % (outDir, outFn.split('.p')[0]) + '.p')
             raise
 
         # Reset OMR
@@ -1018,6 +1067,62 @@ class Dosepix:
 
         return slope
 
+    def TPtoToT(self, slot=1, column=0, outFn='TPtoToT.p'):
+        # Description: Generate test pulses and measure ToT afterwards
+        #              to match test pulse voltage and ToT value.
+
+        # Number of test pulses for ToT measurement
+        NToT = 10
+
+        # Test pulse voltage range
+        TPvoltageRange = np.arange(300, 470, 5)
+
+        # Store results per column in dict
+        resDict = {}
+
+        # Activate DosiMode and select columns
+        columnRange = self.testPulseInit(slot, column=column)
+
+        # Loop over columns
+        for column in columnRange:
+            # Select column
+            self.maskBitsColumn(slot, column)
+
+            # Store results in lists
+            ToTListTotal, ToTErrListTotal = [], []
+
+            # Loop over test pulse voltages
+            for val in TPvoltageRange:
+                # Set test pulse voltage
+                DACval = self.getTestPulseVoltageDAC(slot, val, energy=False)
+                self.DPXWritePeripheryDACCommand(slot, DACval)
+
+                # Generate test pulses
+                dataList = []
+                for i in range(NToT):
+                    self.DPXDataResetCommand(slot)
+                    self.DPXGeneralTestPulse(slot, 1000)
+                    data = self.DPXReadToTDataDosiModeCommand(slot)[column]
+                    dataList.append( data )
+
+                # Determine corresponding ToT value
+                testPulseToT = np.mean(dataList , axis=0)
+                testPulseToTErr = np.std(dataList, axis=0) / np.sqrt( NToT )
+                print 'Test Pulse ToT:'
+                print testPulseToT, np.std(dataList, axis=0)
+
+                # Store in lists
+                ToTListTotal.append( testPulseToT )
+                ToTErrListTotal.append( testPulseToTErr )
+
+            resDict[column] = {'ToT': ToTListTotal, 'ToTErr': ToTErrListTotal, 'volt': TPvoltageRange}
+
+            for i in range(16):
+                plt.errorbar(TPvoltageRange, np.asarray(ToTListTotal).T[i], yerr=np.asarray(ToTErrListTotal).T[i], marker='x')
+            plt.show()
+
+        self.pickleDump(resDict, outFn)
+
     def ToTtoTHL(self, slot=1, column=0, THLstep=1, valueLow=0, valueHigh=460, valueCount=460, energy=False, plot=False, outFn='ToTtoTHL.p'):
         # Description: Generate test pulses and measure their ToT
         #              values. Afterwards, do a THL-scan in order to
@@ -1050,7 +1155,7 @@ class Dosepix:
         # Store results per column in dict
         resDict = {}
 
-        # Activates DosiMode and selects columns
+        # Activate DosiMode and select columns
         columnRange = self.testPulseInit(slot, column=column)
 
         for column in columnRange:
@@ -1126,7 +1231,7 @@ class Dosepix:
                 # self.MCGetADCvalue()
                 # THLRange = np.arange(THLlow, THLhigh, THLstep)
                 # THLRange = self.THLCalib[np.logical_and(self.THLCalib > THLlow, self.THLCalib < THLhigh)]
-                THLRange = np.asarray(self.THLEdges)
+                THLRange = np.asarray(self.THLEdges[slot - 1])
                 THLstop_ = THLhigh if THLstop > THLhigh else THLstop
                 THLRange = THLRange[np.logical_and(THLRange >= THLstart, THLRange <= THLstop_)]
 
@@ -1221,7 +1326,7 @@ class Dosepix:
                 # Transpose to access data of each pixel
                 for data in np.asarray(dataList).T:
                     # Convert to corrected THL
-                    THLListCorr = [self.getVoltFromTHLFit(elm) for elm in THLList]
+                    THLListCorr = [self.getVoltFromTHLFit(elm, slot) for elm in THLList]
                     THLListFit = np.linspace(min(THLListCorr), max(THLListCorr), 1000)
 
                     # Perform erf-Fit
@@ -1431,7 +1536,7 @@ class Dosepix:
         THLVList = []
         dataList = []
 
-        THLRange = np.asarray(self.THLEdges)
+        THLRange = np.asarray(self.THLEdges[slot - 1])
         THLRange = THLRange[np.logical_and(THLRange > THLlow, THLRange < THLhigh)]
 
         # Savitzky-Golay filter the data
@@ -1462,7 +1567,7 @@ class Dosepix:
                 self.DPXWritePeripheryDACCommand(slot, self.peripherys + '%04x' % THL)
 
                 # Convert THL to corrected THL value
-                THL = self.getVoltFromTHLFit(THL)
+                THL = self.getVoltFromTHLFit(THL, slot)
 
                 for i, pixelDAC in enumerate(pixelDACs):
                     # THL matrix for all pixels
@@ -1607,6 +1712,8 @@ class Dosepix:
 
         if type(self.OMR) is list:
             OMRCode_ = self.OMRListToHex(self.OMR)
+        else:
+            OMRCode_ = self.OMR
         OMRCode_ = int(OMRCode_, 16)
 
         OMRCode_ &= ~(0b11111 << 12)
@@ -1725,6 +1832,8 @@ class Dosepix:
             print 'OMR Manipulation:'
             if type(self.OMR) is list:
                 OMRCode_ = self.OMRListToHex(self.OMR)
+            else:
+                OMRCode_ = self.OMR
             OMRCode_ = int(OMRCode_, 16)
 
             OMRCode_ &= ~(0b11111 << 12)
@@ -1767,6 +1876,8 @@ class Dosepix:
                     # Select AnalogOut
                     if type(self.OMR) is list:
                         OMRCode_ = self.OMRListToHex(self.OMR)
+                    else:
+                        OMRCode_ = self.OMR
                     OMRCode_ = int(OMRCode_, 16)
                     OMRCode_ = OMRCode_ & ~(0b11111 << 12)
                     OMRCode_ |= getattr(self.__OMRAnalogOutSel, OMRAnalogOut)
@@ -1949,14 +2060,14 @@ class Dosepix:
 
     def thresholdEqualization(self, slot, reps=1, I_pixeldac=0.5, intPlot=False, resPlot=True):
         # THLlow, THLhigh = 5120, 5630
-        THLlow, THLhigh = 4500, 5500
+        THLlow, THLhigh = 4000, 6000
         # THLRange = np.arange(THLlow, THLhigh, 1) 
 
-        if self.THLEdges is None:
+        if self.THLEdges[slot - 1] is None:
             THLRange = np.arange(THLlow, THLhigh)
         else:
-            THLRange = np.asarray(self.THLEdges)
-            THLRange = THLRange[np.logical_and(THLRange >= THLlow, THLRange <= THLhigh)]
+            THLRange = np.asarray(self.THLEdges[slot - 1])
+            THLRange = np.around(THLRange[np.logical_and(THLRange >= THLlow, THLRange <= THLhigh)])
 
         THLstep = 1
         noiseLimit = 3
@@ -1992,10 +2103,12 @@ class Dosepix:
                 pixelDACs = ['%02x' % int(num) for num in np.linspace(0, 63, 9)]
 
         countsDict = self.getTHLLevel(slot, THLRange, pixelDACs, reps, intPlot)
+        print countsDict['00'].keys(), THLRange
         gaussDict, noiseTHL = self.getNoiseLevel(countsDict, THLRange, pixelDACs, noiseLimit)
+        print 'noiseTHL1:', noiseTHL
 
         # Transform values to indices and get meanDict
-        meanDict, noiseTHL = self.valToIdx(pixelDACs, THLRange, gaussDict, noiseTHL)
+        meanDict, noiseTHL = self.valToIdx(slot, pixelDACs, THLRange, gaussDict, noiseTHL)
 
         if len(pixelDACs) > 2:
             def slopeFit(x, m, t):
@@ -2093,7 +2206,7 @@ class Dosepix:
         gaussDictNew, noiseTHLNew = self.getNoiseLevel(countsDictNew, THLRange, pixelDACNew, noiseLimit)
 
         # Transform values to indices
-        meanDictNew, noiseTHLNew = self.valToIdx([pixelDACNew], THLRange, gaussDictNew, noiseTHLNew)
+        meanDictNew, noiseTHLNew = self.valToIdx(slot, [pixelDACNew], THLRange, gaussDictNew, noiseTHLNew)
 
         # Plot the results of the equalization
         if resPlot:
@@ -2160,7 +2273,7 @@ class Dosepix:
         # Get THLRange
         THLlow, THLhigh = 4000, 8000
         # THLRange = np.arange(THLlow, THLhigh, 1) 
-        THLRange = np.asarray(self.THLEdges)
+        THLRange = np.asarray(self.THLEdges[slot - 1])
         THLRange = THLRange[np.logical_and(THLRange >= THLlow, THLRange <= THLhigh)]
 
         # Transform peripheryDAC values to dictionary
@@ -2191,8 +2304,8 @@ class Dosepix:
             # pixelDACs = ['00']
             countsDict = self.getTHLLevel(slot, THLRange, pixelDACs, reps, intPlot)
             gaussDict, noiseTHL = self.getNoiseLevel(countsDict, THLRange, pixelDACs, noiseLimit)
-            meanDict, noiseTHL = self.valToIdx(pixelDACs, THLRange, gaussDict, noiseTHL)
-            gaussCorrDict = {pixelDAC: [self.getVoltFromTHLFit(elm) if elm else np.nan for elm in gaussDict[pixelDAC]] for pixelDAC in pixelDACs}
+            meanDict, noiseTHL = self.valToIdx(slot, pixelDACs, THLRange, gaussDict, noiseTHL)
+            gaussCorrDict = {pixelDAC: [self.getVoltFromTHLFit(elm, slot) if elm else np.nan for elm in gaussDict[pixelDAC]] for pixelDAC in pixelDACs}
 
             # Add to I_pixeldac-dict
             gaussDicts[I_pixeldac] = gaussCorrDict
@@ -2329,7 +2442,7 @@ class Dosepix:
         # Get THLRange
         THLlow, THLhigh = 4000, 8000
         # THLRange = np.arange(THLlow, THLhigh, 1) 
-        THLRange = np.asarray(self.THLEdges)
+        THLRange = np.asarray(self.THLEdges[slot - 1])
         THLRange = THLRange[np.logical_and(THLRange >= THLlow, THLRange <= THLhigh)]
 
         # Only use first and last pixelDAC values
@@ -2357,7 +2470,7 @@ class Dosepix:
             # Get noise levels for each pixel
             countsDict = self.getTHLLevel(slot, THLRange, pixelDACs, 1, False)
             gaussDict, noiseTHL = self.getNoiseLevel(countsDict, THLRange, pixelDACs, 1)
-            meanDict, noiseTHL = self.valToIdx(pixelDACs, THLRange, gaussDict, noiseTHL)
+            meanDict, noiseTHL = self.valToIdx(slot, pixelDACs, THLRange, gaussDict, noiseTHL)
 
             # Get slope for each pixel
             slope = (noiseTHL['00'] - noiseTHL['3f']) / 63.
@@ -2384,18 +2497,18 @@ class Dosepix:
         else:
             return slopeList
 
-    def valToIdx(self, pixelDACs, THLRange, gaussDict, noiseTHL):
+    def valToIdx(self, slot, pixelDACs, THLRange, gaussDict, noiseTHL):
         # Transform values to indices
         meanDict = {}
         for pixelDAC in pixelDACs:
-            d = np.asarray([self.getVoltFromTHLFit(elm) if elm else np.nan for elm in gaussDict[pixelDAC] ], dtype=np.float)
+            d = np.asarray([self.getVoltFromTHLFit(elm, slot) if elm else np.nan for elm in gaussDict[pixelDAC] ], dtype=np.float)
             meanDict[pixelDAC] = np.nanmean(d)
 
             for pixelX in range(16):
                 for pixelY in range(16):
                     elm = noiseTHL[pixelDAC][pixelX, pixelY]
                     if elm:
-                        noiseTHL[pixelDAC][pixelX, pixelY] = self.getVoltFromTHLFit(elm)
+                        noiseTHL[pixelDAC][pixelX, pixelY] = self.getVoltFromTHLFit(elm, slot)
                     else:
                         noiseTHL[pixelDAC][pixelX, pixelY] = np.nan
 
@@ -2458,7 +2571,7 @@ class Dosepix:
             THLRangeFast = [ THLRangeFast[item[0][0]] if np.any(item) else np.nan for item in [np.argwhere(counts > 3) for counts in countsList] ]
 
             # Precise loop
-            THLRangeSlow = THLRange[np.logical_and(THLRange >= (np.nanmin(THLRangeFast) - 10), THLRange <= np.nanmax(THLRangeFast))]
+            THLRangeSlow = np.around(THLRange[np.logical_and(THLRange >= (np.nanmin(THLRangeFast) - 10), THLRange <= np.nanmax(THLRangeFast))])
 
             NTHL = len(THLRangeSlow)
             for cnt, THL in enumerate( THLRangeSlow ):
@@ -2473,17 +2586,16 @@ class Dosepix:
 
                     # Read ToT values into matrix
                     counts += self.DPXReadToTDatakVpModeCommand(slot)
-                    
+
                     if intPlot:
                         im.set_data(counts)
                         ax.set_title('THL: ' + hex(THL))
                         fig.canvas.draw()
 
-                counts /= reps
-                countsDict[pixelDAC][THL] = counts
+                counts /= float(reps)
+                countsDict[pixelDAC][int(THL)] = counts
             print 
             print
-
         return countsDict
 
     def getNoiseLevel(self, countsDict, THLRange, pixelDACs=['00', '3f'], noiseLimit=3):
@@ -3110,24 +3222,24 @@ class Dosepix:
 
         return hex(code).split('0x')[-1][:-1]
 
-    def getTHLfromVolt(self, V):
-        return self.THLCalib[abs(V - self.voltCalib).argmin()]
+    def getTHLfromVolt(self, V, slot):
+        return self.THLCalib[slot - 1][abs(V - self.voltCalib).argmin()]
 
-    def getVoltFromTHL(self, THL):
-        return self.voltCalib[np.argwhere(self.THLCalib == THL)]
+    def getVoltFromTHL(self, THL, slot):
+        return self.voltCalib[slot - 1][np.argwhere(self.THLCalib == THL)]
 
-    def getVoltFromTHLFit(self, THL):
-        if self.THLEdgesLow is None:
+    def getVoltFromTHLFit(self, THL, slot):
+        if self.THLEdgesLow[slot - 1] is None:
             return THL
 
-        edges = zip(self.THLEdgesLow, self.THLEdgesHigh)
+        edges = zip(self.THLEdgesLow[slot - 1], self.THLEdgesHigh[slot - 1])
         for i, edge in enumerate(edges):
             if THL >= edge[0] and THL <= edge[1]:
                 break
         # else:
         #     return None
 
-        params = self.THLFitParams[i]
+        params = self.THLFitParams[slot - 1][i]
         if i == 0:
             return self.erfStdFit(THL, *params)
         else:
