@@ -4,6 +4,7 @@ import cPickle, hickle
 import matplotlib.pyplot as plt
 import scipy.optimize 
 import scipy.odr
+import ToTtoEnergy as tte
 
 # ENERGYLIST = [25, 50, 75, 100, 125] #[25, 30, 40, 50, 75, 100, 125, 148]
 # INFILELIST = ['temperatures_no_sensor/temperatureToT_col0_%d.p' % energy for energy in ENERGYLIST] # ['temperatureToT_col0_%d.p' % energy for energy in ENERGYLIST] 
@@ -291,6 +292,101 @@ def getColor(c, N, idx):
     cmap = mpl.cm.get_cmap(c)
     norm = mpl.colors.Normalize(vmin=0.0, vmax=N - 1)
     return cmap(norm(idx))
+
+def getNormalCounts(mu, sigma, a, b):
+    return 0.5 * (scipy.special.erf((b - mu) / np.sqrt(2 * sigma**2)) - scipy.special.erf((a - mu) / np.sqrt(2 * sigma**2)))
+
+def histMean(bins, hist):
+    hist = np.nan_to_num(hist)
+    bw = np.asarray(bins[:-1]) + 0.5 * np.diff(bins)
+    mean = np.dot(bw, hist) / np.nansum(hist)
+    return mean, np.sqrt(np.dot(hist/float(np.sum(hist)), np.square(np.asarray(bw) - mean)))
+
+def ToTtoEnergy(data, params):
+    pixelData = data
+    # pixelData = pixelData[pixelData > 0]
+    p = params
+    a, b, c, t, h, k = p['a'], p['b'], p['c'], p['t'], p['h'], p['k']
+
+    pixelDataEnergy = tte.ToTtoEnergy(pixelData, a, b, c, t, h, k)
+    # pixelDataEnergy = pixelDataEnergy[np.logical_and(pixelDataEnergy > 10, pixelDataEnergy <= 100)]
+
+    return pixelDataEnergy
+
+def ToTatT(data, T, slope, offset, Toffset):
+    data = np.asarray( data )
+    # data = data[data > 0]
+    dataAtT = getRealToT(data, T, Toffset, slope, offset)
+    return dataAtT
+    
+def getDataAtT(data, T, slope, offset, Toffset, energy=True):
+    dataEnergyList = []
+    for idx in range(256):
+        try:
+            dataEnergy = getDataAtTSingle(data[idx], T, slope[idx], offset[idx], Toffset, paramsDict[idx], energy=energy)
+            dataEnergyList.append( dataEnergy )
+        except:
+            continue
+    
+    return dataEnergyList
+    
+def getDataAtTSingle(data, T, slope, offset, Toffset, params, energy=True, rmZero=False):
+    dataAtT = np.asarray( ToTatT(data, T, slope, offset, Toffset) )
+    if rmZero:
+        dataAtT = dataAtT[dataAtT > 0]
+    # try:
+    if energy:
+        dataEnergy = ToTtoEnergy(dataAtT, params)
+    else:
+        dataEnergy = dataAtT
+    # except:
+    #     return None
+    
+    return dataEnergy
+
+def simDataAtTSingle(data, T, slope, offset, Toffset, params, energy=True):
+    data = np.asarray(data)
+    dataAtT = np.asarray( simWrongToT(data, T, Toffset, slope, offset) )
+    if energy:
+        dataEnergy = ToTtoEnergy(dataAtT, params)
+    else:
+        dataEnergy = dataAtT
+    return dataEnergy
+
+def linear(x, m, t):
+    return m*x + t
+
+def linear_rev(x, m, t):
+    return (x - t) / m
+
+def normal(x, A, mu, sigma):
+    return A * np.exp(-(x - mu)**2/(s*sigma**2))
+
+def alphaPolyShow(p, deg, x):
+    resList = []
+    p1, p2, p3 = deg
+    idxList = [range(p1), range(p1, p1+p2), range(p1+p2, p1+p2+p3)]
+
+    for i in range(3):
+        f = np.poly1d(np.asarray(p)[idxList[i]])
+        resList.append( f(x) )
+
+    return resList 
+
+def alphaInt(x, y, edges):
+    x = np.asarray(x)
+    y = np.asarray(y)
+
+    res = []
+    for i in range(len(edges) - 1):
+        # try:
+        y_ = y[np.logical_and(x > edges[i], x <= edges[i+1])]
+        x_ = x[np.logical_and(x > edges[i], x <= edges[i+1])]
+        res.append( scipy.integrate.trapz(y_, x=x_) )
+        # except:
+        #    res.append( 0 )
+        
+    return res
 
 if __name__ == '__main__':
     main()

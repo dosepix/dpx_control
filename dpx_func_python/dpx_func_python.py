@@ -28,24 +28,40 @@ DEBUG = False
 
 # Important files
 THL_CALIB_FILES = ['THLCalibration/THLCalib_%d.p' % slot for slot in [22, 6, 109]]
-PARAMS_FILE = None # 'testCalibFactors.p'
+PARAMS_FILE = None # 'energyConversion/paramsDict_DPX22_6_109.hck' # 'testCalibFactors.p'
+GEN_BIN_EDGES_RANDOM = False
+BIN_EDGES_RANDOM_FN = 'binEdgesRandom_DPX22_6_109_v2.hck'
+
+if GEN_BIN_EDGES_RANDOM:
+    import bin_edges_random as ber
+
+    if PARAMS_FILE.endswith('.p'):
+        paramsDict = cPickle.load(open(PARAMS_FILE, 'rb'))
+    else:
+        paramsDict = hickle.load(PARAMS_FILE)
+
+    binEdgesDict = {}
+    for slot in range(1, 3 + 1):
+        binEdges = ber.getBinEdgesRandom(NPixels=256, edgeMin=12, edgeMax=100, edgeOvfw=430, uniform=False)
+        binEdgesDict['Slot%d' % slot] = binEdges
+    hickle.dump(binEdgesDict, BIN_EDGES_RANDOM_FN)
+
+# BIN_EDGES = hickle.load(BIN_EDGES_RANDOM_FN)
+BIN_EDGES = {'Slot1': [12, 18, 21, 24.5, 33.5, 43, 53.5, 66.5, 81.5, 97, 113, 131.5, 151.5, 173, 200.5, 236, 430],
+                'Slot2': [12, 17, 31, 40, 45.5, 50.5, 60.5, 68, 91, 102.5, 133, 148, 163, 196, 220, 257, 430],
+                'Slot3': [32, 37, 47, 57.6, 68.5, 80, 91.5, 104, 117, 131, 145, 163.5, 183.5, 207.5, 234.5, 269.5, 430]}
 
 def main():
     # Create object of class and establish connection
     dpx = Dosepix('/dev/ttyUSB0', 2e6, 'DPXConfig_22_6_109.conf')
 
     '''
-    # Read peripheryDAC values from config
-    d = dpx.splitPerihperyDACs(dpx.peripherys+ dpx.THLs[0], perc=True)
-
-    # Change pixelDAC step value
-    d['I_pixeldac'] = 0.2
-    code = dpx.periheryDACsDictToCode(d, perc=True)
-
-    # Set peripheryDACs
-    dpx.peripherys = code
-    for i in range(1, 3 + 1):
-        dpx.DPXWritePeripheryDACCommand(i, code)
+    # Change DAC values
+    d = dpx.splitPerihperyDACs(dpx.peripherys + dpx.THLs[0], perc=False)
+    d['I_krum'] = 19
+    code = dpx.periheryDACsDictToCode(d, perc=False)
+    dpx.peripherys = code[:-4]
+    dpx.DPXWritePeripheryDACCommand(1, code)
     '''
 
     '''
@@ -66,7 +82,8 @@ def main():
         # print dpx.DPXReadPeripheryDACCommand(1)
         # print dpx.DPXReadOMRCommand(1)
 
-    # dpx.ADCWatch(1, ['V_ThA', 'V_TPref_fine', 'V_TPref_coarse', 'V_TPbufout', 'V_TPbufin', 'V_cascode_bias', 'Temperature'], cnt=0)
+    # dpx.ADCWatch(1, ['I_krum', 'Temperature'], cnt=0)
+    # dpx.measureADC(1, AnalogOut='V_fbk', perc=False, ADChigh=8191, ADClow=0, ADCstep=1, N=1, fn=None, plot=True)
     # return
     # dpx.ADCWatch(1, ['V_ThA', 'V_TPref_fine', 'V_casc_preamp', 'V_fbk', 'V_TPref_coarse', 'V_gnd', 'I_preamp', 'I_disc1', 'I_disc2', 'V_TPbufout', 'V_TPbufin', 'I_krum', 'I_dac_pixel', 'V_bandgap', 'V_casc_krum', 'V_per_bias', 'V_cascode_bias', 'Temperature', 'I_preamp'], cnt=0)
     # dpx.energySpectrumTHL(1, THLhigh=8000, THLlow=int(dpx.THLs[0], 16) - 500, THLstep=25, timestep=1, intPlot=True)
@@ -76,20 +93,24 @@ def main():
     # dpx.ToTtoTHL(slot=1, column='all', THLstep=1, valueLow=1.5e3, valueHigh=30e3, valueCount=20, energy=True, plot=False, outFn='ToTtoTHL.p')
 
     # dpx.energySpectrumTHL(1)
-    dpx.measureToT(slot=[1, 2, 3], intPlot=True, storeEmpty=True, logTemp=True)
-    # dpx.TPtoToT(slot=1, column='all')
+    # dpx.measureToT(slot=1, intPlot=True, storeEmpty=False, logTemp=False)
 
-    # dpx.testPulseDosi(1)
+    # while True:
+    #     dpx.TPtoToT(slot=1, column=1)
+
+    # dpx.testPulseDosi(1, column='all')
     # dpx.testPulseSigma(1)
-    # dpx.testPulseToT(1, 10)
+    # dpx.testPulseToT(1, 10, column='all', DAC='I_krum', DACRange=range(3, 25) + range(25, 50, 5) + range(50, 120, 10), perc=False)
 
-    # dpx.measureDose(measurement_time=120)
+    # dpx.measureDose(slot=1, measurement_time=0, freq=False, frames=1000, logTemp=True, intPlot=False)
 
     # dpx.measureIntegration()
-    # dpx.temperatureWatch(slot=2, column='all', frames=1000, energyRange=(125.e3, 125.e3), fn='TemperatureToT_Dennis1_75keV.p', intplot=True)
+    dpx.temperatureWatch(slot=2, column='all', frames=1000, energyRange=(8.e3, 8.e3), fn='TemperatureToT_DPX22_Col0_0keV.p', intplot=True)
 
     # dpx.measureTHL(1, fn='THLCalib_6.p', plot=False)
     # dpx.thresholdEqualizationConfig('DPXConfig_22_6_109.conf', I_pixeldac=None, reps=1, intPlot=False, resPlot=True)
+
+    # dpx.measurePulseShape(1, column=1)
 
     # Close connection
     dpx.close()
@@ -230,7 +251,7 @@ class Dosepix:
         V_cascode_bias = 0b11101 << 12,
         High_Z = 0b11111 << 12)
 
-    OMRAnalogInSelType = namedtuple("OMRAnalogOutSel", "V_ThA V_TPref_fine V_casc_preamp V_fbk V_TPref_coarse V_gnd I_preamp I_disc1 I_disc2 V_TPbufout V_TPbufin I_krum I_dac_pixel V_bandgap V_casc_krum Temperature V_per_bias V_cascode_bias V_no")
+    OMRAnalogInSelType = namedtuple("OMRAnalogInSel", "V_ThA V_TPref_fine V_casc_preamp V_fbk V_TPref_coarse V_gnd I_preamp I_disc1 I_disc2 V_TPbufout V_TPbufin I_krum I_dac_pixel V_bandgap V_casc_krum Temperature V_per_bias V_cascode_bias V_no")
     __OMRAnalogInSel = OMRAnalogInSelType(
         V_ThA = 0b00001 << 7,
         V_TPref_fine = 0b00010 << 7, 
@@ -288,6 +309,9 @@ class Dosepix:
         self.USE_GUI = False
 
     def getConfigDPX(self, portName, baudRate, configFn):
+        self.ser = serial.Serial(self.portName, self.baudRate)
+        assert self.ser.is_open, 'Error: Could not establish serial connection!'
+
         # Read config
         self.peripherys = ''
         self.OMR = ''
@@ -306,9 +330,6 @@ class Dosepix:
             self.binEdges = [['0']*1024] * 3
         else:
             self.readConfig(self.configFn)
-
-        self.ser = serial.Serial(self.portName, self.baudRate)
-        assert self.ser.is_open, 'Error: Could not establish serial connection!'
 
         self.initDPX()
 
@@ -427,7 +448,10 @@ class Dosepix:
                 paramsDict = cPickle.load(open(PARAMS_FILE, 'rb'))
             else:
                 paramsDict = hickle.load(PARAMS_FILE)
-            self.setBinEdges(paramsDict, None)
+
+            for slot in range(1, 3 + 1):
+                binEdges = BIN_EDGES['Slot%d' % slot]
+                self.setBinEdges(slot, paramsDict['Slot%d' % slot], binEdges)
 
         # = Empty Bins =
         for i in range(1, 3 + 1):
@@ -437,9 +461,34 @@ class Dosepix:
                 # Dummy readout
                 self.DPXReadBinDataDosiModeCommand(i)
 
+    def fillParamDict(self, paramDict):
+        # Get mean factors
+        meanDict = {}
+
+        if 'h' in paramDict[paramDict.keys()[0]].keys():
+            keyList = ['a', 'c', 'b', 'h', 'k', 't']
+        else:
+            keyList = ['a', 'c', 'b', 't']
+
+        for val in keyList:
+            valList = []
+            for idx in paramDict.keys():
+                valList.append( paramDict[idx][val] )
+            valList = np.asarray(valList)
+            valList[abs(valList) == np.inf] = np.nan
+            meanDict[val] = np.nanmean(valList)
+
+        # Find non existent entries and loop
+        for pixel in set(np.arange(256)) - set(paramDict.keys()):
+            paramDict[pixel] = {val: meanDict[val] for val in keyList}
+
+        return paramDict
+
     # Convert the bin edges from energy to ToT and write them to the designated registers
-    def setBinEdges(self, paramDict, binEdgesEnergyDict):
-        assert len(paramDict.keys()) == 256, 'getBinEdges: Number of pixels in paramDict differs from 256!'
+    def setBinEdges(self, slot, paramDict, binEdgesEnergyList):
+        # assert len(paramDict) == 256, 'getBinEdges: Number of pixels in paramDict differs from 256!'
+        if len(paramDict) != 256:
+            paramDict = self.fillParamDict(paramDict)
 
         # The indices of the bins are specified via the following gray code
         gray = [0, 1, 3, 2, 6, 4, 5, 7, 15, 13, 12, 14, 10, 11, 9, 8]
@@ -450,48 +499,63 @@ class Dosepix:
             fEnergyConv = True
 
         binEdgesTotal = []
-        for slot in range(1, 3 + 1):
-            binEdgesEnergy = np.asarray( binEdgesEnergyDict['Slot%d' % slot] )
+        binEdgesEnergy = np.asarray( binEdgesEnergyList )
 
-            binEdgesList = []
-            for pixel in sorted(paramDict.keys()):
-                params = paramDict[pixel]
-                a, b, c, t = params['a'], params['b'], params['c'], params['t']
-                if fEnergyConv:
-                    h, k = params['h'], params['k']
-                else:
-                    h, k = 1, 0
-                
-                # Convert energy to ToT
-                binEdgesToT = self.EnergyToToTSimple(binEdgesEnergy, a, b, c, t, h, k)
+        binEdgesList = []
+        nanCnt = 0
+        for pixel in sorted(paramDict.keys()):
+            params = paramDict[pixel]
+            a, b, c, t = params['a'], params['b'], params['c'], params['t']
+            if fEnergyConv:
+                h, k = params['h'], params['k']
+            else:
+                h, k = 1, 0
 
-                # Round the values - do not use floor function as this leads to a bias
-                binEdgesToT = np.around( binEdgesToT )
-                binEdgesList.append( binEdgesToT )
+            if len(binEdgesEnergy) > 17: # binEdgesEnergy.shape[1] > 0:
+                beEnergy = binEdgesEnergy[pixel]
+            else:
+                beEnergy = binEdgesEnergy
 
-            # Transpose matrix to get pixel values
-            binEdgesList = np.asarray(binEdgesList).T
-            cmdTotal = ''
-            for gc in gray:
-                # Construct command
-                cmd = '%01x' % gc + ''.join( ['%03x' % be for be in binEdgesList[gc]] )
-                self.DPXWriteSingleThresholdCommand(slot, cmd)
-                cmdTotal += cmd
+            # Convert energy to ToT
+            binEdgesToT = self.EnergyToToTSimple(beEnergy, a, b, c, t, h, k)
 
-            binEdgesTotal.append( binEdgesTotal )
+            # Round the values - do not use floor function as this leads to bias
+            binEdgesToT = np.around( binEdgesToT )
+            binEdgesList.append( np.nan_to_num(binEdgesToT) )
 
+        # Transpose matrix to get pixel values
+        binEdgesList = np.asarray(binEdgesList).T
+        cmdTotal = ''
+        for idx, gc in enumerate(gray):
+            # Construct command
+            cmd = ''.join( ['%01x' % gc + '%03x' % be for be in binEdgesList[idx]] )
+            self.DPXWriteSingleThresholdCommand(slot, cmd)
+            cmdTotal += cmd
+
+        binEdgesTotal.append( binEdgesTotal )
         self.binEdges = binEdgesTotal
 
     def ToTtoEnergySimple(self, x, a, b, c, t, h=1, k=0):
         return h * (b + 1./(4 * a) * (2*x + np.pi*c + np.sqrt(16 * a * c * t + (2 * x + np.pi * c)**2))) + k
 
     def EnergyToToTSimple(self, x, a, b, c, t, h=1, k=0):
+        res = np.where(x < b, a*((x - k)/h - b) - c * (np.pi / 2 + t / ((x - k)/h - b)), 0)
+        idx = np.argwhere(res <= 0)
+        
+        if list(idx):
+            res[np.arange(idx[-1]+1)] = 0
+            # res[res < 0] = 0
+        return res
+
+        # Old?
+        '''
         res = np.where(x < b*h + k, a*((x - k)/h - b) - c * (np.pi / 2 + t / ((x - k)/h - b)), 0)
         res[res < 0] = 0
         return res
+        '''
 
     # TODO: Correction factor of 16/15 necessary?
-    def measureDose(self, slot=1, measurement_time=120, frames=10, freq=False, outFn='doseMeasurement.p', intPlot=False):
+    def measureDose(self, slot=1, measurement_time=120, frames=10, freq=False, outFn='doseMeasurement.p', logTemp=False, intPlot=False):
         # Set Dosi Mode in OMR
         # If OMR code is list
         OMRCode = self.OMR
@@ -504,8 +568,23 @@ class Dosepix:
         if not isinstance(slot, (list,)):
             slot = [slot]
 
+        # Set ADC out to temperature if requested
+        if logTemp:
+            tempDict = {'temp': [], 'time': []}
+
+            if type(self.OMR) is list:
+                OMRCode_ = self.OMRListToHex(self.OMR)
+            else:
+                OMRCode_ = self.OMR
+            OMRCode_ = int(OMRCode_, 16)
+
+            OMRCode_ &= ~(0b11111 << 12)
+            OMRCode_ |= getattr(self.__OMRAnalogOutSel, 'Temperature')
+            self.DPXWriteOMRCommand(1, hex(OMRCode_).split('0x')[-1])
+
         for sl in slot:
             self.DPXWriteOMRCommand(sl, OMRCode)
+            self.DPXDataResetCommand(sl)
 
         # Initial reset
         self.clearBins(slot)
@@ -514,64 +593,113 @@ class Dosepix:
         outDict = {'Slot%d' % sl: [] for sl in slot}
 
         # Interactive plot
-        if intplot:
+        if intPlot:
             print 'Warning: plotting takes time, therefore data should be stored as frequency instead of counts!'
             fig, ax = plt.subplots(1, len(slot), figsize=(5*len(slot), 5))
             plt.ion()
-            imList = []
+            imList = {}
+
+            if len(slot) == 1:
+                ax = [ax]
 
             for idx, a in enumerate(ax):
-                imList.append( a.imshow(np.zeros(16, 16)) )
+                imList[slot[idx]] = a.imshow(np.zeros((12, 16)))
                 a.set_title('Slot%d' % slot[idx])
                 a.set_xlabel('x (px)')
                 a.set_ylabel('y (px)')
+            plt.show()
 
         # = START MEASUREMENT =
-        print 'Starting Dose Measurement!'
-        print '========================='
-        for c in range(frames):
-            if freq:
-                startTime = time.time()
-            time.sleep(measurement_time)
+        try:
+            print 'Starting Dose Measurement!'
+            print '========================='
+            measStart = time.time()
+            for c in range(frames):
+                if freq:
+                    startTime = time.time()
 
-            # = Readout =
-            outSlotList = []
-            for sl in slot:
-                outList = []
+                # Measure temperature?
+                if logTemp:
+                    temp = float(int(self.MCGetADCvalue(), 16))
+                    tempDict['temp'].append( temp )
+                    tempDict['time'].append( time.time() - measStart )
 
-                # Loop over bins
-                for col in range(1, 16 + 1):
-                    self.DPXWriteColSelCommand(sl, 16 - col)
-                    out = np.asarray( self.DPXReadBinDataDosiModeCommand(sl) )
+                # for sl in slot:
+                #    self.DPXDataResetCommand(sl)
+                #    self.clearBins([sl])
+                time.sleep(measurement_time)
 
-                    # Calculate frequency if requested
-                    if freq:
-                        out /= (time.time() - startTime)
+                # = Readout =
+                outSlotList = []
+                for sl in slot:
+                    outList = []
+                    showList = []
 
-                    # Bug: discard strange values in matrix
-                    print np.mean(out), np.std(out)
-                    out[abs(out - np.mean(out)) > 3 * np.std(out)] = 0
+                    # Loop over columns
+                    for col in range(16):
+                        if freq:
+                            measTime = float(time.time() - startTime)
+                        # self.DPXDataResetCommand(sl)
+                        # self.clearBins([sl])
 
-                    outList.append( out )
+                        self.DPXWriteColSelCommand(sl, 16 - col)
+                        out = np.asarray( self.DPXReadBinDataDosiModeCommand(sl), dtype=float )
+                        out[out >= 2**15] = np.nan
 
-                # Append to outDict
-                data = np.asarray(outList)
-                outDict['Slot%d' % sl].append( data.flatten() )
+                        # Calculate frequency if requested
+                        if freq:
+                            out = out / measTime
 
-                # Clear matrix for next readout
-                self.DPXDataResetCommand(sl)
+                        # Bug: discard strange values in matrix
+                        print np.nanmean(out), np.nanstd(out), np.nansum(out)
+                        out[abs(out - np.nanmean(out)) > 3 * np.nanstd(out)] = 0
+                        
+                        # plt.imshow(out.T[2:-2].T)
+                        # plt.show()
+                        # print out
+
+                        outList.append( out )
+                        showList.append( np.nansum(out, axis=1)[2:-2] )
+
+                    # Append to outDict
+                    data = np.asarray(outList)
+                    outDict['Slot%d' % sl].append( data )
+
+                    plt.imshow(showList)
+                    plt.show()
+
+                    if intPlot:
+                        print showList
+                        imList[sl].set_data( showList )
+                        # fig.canvas.flush_events()
+
+                        plt.imshow(showList)
+                        plt.show()
 
                 if intPlot:
-                    imList[sl].set_data(data)
-            if intPlot:
-                fig.canvas.draw()
+                    fig.canvas.draw()
+                    fig.canvas.flush_events()
+                    # plt.show()
+
+            # Loop finished
+            if logTemp:
+                self.pickleDump(tempDict, '%s_temp' % outFn.split('.p')[0] + '.p')
+
+            self.pickleDump(outDict, outFn)
+
+        except (KeyboardInterrupt, SystemExit):
+            # Store data and plot in files
+            print 'KeyboardInterrupt-Exception: Storing data!'
+            print 'Measurement time: %.2f min' % ((time.time() - measStart) / 60.)
+            if logTemp:
+                self.pickleDump(tempDict, '%s_temp' % outFn.split('.p')[0] + '.p')
+
+            self.pickleDump(outDict, outFn)
+            raise
 
         # Reset OMR
         for sl in slot:
             self.DPXWriteOMRCommand(sl, self.OMR)
-
-        # Store data to file
-        self.pickleDump(outDict, outFn)
 
     def clearBins(self, slot):
         # Clear bins
@@ -633,7 +761,7 @@ class Dosepix:
     # to store data afterwards. 
     # If storeEmpty flag is set, empty frames are stored, otherwise discarded.
     # If logTemp flag is set, current chip temperature is stored with each frame.
-    def measureToT(self, slot=1, outDir='ToTMeasurement/', cnt=10000, storeEmpty=False, logTemp=False, intPlot=False):
+    def measureToT(self, slot=1, outDir='ToTMeasurement/', cnt=10000, storeEmpty=False, logTemp=False, paramsDict=None, intPlot=False):
         # Set Dosi Mode in OMR
         # If OMR code is list
         OMRCode = self.OMR
@@ -666,6 +794,12 @@ class Dosepix:
             OMRCode_ |= getattr(self.__OMRAnalogOutSel, 'Temperature')
             self.DPXWriteOMRCommand(slot, hex(OMRCode_).split('0x')[-1])
 
+        # GUI
+        if self.USE_GUI:
+            bins = np.arange(0, 400, 1)
+            histData = np.zeros(len(bins)-1)
+            yield bins, histData
+
         # Init plot
         if intPlot:
             plt.ion()
@@ -680,7 +814,7 @@ class Dosepix:
             plt.grid()
 
             # Init bins and histogram data
-            bins = np.arange(0, 1000, 1)
+            bins = np.arange(0, 400, 1)
             histData = np.zeros(len(bins)-1)
 
             ax.set_xlim(min(bins), max(bins))
@@ -696,10 +830,12 @@ class Dosepix:
         try:
             while True:
                 ToTDict = {'Slot%d' % slot: [] for slot in slotList}
+                # if paramsDict is not None:
+                #     energyDict = {'Slot%d' % slot: [] for slot in slotList}
 
                 c = 0
                 startTime = time.time()
-                if intPlot:
+                if intPlot or self.USE_GUI:
                     dataPlot = []
 
                 while c <= cnt:
@@ -723,13 +859,13 @@ class Dosepix:
                         # Remove overflow
                         data[data >= 4096] -= 4096
 
-                        if intPlot:
+                        if intPlot or self.USE_GUI:
                             data_ = data
                             data_ = data_[[self.isLarge(pixel) for pixel in range(256)]]
                             dataPlot += data.tolist()
 
                         ToTDict['Slot%d' % slot].append( data.tolist() )
-                    
+
                     # Measure temperature?
                     if logTemp:
                         temp = float(int(self.MCGetADCvalue(), 16))
@@ -744,7 +880,7 @@ class Dosepix:
                     c += 1
 
                     # Update plot every 100 iterations
-                    if intPlot:
+                    if intPlot or self.USE_GUI:
                         if not c % 10:
                             dataPlot = np.asarray(dataPlot)
                             # Remove empty entries
@@ -754,12 +890,16 @@ class Dosepix:
                             histData += hist
                             dataPlot = []
 
-                            line.set_xdata(bins_[:-1])
-                            line.set_ydata(histData)
+                            if self.USE_GUI:
+                                yield bins_, histData
 
-                            # Update plot scale
-                            ax.set_ylim(1, 1.1 * max(histData))
-                            fig.canvas.draw()
+                            if intPlot:
+                                line.set_xdata(bins_[:-1])
+                                line.set_ydata(histData)
+
+                                # Update plot scale
+                                ax.set_ylim(1, 1.1 * max(histData))
+                                fig.canvas.draw()
 
                 # Loop finished
                 self.pickleDump(ToTDict, '%s/%s' % (outDir, outFn))
@@ -830,6 +970,53 @@ class Dosepix:
 
         self.DPXWriteConfigurationCommand(slot, ''.join(['%02x' % conf for conf in confBits.flatten()]))
 
+    def measurePulseShape(self, slot, column='all'):
+        columnRange = self.testPulseInit(slot, column=column)
+        N = 1
+
+        # Set energy
+        energy = 25.e3
+        DACVal = self.getTestPulseVoltageDAC(slot, energy, True)
+        print 'Energy DAC:', DACVal
+        # self.DPXWritePeripheryDACCommand(slot, DACval)
+
+        # Define THLRange
+        THLhigh = int(self.THLs[slot-1], 16)
+        THLstep = 1
+        THLstart = THLhigh - 1000
+        THLstop = THLhigh
+
+        THLRange = np.asarray(self.THLEdges[slot - 1])
+        THLstop_ = THLhigh if THLstop > THLhigh else THLstop
+        THLRange = THLRange[np.logical_and(THLRange >= THLstart, THLRange <= THLstop_)]
+
+        for column in columnRange:
+            self.maskBitsColumn(slot, column)
+
+            ToTList, voltList = [], []
+            for cnt, THL in enumerate(THLRange[::THLstep]):
+
+                # Set new THL
+                self.DPXWritePeripheryDACCommand(slot, DACVal[:-4] + '%04x' % THL)
+                self.statusBar(float(cnt)/len(THLRange[::THLstep]) * 100 + 1)
+
+                dataList = []
+                for n in range(N):
+                    self.DPXDataResetCommand(slot)
+                    self.DPXGeneralTestPulse(slot, 1000)
+                    dataList.append( self.DPXReadToTDataDosiModeCommand(slot)[column] )
+
+                mean = np.mean( dataList, axis=0 )
+                if np.any(mean):
+                    print mean
+                    ToTList.append( mean )
+                    voltList.append( self.getVoltFromTHLFit(THL, slot) )
+
+            plt.plot(ToTList, -np.asarray(voltList))
+            plt.show()
+
+        self.testPulseClose(slot)
+
     def testPulseSigma(self, slot, column=[0, 1, 2], N=100):
         columnRange = self.testPulseInit(slot, column=column)
 
@@ -887,65 +1074,91 @@ class Dosepix:
 
         self.testPulseClose(slot)
 
-    def testPulseToT(self, slot, length, column='all', paramOutFn='testPulseParams.p'):
+    def testPulseToT(self, slot, length, column='all', paramOutFn='testPulseParams.p', DAC=None, DACRange=None, perc=True):
         columnRange = self.testPulseInit(slot, column=column)
 
         # Measure multiple test pulses and return the average ToT
-        energyRange = np.asarray(list(np.linspace(5e3, 20e3, 30)) + list(np.linspace(20e3, 100e3, 20)))
-        energyRangeFit = np.linspace(5e3, 100e3, 1000)
+        energyRange = np.asarray(list(np.linspace(1.e3, 20.e3, 30)) + list(np.linspace(20e3, 100e3, 20)))
+        energyRangeFit = np.linspace(1.e3, 100e3, 1000)
         # energyRange = np.arange(509, 0, -10)
 
-        paramOutDict = {'a': [], 'b': [], 'c': [], 't': []}
-        for column in  columnRange:
-            self.maskBitsColumn(slot, column)
+        outDict = {'energy': energyRange, 'DAC': DACRange}
 
-            ToTValues = []
-            for energy in energyRange:
-                # DACval = self.getTestPulseVoltageDAC(slot, energy)
-                DACval = self.getTestPulseVoltageDAC(slot, energy, True)
-                self.DPXWritePeripheryDACCommand(slot, DACval)
+        # Set DAC value
+        if DAC is not None:
+            if DACRange is not None:
+                outList = []
+                for DACVal in DACRange:
+                    d = self.splitPerihperyDACs(self.peripherys + self.THLs[0], perc=perc)
+                    d[DAC] = DACVal
+                    code = self.periheryDACsDictToCode(d, perc=perc)
+                    self.peripherys = code[:-4]
+                    self.DPXWritePeripheryDACCommand(slot, code)
 
-                data = np.zeros((16, 16))
-                for i in range(10):
-                    self.DPXDataResetCommand(slot)
-                    self.DPXGeneralTestPulse(slot, 1000)
-                    data += self.DPXReadToTDataDosiModeCommand(slot)
-                data = data / 10
+                    dataArray = []
+                    for column in  columnRange:
+                        self.maskBitsColumn(slot, column)
 
-                # Filter zero entries
-                # data = data[data != 0]
+                        ToTValues = []
+                        for energy in energyRange:
+                            # DACval = self.getTestPulseVoltageDAC(slot, energy)
+                            DACval = self.getTestPulseVoltageDAC(slot, energy, True)
+                            self.DPXWritePeripheryDACCommand(slot, DACval)
 
-                ToTValues.append( data[column] )
+                            data = []
+                            for i in range(10):
+                                self.DPXDataResetCommand(slot)
+                                self.DPXGeneralTestPulse(slot, 1000)
+                                data.append( self.DPXReadToTDataDosiModeCommand(slot)[column] )
+                            data = np.mean(data, axis=0)
 
-            x = energyRange/float(1000)
-            for row in range(16):
-                y = []
-                for ToTValue in ToTValues:
-                    # print ToTValue
-                    y.append( ToTValue[row])
+                            # Filter zero entries
+                            # data = data[data != 0]
 
-                # Fit curve
-                popt, pcov = scipy.optimize.curve_fit(self.energyToToTFitAtan, x, y, p0=(3, 8, 50, 1))
-                perr = np.sqrt( np.diag(pcov) )
+                            ToTValues.append( data )
 
-                # Store in dictionary
-                a, b, c, t = popt
-                paramOutDict['a'].append( a )
-                paramOutDict['b'].append( b )
-                paramOutDict['c'].append( c )
-                paramOutDict['t'].append( t )
+                        ToTValues = np.asarray( ToTValues )
+                        print ToTValues
+                        dataArray.append( ToTValues.T )
+                        print dataArray
 
-                print popt, perr/popt*100
+                        if False:
+                            x = energyRange/float(1000)
+                            for row in range(16):
+                                y = []
+                                for ToTValue in ToTValues:
+                                    # print ToTValue
+                                    y.append( ToTValue[row])
 
-                '''
-                plt.plot(x, y, marker='x')
-                plt.plot(energyRangeFit/float(1000), self.energyToToTFitAtan(energyRangeFit/float(1000), *popt))
-                plt.show()
-                '''
+                                # Fit curve
+                                try:
+                                    popt, pcov = scipy.optimize.curve_fit(self.energyToToTFitAtan, x, y, p0=(3, 8, 50, 1))
+                                    perr = np.sqrt( np.diag(pcov) )
+                                except:
+                                    popt = (3, 8, 50, 1)
+                                    perr = np.zeros(len(popt))
+
+                                # Store in dictionary
+                                a, b, c, t = popt
+                                paramOutDict['a'].append( a )
+                                paramOutDict['b'].append( b )
+                                paramOutDict['c'].append( c )
+                                paramOutDict['t'].append( t )
+
+                                print popt, perr/popt*100
+
+                                plt.plot(x, y, marker='x')
+                                plt.plot(energyRangeFit/float(1000), self.energyToToTFitAtan(energyRangeFit/float(1000), *popt))
+                                plt.show()
+
+                    outList.append(np.vstack(dataArray))
+
+        outDict['data'] = outList
 
         # Dump to file
         if paramOutFn:
-            cPickle.dump(paramOutDict, open(paramOutFn, 'wb'))
+            cPickle.dump(outDict, open(paramOutFn, 'wb'))
+        return
 
         # Plot
         plt.xlabel('Energy (keV)')
@@ -957,10 +1170,10 @@ class Dosepix:
         return
 
     def testPulseDosi(self, slot=1, column='all'):
-        column = 5
         columnRange = self.testPulseInit(slot, column=column)
 
         # Select DosiMode
+        '''
         OMRCode = self.OMR
         if not isinstance(OMRCode, basestring):
             OMRCode[0] = 'DosiMode'
@@ -968,9 +1181,10 @@ class Dosepix:
             OMRCode = '%04x' % (int(OMRCode, 16) & ~((0b11) << 22))
 
         self.DPXWriteOMRCommand(slot, OMRCode)
+        '''
 
         # Specify energy range
-        energyRange = list(np.linspace(20e3, 100e3, 10))
+        energyRange = [25.e3] # list(np.linspace(20e3, 100e3, 10))
 
         ToTValues = []
         # Loop over energies
@@ -979,49 +1193,37 @@ class Dosepix:
             self.DPXWritePeripheryDACCommand(slot, DACval)
 
             # Clear data
-            self.clearBins()
+            self.clearBins([slot])
 
             # Loop over columns
+            outList = []
             for column in columnRange:
-                self.maskBitsColumn(slot, column)
-                self.DPXWriteColSelCommand(slot, 16 - 5 - 1)
+                self.maskBitsColumn(slot, 15 - column)
+                # self.DPXWriteColSelCommand(slot, column)
+
                 # Dummy readouts
-                self.DPXReadBinDataDosiModeCommand(slot)
-                self.DPXReadBinDataDosiModeCommand(slot)
-                self.DPXReadBinDataDosiModeCommand(slot)
+                # self.DPXReadBinDataDosiModeCommand(slot)
 
                 # Generate pulses
                 for i in range(10):
-                    time.sleep(1)
-                    self.DPXGeneralTestPulse(1, 1000)
+                    # time.sleep(1)
+                    self.DPXGeneralTestPulse(slot, 1000)
 
-                print self.DPXReadBinDataDosiModeCommand(slot)
+                # Read from column
+                self.DPXWriteColSelCommand(slot, column)
+                out = self.DPXReadBinDataDosiModeCommand(slot)
+                print np.mean(out), np.std(out)
+                print out
+                outList.append( out )
 
-            # = Readout =
-            # Loop over bins
-            outList = []
-            # for col in range(1, 16 + 1):
-            self.DPXWriteColSelCommand(slot, 16 - 5 - 1)
-            # self.DPXWriteColSelCommand(slot, 16 - col)
-            # out = self.DPXReadToTDatakVpModeCommand(slot)
-            # out = np.sum( self.DPXReadBinDataDosiModeCommand(slot), axis=1 )
-            out = self.DPXReadBinDataDosiModeCommand(slot)
-
-            # Bug: discard strange values in column
-            print np.mean(out), np.std(out)
-            print out 
-            # out[abs(out - np.mean(out)) > np.std(out)] = 0
-
-            outList.append( out )
-            print 
-
-            '''
             dataMatrix = np.rec.fromarrays( outList )
             for i in range(len(dataMatrix)):
                 print np.asarray([list(entry) for entry in dataMatrix[i]])
                 plt.imshow(np.asarray([list(entry) for entry in dataMatrix[i]]))
                 plt.show()
-            '''
+
+        self.testPulseClose(slot)
+        return
 
     def energyToToTFitAtan(self, x, a, b, c, d):
         return np.where(x > b, a*(x - b) + c*np.arctan((x - b)/d), 0)
@@ -1071,11 +1273,27 @@ class Dosepix:
         # Description: Generate test pulses and measure ToT afterwards
         #              to match test pulse voltage and ToT value.
 
+        # Measure temperature
+        if type(self.OMR) is list:
+            OMRCode_ = self.OMRListToHex(self.OMR)
+        else:
+            OMRCode_ = self.OMR
+        OMRCode_ = int(OMRCode_, 16)
+
+        OMRCode_ &= ~(0b11111 << 12)
+        OMRCode_ |= getattr(self.__OMRAnalogOutSel, 'Temperature')
+        self.DPXWriteOMRCommand(slot, hex(OMRCode_).split('0x')[-1])
+
+        TList = []
+        for i in range(100):
+            TList.append( float(int(self.MCGetADCvalue(), 16)) )
+        T = np.mean(TList)
+
         # Number of test pulses for ToT measurement
         NToT = 10
 
         # Test pulse voltage range
-        TPvoltageRange = np.arange(300, 470, 5)
+        TPvoltageRange = np.arange(300, 511, 5)
 
         # Store results per column in dict
         resDict = {}
@@ -1117,10 +1335,13 @@ class Dosepix:
 
             resDict[column] = {'ToT': ToTListTotal, 'ToTErr': ToTErrListTotal, 'volt': TPvoltageRange}
 
+            '''
             for i in range(16):
                 plt.errorbar(TPvoltageRange, np.asarray(ToTListTotal).T[i], yerr=np.asarray(ToTErrListTotal).T[i], marker='x')
             plt.show()
+            '''
 
+        outFn = outFn.split('.')[0] + '_T%d.hck' % T
         self.pickleDump(resDict, outFn)
 
     def ToTtoTHL(self, slot=1, column=0, THLstep=1, valueLow=0, valueHigh=460, valueCount=460, energy=False, plot=False, outFn='ToTtoTHL.p'):
@@ -1799,13 +2020,13 @@ class Dosepix:
                         fig.canvas.draw()
 
             if fn:
-                self.pickleDump(energyDict, 'temperatureToT.p')
+                self.pickleDump(energyDict, fn)
 
         except (KeyboardInterrupt, SystemExit):
             # Store data and plot in files
             print 'KeyboardInterrupt'
             if fn:
-                self.pickleDump(logDict, 'temperatureToT.p')
+                self.pickleDump(logDict, fn)
             raise
 
     # If cnt = 0, loop infinitely
@@ -1838,6 +2059,8 @@ class Dosepix:
 
             OMRCode_ &= ~(0b11111 << 12)
             OMRCode_ |= getattr(self.__OMRAnalogOutSel, OMRAnalogOut)
+            # OMRCode_ &= ~(0b11111 << 7)
+            # OMRCode_ |= getattr(self.__OMRAnalogInSel, OMRAnalogOut)
             self.DPXWriteOMRCommand(slot, hex(OMRCode_).split('0x')[-1])
 
             # Data
@@ -1882,6 +2105,8 @@ class Dosepix:
                     OMRCode_ = OMRCode_ & ~(0b11111 << 12)
                     OMRCode_ |= getattr(self.__OMRAnalogOutSel, OMRAnalogOut)
                     print hex(OMRCode_).split('0x')[-1]
+                    # OMRCode_ &= ~(0b11111 << 7)
+                    # OMRCode_ |= getattr(self.__OMRAnalogInSel, OMRAnalogOut)
                     self.DPXWriteOMRCommand(slot, hex(OMRCode_).split('0x')[-1])
 
                     # Time 
@@ -3007,8 +3232,8 @@ class Dosepix:
                 grayC = grayCode[binEdge]
                 ToT = int( ToTList[binEdge] )
 
-                binEdgeString += ('%04x' % grayC)
-                binEdgeString += ('%012x' % ToT)
+                binEdgeString += ('%01x' % grayC)
+                binEdgeString += ('%03x' % ToT)
 
         return binEdgeString
 

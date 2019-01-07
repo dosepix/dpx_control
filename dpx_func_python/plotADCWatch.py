@@ -2,15 +2,18 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import scipy.optimize
-import cPickle
+import cPickle, hickle
 
-INFILE = 'ADCWatch_5.p'
+INFILE = '../../dpx_data/ADCWatch.hck'
 OUTDIR = 'plotADCWatch/'
 WINDOW = 200
 
 def main():
 	# Load dictionary from file
-	d = cPickle.load( open(INFILE, 'rb') )
+	if INFILE.split('.')[-1] == 'p':
+		d = cPickle.load( open(INFILE, 'rb') )
+	else:
+		d = hickle.load(INFILE)
 
 	tempData = np.asarray( running_mean(d['Temperature']['data'], WINDOW) )
 

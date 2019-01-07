@@ -42,6 +42,8 @@ def getToTtoEnergy(data, params, slot=1, use_hist=False, plot=True, save=None):
             hist = hist[hist > 0]
         else:
             bins, hist = data['bins'][pixel], data['hist'][pixel]
+            if bins is None:
+                continue
             
             # Remove zeros
             if bins[0] == 0:
@@ -76,7 +78,7 @@ def getToTtoEnergy(data, params, slot=1, use_hist=False, plot=True, save=None):
             plt.title('Pixel #%d' % pixel)
             plt.xlabel('Energy (keV)')
             plt.ylabel('Counts')
-            plt.xlim(0, 65)
+            plt.xlim(0, 200)
             if False: # save is not None:
                 outFn = ''
                 if '.' in save:
@@ -89,8 +91,8 @@ def getToTtoEnergy(data, params, slot=1, use_hist=False, plot=True, save=None):
 
     totalData = np.asarray( totalData )
     print totalData
-    totalData = totalData[np.logical_and(totalData > 0, totalData < 65)]
-    hist, bins = np.histogram(totalData, bins=300) # np.linspace(15, 65, 300))
+    totalData = totalData[np.logical_and(totalData > 0, totalData < 1000)]
+    hist, bins = np.histogram(totalData, bins=np.linspace(5, 1000, 1000))
     # Get rid of empty entries
     bins = bins[:-1][hist > 10]
     hist = hist[hist > 10]
@@ -102,7 +104,7 @@ def getToTtoEnergy(data, params, slot=1, use_hist=False, plot=True, save=None):
     
     if save is not None:
         plt.savefig(save)
-    plt.show()
+    # plt.show()
     return totalData
         
 def ToTtoEnergy(x, a, b, c, t, h=1, k=0):

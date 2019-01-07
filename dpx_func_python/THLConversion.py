@@ -105,10 +105,11 @@ def THLConversion(data, calib, use_hist=False, plot=False):
         # Fit to peaks
         # 60 keV peak located at maximum
         muList = [1650, 1900] # [bins[:-1][np.argmax(hist)], 2200]
-        sigmaList = [20, 20, 100] # ToTtoEnergy([mean+sig], a, b, c, t)[0] - mu
+        sigmaList = [20, 15] #, 15] # ToTtoEnergy([mean+sig], a, b, c, t)[0] - mu
         # energyList = [26.3446, 59.5409]
         # energyList = [26.167, 58.3] # [33, 59.5409] 
-        energyList = [16., 26.167, 58.3]
+        # energyList = [16., 26.167, 58.3]
+        energyList = [19., 58.3] # 26.167, 16.]
         THLList = []
 
         # Filter the data
@@ -119,7 +120,7 @@ def THLConversion(data, calib, use_hist=False, plot=False):
             continue
 
         # Find peaks
-        peakIdx = peakutils.indexes(hist_filt, thres=0.11, min_dist=15)
+        peakIdx = peakutils.indexes(hist_filt, thres=0.10, min_dist=20)
         xPeak = bins[:-1][peakIdx]
         yPeak = hist_filt[peakIdx]
         
@@ -131,10 +132,11 @@ def THLConversion(data, calib, use_hist=False, plot=False):
             ax[2].set_ylabel('Counts')
 
         # Concatenate coordinates and get two largest peaks
-        # peakList = np.argsort(yPeak)
-        # xPeak, yPeak = xPeak[peakList[-2:]], yPeak[peakList[-2:]]
+        peakList = np.argsort(yPeak)
+        xPeak, yPeak = xPeak[peakList[-2:]], yPeak[peakList[-2:]]
         try:
-            xPeak, yPeak = [xPeak[0], xPeak[-3], xPeak[-1]], [yPeak[0], yPeak[-3], yPeak[-1]]
+            # xPeak, yPeak = [xPeak[0], xPeak[-3], xPeak[-1]], [yPeak[0], yPeak[-3], yPeak[-1]]
+            # xPeak, yPeak = [xPeak[-1], xPeak[-3]], [yPeak[-1], yPeak[-3]] # list(reversed(xPeak[-3:])), list(reversed(yPeak[-3:])) # [xPeak[-1], xPeak[-3], xPeak[-4]], [yPeak[-1], yPeak[-3], yPeak[-4]]
             print xPeak, yPeak
         except:
             paramsDict[pixel] = {'a': np.nan, 'b': np.nan, 'c': np.nan, 't': np.nan, 'h': np.nan, 'k': np.nan}
@@ -142,14 +144,14 @@ def THLConversion(data, calib, use_hist=False, plot=False):
            
         for k in range(len(xPeak)):
             mu, sigma = xPeak[k], sigmaList[k]
-            p0 = (mu, 10., 600., 300., 100.)
 
-            for i in range(2):
+            for i in range(1):
                 try:
-                    x = bins[:-1][abs(bins[:-1] - mu) < 4*sigma]
-                    y = hist[abs(bins[:-1] - mu) < 4*sigma]
-                
-                    popt, pcov = scipy.optimize.curve_fit(normalTotal, x, y, p0=p0)
+                    x = bins[:-1][abs(bins[:-1] - mu) < 2*sigma]
+                    y = hist[abs(bins[:-1] - mu) < 2*sigma]
+                    p0 = (mu, 5., 300., 100., 0.2*np.max(y))
+
+                    popt, pcov = scipy.optimize.curve_fit(normalTotal, x, scipy.signal.savgol_filter(y, 11, 3), p0=p0, bounds=((0.98*mu, 0, 0, 0, 0), (1.02*mu, np.inf, np.inf, np.inf, np.inf)))
                 except:
                     popt = p0
                 # print popt
@@ -169,8 +171,11 @@ def THLConversion(data, calib, use_hist=False, plot=False):
         offset = energyList[0] - slope * THLList[0]
         if len(energyList) > 2:
             p0 = (slope, offset) 
-            popt, pcov = scipy.optimize.curve_fit(linear, THLList, energyList)
-            slope, offset = popt
+            try:
+                popt, pcov = scipy.optimize.curve_fit(linear, THLList, energyList)
+                slope, offset = popt
+            except:
+                slope, offset = np.nan, np.nan
             '''
             fig_, ax_ = plt.subplots()
             THLList = np.asarray( THLList )
