@@ -27,12 +27,17 @@ GUI = False
 DEBUG = False
 
 # Important files
-THL_CALIB_FILES = ['THLCalibration/THLCalib_%d.p' % slot for slot in [22, 6, 109]]
-PARAMS_FILE = None # 'energyConversion/paramsDict_DPX22_6_109.hck' # 'testCalibFactors.p'
-GEN_BIN_EDGES_RANDOM = False
-BIN_EDGES_RANDOM_FN = 'binEdgesRandom_DPX22_6_109_v2.hck'
+THL_CALIB_FILES = None # ['THLCalibration/THLCalib_%d.p' % slot for slot in [22, 6, 109]]
+BIN_EDGES_FILE = None # 'Dennis1_binEdges.hck'
+PARAMS_FILE = 'energyConversion/paramsDict_DPX22_6_109.hck' # 'testCalibFactors.p'
 
-if GEN_BIN_EDGES_RANDOM:
+GEN_BIN_EDGES = True
+GEN_BIN_EDGES_RANDOM = False
+GEN_BIN_EDGES_UNIFORM = True
+# BIN_EDGES_RANDOM_FN = 'binEdgesRandom_DPX22_6_109_v2.hck'
+BIN_EDGES_RANDOM_FN = 'binEdgesUniform_DPX22_6_109_v2.hck'
+
+if GEN_BIN_EDGES:
     import bin_edges_random as ber
 
     if PARAMS_FILE.endswith('.p'):
@@ -42,23 +47,28 @@ if GEN_BIN_EDGES_RANDOM:
 
     binEdgesDict = {}
     for slot in range(1, 3 + 1):
-        binEdges = ber.getBinEdgesRandom(NPixels=256, edgeMin=12, edgeMax=100, edgeOvfw=430, uniform=False)
+        if GEN_BIN_EDGES_RANDOM:
+            binEdges = ber.getBinEdgesRandom(NPixels=256, edgeMin=12, edgeMax=100, edgeOvfw=430, uniform=False)
+        elif GEN_BIN_EDGES_UNIFORM:
+            binEdges = ber.getBinEdgesUniform(NPixels=256, edgeMin=8, edgeMax=80, edgeOvfw=430)
         binEdgesDict['Slot%d' % slot] = binEdges
     hickle.dump(binEdgesDict, BIN_EDGES_RANDOM_FN)
 
-# BIN_EDGES = hickle.load(BIN_EDGES_RANDOM_FN)
+BIN_EDGES = hickle.load(BIN_EDGES_RANDOM_FN)
+'''
 BIN_EDGES = {'Slot1': [12, 18, 21, 24.5, 33.5, 43, 53.5, 66.5, 81.5, 97, 113, 131.5, 151.5, 173, 200.5, 236, 430],
                 'Slot2': [12, 17, 31, 40, 45.5, 50.5, 60.5, 68, 91, 102.5, 133, 148, 163, 196, 220, 257, 430],
                 'Slot3': [32, 37, 47, 57.6, 68.5, 80, 91.5, 104, 117, 131, 145, 163.5, 183.5, 207.5, 234.5, 269.5, 430]}
+'''
 
 def main():
     # Create object of class and establish connection
     dpx = Dosepix('/dev/ttyUSB0', 2e6, 'DPXConfig_22_6_109.conf')
 
-    '''
     # Change DAC values
+    '''
     d = dpx.splitPerihperyDACs(dpx.peripherys + dpx.THLs[0], perc=False)
-    d['I_krum'] = 19
+    d['I_krum'] = 80
     code = dpx.periheryDACsDictToCode(d, perc=False)
     dpx.peripherys = code[:-4]
     dpx.DPXWritePeripheryDACCommand(1, code)
@@ -87,25 +97,27 @@ def main():
     # return
     # dpx.ADCWatch(1, ['V_ThA', 'V_TPref_fine', 'V_casc_preamp', 'V_fbk', 'V_TPref_coarse', 'V_gnd', 'I_preamp', 'I_disc1', 'I_disc2', 'V_TPbufout', 'V_TPbufin', 'I_krum', 'I_dac_pixel', 'V_bandgap', 'V_casc_krum', 'V_per_bias', 'V_cascode_bias', 'Temperature', 'I_preamp'], cnt=0)
     # dpx.energySpectrumTHL(1, THLhigh=8000, THLlow=int(dpx.THLs[0], 16) - 500, THLstep=25, timestep=1, intPlot=True)
-    
+    # dpx.ADCWatch(1, ['V_fbk', 'V_ThA', 'V_gnd', 'I_krum', 'V_casc_krum', 'I_preamp', 'V_casc_preamp', 'Temperature'], cnt=0)
+
     # dpx.measureADC(1, AnalogOut='V_cascode_bias', perc=True, ADChigh=0.06, ADClow=0., ADCstep=0.00001, N=1)
     # dpx.ToTtoTHL_pixelDAC(slot=1, THLstep=1, I_pixeldac=0.0001, valueLow=200, valueHigh=200, valueCount=1, energy=False, plot=False)
     # dpx.ToTtoTHL(slot=1, column='all', THLstep=1, valueLow=1.5e3, valueHigh=30e3, valueCount=20, energy=True, plot=False, outFn='ToTtoTHL.p')
 
     # dpx.energySpectrumTHL(1)
-    # dpx.measureToT(slot=1, intPlot=True, storeEmpty=False, logTemp=False)
+    # paramsDict = None # hickle.load(PARAMS_FILE)
+    # dpx.measureToT(slot=1, intPlot=True, storeEmpty=False, logTemp=False, paramsDict=paramsDict)
 
-    # while True:
-    #     dpx.TPtoToT(slot=1, column=1)
+    while True:
+        dpx.TPtoToT(slot=1, column=0)
 
     # dpx.testPulseDosi(1, column='all')
     # dpx.testPulseSigma(1)
-    # dpx.testPulseToT(1, 10, column='all', DAC='I_krum', DACRange=range(3, 25) + range(25, 50, 5) + range(50, 120, 10), perc=False)
+    # dpx.testPulseToT(1, 10, column=0, DAC='I_krum', DACRange=range(3, 25) + range(25, 50, 5) + range(50, 120, 10), perc=False)
 
-    # dpx.measureDose(slot=1, measurement_time=0, freq=False, frames=1000, logTemp=True, intPlot=False)
+    # dpx.measureDose(slot=1, measurement_time=0, freq=False, frames=1000, logTemp=False, intPlot=False)
 
     # dpx.measureIntegration()
-    dpx.temperatureWatch(slot=2, column='all', frames=1000, energyRange=(8.e3, 8.e3), fn='TemperatureToT_DPX22_Col0_0keV.p', intplot=True)
+    # dpx.temperatureWatch(slot=1, column='all', frames=1000, energyRange=(50.e3, 50.e3), fn='TemperatureToT_DPX22_Ikrum_50keV.hck', intplot=True)
 
     # dpx.measureTHL(1, fn='THLCalib_6.p', plot=False)
     # dpx.thresholdEqualizationConfig('DPXConfig_22_6_109.conf', I_pixeldac=None, reps=1, intPlot=False, resPlot=True)
@@ -293,6 +305,8 @@ class Dosepix:
         if GUI:
             self.getSettingsGUI()
             self.portName, self.baudRate, self.configFn = setSettingsGUI()
+        else:
+            self.unsetGUI()
 
         self.getConfigDPX(self.portName, self.baudRate, self.configFn)
 
@@ -432,26 +446,38 @@ class Dosepix:
             self.DPXReadToTDataDosiModeCommand(i)
 
         # = Bin Edges =
-        if PARAMS_FILE is None:
-            print 'Warning: No parameters for the bin edges specified. Using default values.'
-
-            gray = [0, 1, 3, 2, 6, 4, 5, 7, 15, 13, 12, 14, 10, 11, 9, 8]
-            for i in range(1, 3 + 1):
-                for binEdge in range(16):
-                    gc = gray[binEdge]
-                    binEdges = ('%01x' % gc + '%03x' % (20*binEdge + 15)) * 256
-                    self.DPXWriteSingleThresholdCommand(i, binEdges)
-
-        else:
-            # TODO: Add energy bins to config file
-            if PARAMS_FILE.endswith('.p'):
-                paramsDict = cPickle.load(open(PARAMS_FILE, 'rb'))
+        if BIN_EDGES_FILE is not None:
+            print BIN_EDGES_FILE
+            if BIN_EDGES_FILE.endswith('.p'):
+                binEdgesDict = cPickle.load(open(BIN_EDGES_FILE, 'rb'))
             else:
-                paramsDict = hickle.load(PARAMS_FILE)
+                binEdgesDict = hickle.load(BIN_EDGES_FILE)
 
             for slot in range(1, 3 + 1):
-                binEdges = BIN_EDGES['Slot%d' % slot]
-                self.setBinEdges(slot, paramsDict['Slot%d' % slot], binEdges)
+                for idx in range(16):
+                    self.DPXWriteSingleThresholdCommand(slot, binEdgesDict['Slot%d' % slot][idx])
+
+        else:
+            if PARAMS_FILE is None:
+                print 'Warning: No parameters for the bin edges specified. Using default values.'
+
+                gray = [0, 1, 3, 2, 6, 4, 5, 7, 15, 13, 12, 14, 10, 11, 9, 8]
+                for i in range(1, 3 + 1):
+                    for binEdge in range(16):
+                        gc = gray[binEdge]
+                        binEdges = ('%01x' % gc + '%03x' % (20*binEdge + 15)) * 256
+                        self.DPXWriteSingleThresholdCommand(i, binEdges)
+
+            else:
+                # TODO: Add energy bins to config file
+                if PARAMS_FILE.endswith('.p'):
+                    paramsDict = cPickle.load(open(PARAMS_FILE, 'rb'))
+                else:
+                    paramsDict = hickle.load(PARAMS_FILE)
+
+                for slot in range(1, 3 + 1):
+                    binEdges = BIN_EDGES['Slot%d' % slot]
+                    self.setBinEdges(slot, paramsDict['Slot%d' % slot], binEdges)
 
         # = Empty Bins =
         for i in range(1, 3 + 1):
@@ -527,10 +553,12 @@ class Dosepix:
         binEdgesList = np.asarray(binEdgesList).T
         cmdTotal = ''
         for idx, gc in enumerate(gray):
+            print binEdgesList[idx]
             # Construct command
             cmd = ''.join( ['%01x' % gc + '%03x' % be for be in binEdgesList[idx]] )
             self.DPXWriteSingleThresholdCommand(slot, cmd)
             cmdTotal += cmd
+        print
 
         binEdgesTotal.append( binEdgesTotal )
         self.binEdges = binEdgesTotal
@@ -652,7 +680,7 @@ class Dosepix:
 
                         # Bug: discard strange values in matrix
                         print np.nanmean(out), np.nanstd(out), np.nansum(out)
-                        out[abs(out - np.nanmean(out)) > 3 * np.nanstd(out)] = 0
+                        # out[abs(out - np.nanmean(out)) > 3 * np.nanstd(out)] = 0
                         
                         # plt.imshow(out.T[2:-2].T)
                         # plt.show()
@@ -665,8 +693,8 @@ class Dosepix:
                     data = np.asarray(outList)
                     outDict['Slot%d' % sl].append( data )
 
-                    plt.imshow(showList)
-                    plt.show()
+                    # plt.imshow(showList)
+                    # plt.show()
 
                     if intPlot:
                         print showList
@@ -765,10 +793,12 @@ class Dosepix:
         # Set Dosi Mode in OMR
         # If OMR code is list
         OMRCode = self.OMR
+        print self.OMRListToHex(OMRCode)
         if not isinstance(OMRCode, basestring):
             OMRCode[0] = 'DosiMode'
         else:
-            OMRCode = '%04x' % (int(OMRCode, 16) & ~((0b11) << 22))
+            OMRCode = '%04x' % ((int(OMRCode, 16) & ~((0b11) << 22)) | (0b10 << 22))
+        print self.OMRListToHex(OMRCode)
 
         # Check which slots to read out
         if isinstance(slot, int):
@@ -795,10 +825,12 @@ class Dosepix:
             self.DPXWriteOMRCommand(slot, hex(OMRCode_).split('0x')[-1])
 
         # GUI
+        '''
         if self.USE_GUI:
             bins = np.arange(0, 400, 1)
             histData = np.zeros(len(bins)-1)
             yield bins, histData
+        '''
 
         # Init plot
         if intPlot:
@@ -814,7 +846,10 @@ class Dosepix:
             plt.grid()
 
             # Init bins and histogram data
-            bins = np.arange(0, 400, 1)
+            if paramsDict is not None:
+                bins = np.linspace(20, 100, 300)
+            else:
+                bins = np.arange(0, 400, 1)
             histData = np.zeros(len(bins)-1)
 
             ax.set_xlim(min(bins), max(bins))
@@ -822,6 +857,10 @@ class Dosepix:
         # Check if output directory exists
         outDir = self.makeDirectory(outDir)
         outFn = outDir.split('/')[0] + '.p'
+
+        # Initial reset 
+        for slot in slotList:
+            self.DPXDataResetCommand(slot)
 
         # For KeyboardInterrupt exception
         print 'Starting ToT Measurement!'
@@ -840,11 +879,13 @@ class Dosepix:
 
                 while c <= cnt:
                     for slot in slotList:
+                        # Read data
+                        data = self.DPXReadToTDataDosiModeCommand(slot)
+
                         # Reset data registers
                         self.DPXDataResetCommand(slot)
 
-                        # Read data
-                        data = self.DPXReadToTDataDosiModeCommand(slot)
+                        # print np.median( data )
                         # data = self.DPXReadToTDataDosiModeMultiCommand(slot)
                         # print data[256:]
                         # print data[:256]
@@ -856,15 +897,35 @@ class Dosepix:
                         if not np.any(data) and not storeEmpty:
                             continue
 
+                        if paramsDict is not None:
+                            energyData = []
+                            p = paramsDict['Slot%d' % slot]
+                            for pixel in range(256):
+                                if pixel not in p.keys():
+                                    energyData.append(np.nan)
+                                    continue
+
+                                pPixel = p[pixel]
+                                if len( pPixel.keys() ) == 6:
+                                    energyData.append( self.ToTtoEnergySimple(data[pixel], 
+                                        pPixel['a'], pPixel['b'], pPixel['c'],
+                                        pPixel['t'], pPixel['h'], pPixel['k']) )
+                                else:
+                                    energyData.append( self.ToTtoEnergySimple(data[pixel], 
+                                        pPixel['a'], pPixel['b'], pPixel['c'],
+                                        pPixel['t']) )
+                            data = np.asarray(energyData)
+                            print data
+
                         # Remove overflow
-                        data[data >= 4096] -= 4096
+                        # data[data >= 4096] -= 4096
 
                         if intPlot or self.USE_GUI:
-                            data_ = data
-                            data_ = data_[[self.isLarge(pixel) for pixel in range(256)]]
-                            dataPlot += data.tolist()
+                            data_ = np.asarray(data[[self.isLarge(pixel) for pixel in range(256)]])
+                            data_ = data_[~np.isnan(data_)]
+                            dataPlot += data_.tolist()
 
-                        ToTDict['Slot%d' % slot].append( data.tolist() )
+                        ToTDict['Slot%d' % slot].append( np.nan_to_num(data).tolist() )
 
                     # Measure temperature?
                     if logTemp:
@@ -890,8 +951,10 @@ class Dosepix:
                             histData += hist
                             dataPlot = []
 
+                            '''
                             if self.USE_GUI:
                                 yield bins_, histData
+                            '''
 
                             if intPlot:
                                 line.set_xdata(bins_[:-1])
@@ -936,7 +999,7 @@ class Dosepix:
         if not isinstance(self.OMR, basestring):
             OMRCode[0] = 'DosiMode'
         else:
-            OMRCode = '%04x' % ((int(self.OMR, 16) & ~((0b11) << 22)) | (0x10 << 22))
+            OMRCode = '%04x' % ((int(self.OMR, 16) & ~((0b11) << 22)) | (0b10 << 22))
         
         self.DPXWriteOMRCommand(slot, OMRCode)
 
@@ -1290,10 +1353,10 @@ class Dosepix:
         T = np.mean(TList)
 
         # Number of test pulses for ToT measurement
-        NToT = 10
+        NToT = 30
 
         # Test pulse voltage range
-        TPvoltageRange = np.arange(300, 511, 5)
+        TPvoltageRange = list(reversed(np.arange(490, 512, 1)))
 
         # Store results per column in dict
         resDict = {}

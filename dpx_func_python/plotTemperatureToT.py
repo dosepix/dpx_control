@@ -31,10 +31,10 @@ def plotTemperature(tempDict, offsettemp=1570, cuttemp=0, plot=False, outdir=Non
         energyCond = (energy_ == energy)
         time, temp, tempErr, ToT, ToTErr = time_[energyCond], temp_[energyCond], tempErr_.T[energyCond].T, ToT_.T[energyCond].T, ToTErr_.T[energyCond].T
 
-	cuttempCond = (temp >= cuttemp)
-	time, tempErr, temp = time[cuttempCond], tempErr[cuttempCond], temp[cuttempCond]
-	ToT = [ToT[i][cuttempCond] for i in range(256)]
-	ToTErr = [ToTErr[i][cuttempCond] for i in range(256)]
+        cuttempCond = (temp >= cuttemp)
+        time, tempErr, temp = time[cuttempCond], tempErr[cuttempCond], temp[cuttempCond]
+        ToT = [ToT[i][cuttempCond] for i in range(256)]
+        ToTErr = [ToTErr[i][cuttempCond] for i in range(256)]
         
         # = Plot =
         if plot:
@@ -145,7 +145,7 @@ def plotTemperature(tempDict, offsettemp=1570, cuttemp=0, plot=False, outdir=Non
         slopeList_ = slopeList_[~np.isnan(slopeList_)]
 
         try:
-	    popt, perr = scipy.optimize.curve_fit(lambda x, m, t: m*x + t, offsetList_, 1./slopeList_)
+            popt, perr = scipy.optimize.curve_fit(lambda x, m, t: m*x + t, offsetList_, 1./slopeList_)
             if plot:
                 plt.plot(offsetList[i], popt[0]*offsetList_ + popt[1], color=getColor('tab20', len(ToT), i))
         except:
@@ -157,6 +157,8 @@ def plotTemperature(tempDict, offsettemp=1570, cuttemp=0, plot=False, outdir=Non
     if plot:
         plt.xlabel('Offset (ToT)')
         plt.ylabel('Slope (ToT/DAC)')
+        plt.xlim(left=0)
+        plt.ylim(0, 4)
         plt.tight_layout()
         plt.savefig(outdir + '/slope_vs_offset.pdf')
         plt.show()
@@ -212,8 +214,8 @@ def plotTemperature(tempDict, offsettemp=1570, cuttemp=0, plot=False, outdir=Non
         ax[0].set_ylabel(r'Temperature (DAC)')
         ax[1].set_xlabel(r'$\mu_{\mathrm{ToT}}$')
 
-        ax[0].set_xlim(0, 800)
-        ax[1].set_xlim(0, 800)
+        # ax[0].set_xlim(0, 200)
+        # ax[1].set_xlim(0, 200)
         plt.tight_layout()
         plt.show()
         plt.clf()
@@ -306,8 +308,12 @@ def ToTtoEnergy(data, params):
     pixelData = data
     # pixelData = pixelData[pixelData > 0]
     p = params
-    a, b, c, t, h, k = p['a'], p['b'], p['c'], p['t'], p['h'], p['k']
-
+    if len(p) == 6:
+        a, b, c, t, h, k = p['a'], p['b'], p['c'], p['t'], p['h'], p['k']
+    else:
+        a, b, c, t = p['a'], p['b'], p['c'], p['t']
+        h, k = 1, 0
+        
     pixelDataEnergy = tte.ToTtoEnergy(pixelData, a, b, c, t, h, k)
     # pixelDataEnergy = pixelDataEnergy[np.logical_and(pixelDataEnergy > 10, pixelDataEnergy <= 100)]
 
@@ -353,8 +359,10 @@ def simDataAtTSingle(data, T, slope, offset, Toffset, params, energy=True):
         dataEnergy = dataAtT
     return dataEnergy
 
+'''
 def linear(x, m, t):
     return m*x + t
+'''
 
 def linear_rev(x, m, t):
     return (x - t) / m
