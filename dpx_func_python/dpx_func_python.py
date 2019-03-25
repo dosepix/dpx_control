@@ -9,6 +9,7 @@ import os.path
 import sys
 import configparser 
 import yaml
+import pandas as pd
 
 import matplotlib.pyplot as plt
 import matplotlib as mpl
@@ -31,7 +32,7 @@ THL_CALIB_FILES = None # ['THLCalibration/THLCalib_%d.p' % slot for slot in [22,
 BIN_EDGES_FILE = None # 'Dennis1_binEdges.hck'
 PARAMS_FILE = 'energyConversion/paramsDict_DPX22_6_109.hck' # 'testCalibFactors.p'
 
-GEN_BIN_EDGES = True
+GEN_BIN_EDGES = False
 GEN_BIN_EDGES_RANDOM = False
 GEN_BIN_EDGES_UNIFORM = True
 # BIN_EDGES_RANDOM_FN = 'binEdgesRandom_DPX22_6_109_v2.hck'
@@ -50,20 +51,24 @@ if GEN_BIN_EDGES:
         if GEN_BIN_EDGES_RANDOM:
             binEdges = ber.getBinEdgesRandom(NPixels=256, edgeMin=12, edgeMax=100, edgeOvfw=430, uniform=False)
         elif GEN_BIN_EDGES_UNIFORM:
-            binEdges = ber.getBinEdgesUniform(NPixels=256, edgeMin=8, edgeMax=80, edgeOvfw=430)
+	    # Generate edges for multiple energy regions
+            binEdges = []
+	    energy_start, energy_range = 10, 90
+	    for idx in range(4):
+	    	edges = ber.getBinEdgesUniform(NPixels=256, edgeMin=energy_start + idx*energy_range, edgeMax=energy_start + (idx + 1)*energy_range, edgeOvfw=430)
+		binEdges.append( edges )
         binEdgesDict['Slot%d' % slot] = binEdges
     hickle.dump(binEdgesDict, BIN_EDGES_RANDOM_FN)
 
-BIN_EDGES = hickle.load(BIN_EDGES_RANDOM_FN)
-'''
+# BIN_EDGES = hickle.load(BIN_EDGES_RANDOM_FN)
 BIN_EDGES = {'Slot1': [12, 18, 21, 24.5, 33.5, 43, 53.5, 66.5, 81.5, 97, 113, 131.5, 151.5, 173, 200.5, 236, 430],
                 'Slot2': [12, 17, 31, 40, 45.5, 50.5, 60.5, 68, 91, 102.5, 133, 148, 163, 196, 220, 257, 430],
                 'Slot3': [32, 37, 47, 57.6, 68.5, 80, 91.5, 104, 117, 131, 145, 163.5, 183.5, 207.5, 234.5, 269.5, 430]}
-'''
 
 def main():
     # Create object of class and establish connection
     dpx = Dosepix('/dev/ttyUSB0', 2e6, 'DPXConfig_22_6_109.conf')
+    # dpx.measureTestPulses(1, 0)
 
     # Change DAC values
     '''
@@ -107,20 +112,20 @@ def main():
     # paramsDict = None # hickle.load(PARAMS_FILE)
     # dpx.measureToT(slot=1, intPlot=True, storeEmpty=False, logTemp=False, paramsDict=paramsDict)
 
-    while True:
-        dpx.TPtoToT(slot=1, column=0)
+    # while True:
+    #     dpx.TPtoToT(slot=1, column=0)
 
     # dpx.testPulseDosi(1, column='all')
     # dpx.testPulseSigma(1)
     # dpx.testPulseToT(1, 10, column=0, DAC='I_krum', DACRange=range(3, 25) + range(25, 50, 5) + range(50, 120, 10), perc=False)
 
-    # dpx.measureDose(slot=1, measurement_time=0, freq=False, frames=1000, logTemp=False, intPlot=False)
+    dpx.measureDose(slot=1, measurement_time=0, freq=False, frames=1000, logTemp=False, intPlot=False, conversion_factors='conversion_factors/conversionFit_wSim_10.csv')
 
     # dpx.measureIntegration()
     # dpx.temperatureWatch(slot=1, column='all', frames=1000, energyRange=(50.e3, 50.e3), fn='TemperatureToT_DPX22_Ikrum_50keV.hck', intplot=True)
 
     # dpx.measureTHL(1, fn='THLCalib_6.p', plot=False)
-    # dpx.thresholdEqualizationConfig('DPXConfig_22_6_109.conf', I_pixeldac=None, reps=1, intPlot=False, resPlot=True)
+    # dpx.thresholdEqualizationConfig('test.conf', I_pixeldac=None, reps=1, intPlot=False, resPlot=True)
 
     # dpx.measurePulseShape(1, column=1)
 
@@ -475,8 +480,9 @@ class Dosepix:
                 else:
                     paramsDict = hickle.load(PARAMS_FILE)
 
+                self.binEdges = {}
                 for slot in range(1, 3 + 1):
-                    binEdges = BIN_EDGES['Slot%d' % slot]
+                    binEdges = BIN_EDGES['Slot%d' % slot] # [0]
                     self.setBinEdges(slot, paramsDict['Slot%d' % slot], binEdges)
 
         # = Empty Bins =
@@ -523,6 +529,8 @@ class Dosepix:
         # If so, additional parameters h and k are present in the dict
         if 'h' in paramDict[paramDict.keys()[0]].keys():
             fEnergyConv = True
+        else:
+            fEnergyConv = False
 
         binEdgesTotal = []
         binEdgesEnergy = np.asarray( binEdgesEnergyList )
@@ -543,38 +551,41 @@ class Dosepix:
                 beEnergy = binEdgesEnergy
 
             # Convert energy to ToT
-            binEdgesToT = self.EnergyToToTSimple(beEnergy, a, b, c, t, h, k)
+            if h == 1 and k == 0:
+                binEdgesToT = self.energyToToTFitHyp(beEnergy, a, b, c, t)
+            else:
+                binEdgesToT = self.EnergyToToTSimple(beEnergy, a, b, c, t, h, k)
 
             # Round the values - do not use floor function as this leads to bias
             binEdgesToT = np.around( binEdgesToT )
-            binEdgesList.append( np.nan_to_num(binEdgesToT) )
+            binEdgesToT = np.nan_to_num(binEdgesToT)
+            binEdgesToT[binEdgesToT < 0] = 0
+            binEdgesToT[binEdgesToT > 4095] = 4095
+            binEdgesList.append( binEdgesToT )
 
         # Transpose matrix to get pixel values
         binEdgesList = np.asarray(binEdgesList).T
         cmdTotal = ''
         for idx, gc in enumerate(gray):
-            print binEdgesList[idx]
+            # print binEdgesList[idx]
             # Construct command
-            cmd = ''.join( ['%01x' % gc + '%03x' % be for be in binEdgesList[idx]] )
+            cmd = ''.join( [('%01x' % gc) + ('%03x' % be) for be in binEdgesList[idx]] )
             self.DPXWriteSingleThresholdCommand(slot, cmd)
             cmdTotal += cmd
         print
 
-        binEdgesTotal.append( binEdgesTotal )
-        self.binEdges = binEdgesTotal
+	self.binEdges['Slot%d' % slot] = binEdgesList
+        # binEdgesTotal.append( binEdgesTotal )
+        # self.binEdges = binEdgesTotal
 
     def ToTtoEnergySimple(self, x, a, b, c, t, h=1, k=0):
         return h * (b + 1./(4 * a) * (2*x + np.pi*c + np.sqrt(16 * a * c * t + (2 * x + np.pi * c)**2))) + k
 
     def EnergyToToTSimple(self, x, a, b, c, t, h=1, k=0):
         res = np.where(x < b, a*((x - k)/h - b) - c * (np.pi / 2 + t / ((x - k)/h - b)), 0)
-        idx = np.argwhere(res <= 0)
-        
-        if list(idx):
-            res[np.arange(idx[-1]+1)] = 0
-            # res[res < 0] = 0
+        res[res <= 0] = 0
         return res
-
+        
         # Old?
         '''
         res = np.where(x < b*h + k, a*((x - k)/h - b) - c * (np.pi / 2 + t / ((x - k)/h - b)), 0)
@@ -583,7 +594,173 @@ class Dosepix:
         '''
 
     # TODO: Correction factor of 16/15 necessary?
-    def measureDose(self, slot=1, measurement_time=120, frames=10, freq=False, outFn='doseMeasurement.p', logTemp=False, intPlot=False):
+    def measureDose(self, slot=1, measurement_time=120, frames=10, freq=False, outFn='doseMeasurement.p', logTemp=False, intPlot=False, conversion_factors=None):
+        # Set Dosi Mode in OMR
+        # If OMR code is list
+        OMRCode = self.OMR
+        if not isinstance(OMRCode, basestring):
+            OMRCode[0] = 'DosiMode'
+        else:
+            OMRCode = int(OMRCode, 16) & ~((0b11) << 22)
+
+        # If slot is no list, transform it into one
+        if not isinstance(slot, (list,)):
+            slot = [slot]
+
+        # Set ADC out to temperature if requested
+        if logTemp:
+            tempDict = {'temp': [], 'time': []}
+
+            if type(self.OMR) is list:
+                OMRCode_ = self.OMRListToHex(self.OMR)
+            else:
+                OMRCode_ = self.OMR
+            OMRCode_ = int(OMRCode_, 16)
+
+            OMRCode_ &= ~(0b11111 << 12)
+            OMRCode_ |= getattr(self.__OMRAnalogOutSel, 'Temperature')
+            self.DPXWriteOMRCommand(1, hex(OMRCode_).split('0x')[-1])
+
+        # Initial reset 
+        for sl in slot:
+            self.DPXWriteOMRCommand(sl, OMRCode)
+            self.DPXDataResetCommand(sl)
+        self.clearBins(slot)
+
+        # Load conversion factors if requested
+        if conversion_factors is not None:
+            if len(slot) < 3:
+                print 'WARNING: Need three detectors to determine total dose!'
+            cv = np.asarray( pd.read_csv(conversion_factors, header=None) )
+            doseDict = {'Slot%d' % sl: [] for sl in slot}
+
+        # Data storage
+        outDict = {'Slot%d' % sl: [] for sl in slot}
+
+        # Interactive plot
+        if intPlot:
+            print 'Warning: plotting takes time, therefore data should be stored as frequency instead of counts!'
+            fig, ax = plt.subplots(1, len(slot), figsize=(5*len(slot), 5))
+            plt.ion()
+            imList = {}
+
+            if len(slot) == 1:
+                ax = [ax]
+
+            for idx, a in enumerate(ax):
+                imList[slot[idx]] = a.imshow(np.zeros((12, 16)))
+                a.set_title('Slot%d' % slot[idx])
+                a.set_xlabel('x (px)')
+                a.set_ylabel('y (px)')
+            plt.show()
+
+        # = START MEASUREMENT =
+        try:
+            print 'Starting Dose Measurement!'
+            print '========================='
+            measStart = time.time()
+            for c in range(frames):
+                startTime = time.time()
+
+                # Measure temperature?
+                if logTemp:
+                    temp = float(int(self.MCGetADCvalue(), 16))
+                    tempDict['temp'].append( temp )
+                    tempDict['time'].append( time.time() - measStart )
+
+                # for sl in slot:
+                #    self.DPXDataResetCommand(sl)
+                #    self.clearBins([sl])
+                time.sleep(measurement_time)
+
+                # = Readout =
+                doseList = []
+                for sl in slot:
+                    outList = []
+                    showList = []
+
+                    # Loop over columns
+                    for col in range(16):
+                        measTime = float(time.time() - startTime)
+                        # self.DPXDataResetCommand(sl)
+                        # self.clearBins([sl])
+
+                        self.DPXWriteColSelCommand(sl, 16 - col)
+                        out = np.asarray( self.DPXReadBinDataDosiModeCommand(sl), dtype=float )
+                        # out[out >= 2**15] = np.nan
+
+                        # Calculate frequency if requested
+                        if freq:
+                            out = out / measTime
+
+                        # Bug: discard strange values in matrix
+                        # print np.nanmean(out), np.nanstd(out), np.nansum(out)
+                        # out[abs(out - np.nanmean(out)) > 3 * np.nanstd(out)] = 0
+                        
+                        # plt.imshow(out.T[2:-2].T)
+                        # plt.show()
+                        # print out
+
+                        outList.append( out )
+                        showList.append( np.nansum(out, axis=1)[2:-2] )
+
+                    # Append to outDict
+                    data = np.asarray(outList)
+                    outDict['Slot%d' % sl].append( data )
+
+                    # plt.imshow(showList)
+                    # plt.show()
+
+                    if conversion_factors is not None:
+                        d = np.sum(np.asarray(data).reshape((16, 256)).T, axis=0)
+                        print d
+                        dose = np.nan_to_num( np.dot(d, cv[:,(sl-1)]) / (time.time() - measStart) )
+                        print dose
+                        print 'Slot %d: %.2f uSv/s' % (sl, dose)
+                        doseDict['Slot%d' % sl].append( dose )
+
+                    if intPlot:
+                        print showList
+                        imList[sl].set_data( showList )
+                        # fig.canvas.flush_events()
+
+                        plt.imshow(showList)
+                        plt.show()
+                if conversion_factors is not None:
+                    print 'Total dose: %.2f uSv/s' % (np.sum([doseDict['Slot%d' % sl] for sl in slot]))
+                    print
+
+                if intPlot:
+                    fig.canvas.draw()
+                    fig.canvas.flush_events()
+                    # plt.show()
+
+            # Loop finished
+            self.pickleDump(outDict, outFn)
+            if logTemp:
+                self.pickleDump(tempDict, '%s_temp' % outFn.split('.p')[0] + '.p')
+            if conversion_factors:
+                self.pickleDump(doseDict, '%s_dose' % outFn.split('.p')[0] + '.p')
+
+        except (KeyboardInterrupt, SystemExit):
+            # Store data and plot in files
+            print 'KeyboardInterrupt-Exception: Storing data!'
+            print 'Measurement time: %.2f min' % ((time.time() - measStart) / 60.)
+            self.pickleDump(outDict, outFn)
+            if logTemp:
+                self.pickleDump(tempDict, '%s_temp' % outFn.split('.p')[0] + '.p')
+            if conversion_factors:
+                self.pickleDump(doseDict, '%s_dose' % outFn.split('.p')[0] + '.p')
+            raise
+
+        # Reset OMR
+        for sl in slot:
+            self.DPXWriteOMRCommand(sl, self.OMR)
+
+    # If binEdgesDict is provided, perform shifting of energy regions between
+    # frames. I.e. the measured region is shifted in order to increase the
+    # total energy region.
+    def measureDoseEnergyShift(self, slot=1, measurement_time=120, frames=10, freq=False, outFn='doseMeasurement.p', logTemp=False, intPlot=False, binEdgesDict=None, paramsDict=None):
         # Set Dosi Mode in OMR
         # If OMR code is list
         OMRCode = self.OMR
@@ -618,102 +795,85 @@ class Dosepix:
         self.clearBins(slot)
 
         # Data storage
-        outDict = {'Slot%d' % sl: [] for sl in slot}
-
-        # Interactive plot
-        if intPlot:
-            print 'Warning: plotting takes time, therefore data should be stored as frequency instead of counts!'
-            fig, ax = plt.subplots(1, len(slot), figsize=(5*len(slot), 5))
-            plt.ion()
-            imList = {}
-
-            if len(slot) == 1:
-                ax = [ax]
-
-            for idx, a in enumerate(ax):
-                imList[slot[idx]] = a.imshow(np.zeros((12, 16)))
-                a.set_title('Slot%d' % slot[idx])
-                a.set_xlabel('x (px)')
-                a.set_ylabel('y (px)')
-            plt.show()
+        outDict = {'Slot%d' % sl: {'Region%d' % reg: [] for reg in range(4)} for sl in slot}
 
         # = START MEASUREMENT =
         try:
             print 'Starting Dose Measurement!'
             print '========================='
+            region_stack = {sl: [0] for sl in slot}
+            region_idx = 0
             measStart = time.time()
             for c in range(frames):
-                if freq:
-                    startTime = time.time()
-
                 # Measure temperature?
                 if logTemp:
                     temp = float(int(self.MCGetADCvalue(), 16))
                     tempDict['temp'].append( temp )
                     tempDict['time'].append( time.time() - measStart )
 
-                # for sl in slot:
-                #    self.DPXDataResetCommand(sl)
-                #    self.clearBins([sl])
                 time.sleep(measurement_time)
 
-                # = Readout =
-                outSlotList = []
                 for sl in slot:
                     outList = []
-                    showList = []
-
                     # Loop over columns
                     for col in range(16):
-                        if freq:
-                            measTime = float(time.time() - startTime)
-                        # self.DPXDataResetCommand(sl)
-                        # self.clearBins([sl])
-
                         self.DPXWriteColSelCommand(sl, 16 - col)
                         out = np.asarray( self.DPXReadBinDataDosiModeCommand(sl), dtype=float )
-                        out[out >= 2**15] = np.nan
-
-                        # Calculate frequency if requested
-                        if freq:
-                            out = out / measTime
-
-                        # Bug: discard strange values in matrix
                         print np.nanmean(out), np.nanstd(out), np.nansum(out)
-                        # out[abs(out - np.nanmean(out)) > 3 * np.nanstd(out)] = 0
-                        
-                        # plt.imshow(out.T[2:-2].T)
-                        # plt.show()
-                        # print out
-
                         outList.append( out )
-                        showList.append( np.nansum(out, axis=1)[2:-2] )
+                    print
 
                     # Append to outDict
                     data = np.asarray(outList)
-                    outDict['Slot%d' % sl].append( data )
+                    outDict['Slot%d' % sl]['Region%d' % region_idx].append( data )
 
-                    # plt.imshow(showList)
-                    # plt.show()
+                    # = Measurement time handler =
+                    if len(region_stack[sl]) == 0:
+                        region_idx = 0
+                    else:
+                        # Get current energy region
+                        region_idx = region_stack[sl].pop(0)
 
-                    if intPlot:
-                        print showList
-                        imList[sl].set_data( showList )
-                        # fig.canvas.flush_events()
+                    if region_idx == 3:
+                        continue
 
-                        plt.imshow(showList)
-                        plt.show()
+                    # Get number of counts in frame and overflow bins
+                    N_frame = np.sum(data[1:])
+                    N_ovfw = np.sum(data[0])
 
-                if intPlot:
-                    fig.canvas.draw()
-                    fig.canvas.flush_events()
-                    # plt.show()
+                    if N_ovfw == 0 or N_frame == 0:
+                        # region_stack[sl].append( region_idx )
+                        continue
+
+                    # Calculate fraction
+                    p_next = N_ovfw / N_frame
+                    print 'p_next =', p_next
+
+                    if p_next <= 0.01:
+                        print 'Continue'
+                        continue
+
+                    # Select next frames
+                    if p_next < 1:
+                        if int(1. / p_next) == 0:
+                            region_stack[sl].append( region_idx )
+                        region_stack[sl] += [region_idx + 1] * int(np.around(1. / p_next))
+                    else:
+                        continue
+                        # region_stack[sl] += [region_idx] * int(np.around(p_next))
+
+                    print region_stack[sl]
+                    print region_stack[sl][0], region_idx
+                    if region_stack[sl][0] != region_idx:
+                        self.setBinEdges(sl, paramsDict['Slot%d' % sl], binEdgesDict['Slot%d' % sl][region_stack[sl][-1]])
+                        self.clearBins(slot)
 
             # Loop finished
             if logTemp:
                 self.pickleDump(tempDict, '%s_temp' % outFn.split('.p')[0] + '.p')
 
             self.pickleDump(outDict, outFn)
+            self.pickleDump(self.binEdges, '%s_binEdges' % outFn.split('.hck')[0] + '.hck')
 
         except (KeyboardInterrupt, SystemExit):
             # Store data and plot in files
@@ -723,6 +883,7 @@ class Dosepix:
                 self.pickleDump(tempDict, '%s_temp' % outFn.split('.p')[0] + '.p')
 
             self.pickleDump(outDict, outFn)
+            self.pickleDump(self.binEdges, '%s_binEdges' % outFn.split('.p')[0] + '.p')
             raise
 
         # Reset OMR
@@ -1032,6 +1193,16 @@ class Dosepix:
         # confBits[confBits != getattr(self.__ConfBits, 'MaskBit')] = getattr(self.__ConfBits, 'TestBit_Analog')
 
         self.DPXWriteConfigurationCommand(slot, ''.join(['%02x' % conf for conf in confBits.flatten()]))
+
+    def measureTestPulses(self, slot, column='all'):
+        columnRange = self.testPulseInit(slot, column=column)
+        for column in columnRange:
+            self.maskBitsColumn(slot, column)
+
+            while True:
+                self.DPXDataResetCommand(slot)
+                # self.DPXGeneralTestPulse(slot, 1000)
+                print self.DPXReadToTDataDosiModeCommand(slot)[column]
 
     def measurePulseShape(self, slot, column='all'):
         columnRange = self.testPulseInit(slot, column=column)
