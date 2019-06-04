@@ -28,7 +28,7 @@ GUI = False
 DEBUG = False
 
 # Important files
-THL_CALIB_FILES = None # ['THLCalibration/THLCalib_%d.p' % slot for slot in [22, 6, 109]]
+THL_CALIB_FILES = ['THLCalibration/THLCalib_%d.p' % slot for slot in [22, 6, 109]]
 BIN_EDGES_FILE = None # 'Dennis1_binEdges.hck'
 PARAMS_FILE = 'energyConversion/paramsDict_DPX22_6_109.hck' # 'testCalibFactors.p'
 
@@ -68,6 +68,8 @@ BIN_EDGES = {'Slot1': [12, 18, 21, 24.5, 33.5, 43, 53.5, 66.5, 81.5, 97, 113, 13
 def main():
     # Create object of class and establish connection
     dpx = Dosepix('/dev/ttyUSB0', 2e6, 'DPXConfig_22_6_109.conf')
+    # dpx = Dosepix('/dev/ttyUSB0', 2e6, 'Configurations/DPXConfig_Dennis1_THL20.conf')
+    # dpx = Dosepix('/dev/ttyUSB0', 2e6, 'DPXConfig_22_wCable.conf')
     # dpx.measureTestPulses(1, 0)
 
     # Change DAC values
@@ -78,6 +80,9 @@ def main():
     dpx.peripherys = code[:-4]
     dpx.DPXWritePeripheryDACCommand(1, code)
     '''
+
+    # dpx.TPtoToT(slot=1, column='all')
+    # dpx.thresholdEqualizationConfig('DPXConfig_22_wLight.conf', I_pixeldac=None, reps=1, intPlot=False, resPlot=True)
 
     '''
     while True:
@@ -109,7 +114,7 @@ def main():
     # dpx.ToTtoTHL(slot=1, column='all', THLstep=1, valueLow=1.5e3, valueHigh=30e3, valueCount=20, energy=True, plot=False, outFn='ToTtoTHL.p')
 
     # dpx.energySpectrumTHL(1)
-    # paramsDict = None # hickle.load(PARAMS_FILE)
+    paramsDict = None # hickle.load(PARAMS_FILE)
     # dpx.measureToT(slot=1, intPlot=True, storeEmpty=False, logTemp=False, paramsDict=paramsDict)
 
     # while True:
@@ -119,15 +124,15 @@ def main():
     # dpx.testPulseSigma(1)
     # dpx.testPulseToT(1, 10, column=0, DAC='I_krum', DACRange=range(3, 25) + range(25, 50, 5) + range(50, 120, 10), perc=False)
 
-    dpx.measureDose(slot=1, measurement_time=0, freq=False, frames=1000, logTemp=False, intPlot=False, conversion_factors='conversion_factors/conversionFit_wSim_10.csv')
+    # dpx.measureDose(slot=2, measurement_time=0, freq=False, frames=1000, logTemp=False, intPlot=True, conversion_factors=None) # ('conversion_factors/conversionFit_wSim_10.csv', 'conversion_factors/conversionFit_wSim_10.csv')) 
 
     # dpx.measureIntegration()
     # dpx.temperatureWatch(slot=1, column='all', frames=1000, energyRange=(50.e3, 50.e3), fn='TemperatureToT_DPX22_Ikrum_50keV.hck', intplot=True)
 
     # dpx.measureTHL(1, fn='THLCalib_6.p', plot=False)
-    # dpx.thresholdEqualizationConfig('test.conf', I_pixeldac=None, reps=1, intPlot=False, resPlot=True)
+    # dpx.thresholdEqualizationConfig('DPXConfig_22_wCable.conf', I_pixeldac=None, reps=1, intPlot=False, resPlot=True)
 
-    # dpx.measurePulseShape(1, column=1)
+    dpx.measurePulseShape(1, column=1)
 
     # Close connection
     dpx.close()
@@ -631,8 +636,9 @@ class Dosepix:
         if conversion_factors is not None:
             if len(slot) < 3:
                 print 'WARNING: Need three detectors to determine total dose!'
-            cv = np.asarray( pd.read_csv(conversion_factors, header=None) )
+            cvLarge, cvSmall = np.asarray( pd.read_csv(conversion_factors[0], header=None) ), np.asarray( pd.read_csv(conversion_factors[1], header=None) )
             doseDict = {'Slot%d' % sl: [] for sl in slot}
+            isLarge = np.asarray([self.isLarge(pixel) for pixel in range(256)])
 
         # Data storage
         outDict = {'Slot%d' % sl: [] for sl in slot}
@@ -712,12 +718,11 @@ class Dosepix:
                     # plt.show()
 
                     if conversion_factors is not None:
-                        d = np.sum(np.asarray(data).reshape((16, 256)).T, axis=0)
-                        print d
-                        dose = np.nan_to_num( np.dot(d, cv[:,(sl-1)]) / (time.time() - measStart) )
-                        print dose
-                        print 'Slot %d: %.2f uSv/s' % (sl, dose)
-                        doseDict['Slot%d' % sl].append( dose )
+                        dLarge, dSmall = np.sum(np.asarray(data).reshape((256, 16))[isLarge], axis=0), np.sum(np.asarray(data).reshape((256, 16))[~isLarge], axis=0)
+                        doseLarge = np.nan_to_num( np.dot(dLarge, cvLarge[:,(sl-1)]) / (time.time() - measStart) )
+                        doseSmall = np.nan_to_num( np.dot(dSmall, cvSmall[:,(sl-1)]) / (time.time() - measStart) )
+                        print 'Slot %d: %.2f uSv/s (large), %.2f uSv/s (small)' % (sl, doseLarge, doseSmall)
+                        doseDict['Slot%d' % sl].append( (doseLarge, doseSmall) )
 
                     if intPlot:
                         print showList
@@ -727,7 +732,7 @@ class Dosepix:
                         plt.imshow(showList)
                         plt.show()
                 if conversion_factors is not None:
-                    print 'Total dose: %.2f uSv/s' % (np.sum([doseDict['Slot%d' % sl] for sl in slot]))
+                    print 'Total dose: %.2f uSv/s' % (np.sum([np.sum(doseDict['Slot%d' % sl]) for sl in slot]))
                     print
 
                 if intPlot:
@@ -1206,10 +1211,10 @@ class Dosepix:
 
     def measurePulseShape(self, slot, column='all'):
         columnRange = self.testPulseInit(slot, column=column)
-        N = 1
+        N = 10
 
         # Set energy
-        energy = 25.e3
+        energy = 10.e3
         DACVal = self.getTestPulseVoltageDAC(slot, energy, True)
         print 'Energy DAC:', DACVal
         # self.DPXWritePeripheryDACCommand(slot, DACval)
@@ -1232,7 +1237,7 @@ class Dosepix:
 
                 # Set new THL
                 self.DPXWritePeripheryDACCommand(slot, DACVal[:-4] + '%04x' % THL)
-                self.statusBar(float(cnt)/len(THLRange[::THLstep]) * 100 + 1)
+                self.statusBar(float(cnt) / len(THLRange[::THLstep]) * 100 + 1)
 
                 dataList = []
                 for n in range(N):
@@ -1524,10 +1529,11 @@ class Dosepix:
         T = np.mean(TList)
 
         # Number of test pulses for ToT measurement
-        NToT = 30
+        NToT = 10
 
         # Test pulse voltage range
-        TPvoltageRange = list(reversed(np.arange(490, 512, 1)))
+        # TPvoltageRange = list(reversed(np.arange(300, 490, 1))) # list(reversed(np.arange(490, 512, 1)))
+        TPvoltageRange = list(reversed(np.arange(440, 512, 1))) + list(reversed(np.arange(250, 440, 5)))
 
         # Store results per column in dict
         resDict = {}

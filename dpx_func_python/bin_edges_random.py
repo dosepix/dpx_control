@@ -47,7 +47,6 @@ def getBinEdgesUniform(NPixels, edgeMin, edgeMax, edgeOvfw):
 		pixelIdx += 1
 	return edgeList
 
-
 def isLarge(pixel):
 	if pixel % 16 in [0, 1, 14, 15]:
 		return False
