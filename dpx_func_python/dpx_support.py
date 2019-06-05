@@ -248,35 +248,3 @@ class DPX_support(object):
 
         return gaussDict, noiseTHL
 
-    def getTestPulseVoltageDAC(self, slot, DACVal, energy=False):
-        # Set coarse and fine voltage of test pulse
-        peripheryDACcode = int(self.peripherys + self.THLs[slot-1], 16)
-
-        if energy:
-            # Use nominal value of test capacitor
-            # and DACVal as energy
-            C = 5.14e-15
-
-            deltaV = DACVal * scipy.constants.e / (C * 3.62)
-
-            assert deltaV < 1.275, "TestPulse Voltage: The energy of the test pulse was set too high! Has to be less than or equal to 148 keV."
-
-            # Set coarse voltage to 0
-            voltageDiv = 2.5e-3
-            DACVal = int((1.275 - deltaV) / voltageDiv)
-        else:
-            assert DACVal >= 0, 'Minimum THL value must be at least 0'
-            assert DACVal <= 0x1ff, 'Maximum THL value mustn\'t be greater than %d' % 0x1ff
-
-        # Delete current values
-        peripheryDACcode &= ~(0xff << 32)   # coarse
-        peripheryDACcode &= ~(0x1ff << 16)  # fine
-
-        # Adjust fine voltage only
-        peripheryDACcode |= (DACVal << 16)
-        peripheryDACcode |= (0xff << 32)
-        print '%032x' % peripheryDACcode
-        print DACVal
-
-        return '%032x' % peripheryDACcode
-

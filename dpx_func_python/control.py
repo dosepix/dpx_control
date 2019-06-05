@@ -219,51 +219,6 @@ class Control():
                 self.DPXWriteColSelCommand(i, 16 - col)
                 self.DPXReadBinDataDosiModeCommand(i)
 
-    def testPulseInit(self, slot, column=0):
-        # Set Polarity to hole and Photon Counting Mode in OMR
-        OMRCode = self.OMR
-        if not isinstance(self.OMR, basestring):
-            OMRCode[3] = 'hole'
-        else:
-            OMRCode = '%04x' % (int(self.OMR, 16) & ~(1 << 17))
-
-        if not isinstance(self.OMR, basestring):
-            OMRCode[0] = 'DosiMode'
-        else:
-            OMRCode = '%04x' % ((int(self.OMR, 16) & ~((0b11) << 22)) | (0b10 << 22))
-        
-        self.DPXWriteOMRCommand(slot, OMRCode)
-
-        if column == 'all':
-            columnRange = range(16)
-        elif not isinstance(column, basestring):
-            if isinstance(column, int):
-                columnRange = [column]
-            else:
-                columnRange = column
-
-        return columnRange
-
-    def testPulseClose(self, slot):
-        # Reset ConfBits
-        self.DPXWriteConfigurationCommand(slot, self.confBits[slot-1])
-
-        # Reset peripheryDACs
-        self.DPXWritePeripheryDACCommand(slot, self.peripherys + self.THLs[slot-1])
-
-    def maskBitsColumn(self, slot, column):
-        # Set ConfBits to use test charge on preamp input if pixel is enabled
-        # Only select one column at max
-        confBits = np.zeros((16, 16))
-        confBits.fill(getattr(ds._ConfBits, 'MaskBit'))
-        confBits[column] = [getattr(ds._ConfBits, 'TestBit_Analog')] * 16
-        # print confBits
-
-        # confBits = np.asarray( [int(num, 16) for num in textwrap.wrap(self.confBits[slot-1], 2)] )
-        # confBits[confBits != getattr(ds._ConfBits, 'MaskBit')] = getattr(ds._ConfBits, 'TestBit_Analog')
-
-        self.DPXWriteConfigurationCommand(slot, ''.join(['%02x' % conf for conf in confBits.flatten()]))
-
     # === HV SECTION ===
     def HVSetDac(self, DAC):
         assert len(DAC) == 4, 'Error: DAC command has to be of size 4!'

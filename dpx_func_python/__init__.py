@@ -1,26 +1,5 @@
-import numpy as np
-import time
-import serial
-import textwrap
-from collections import namedtuple
-import os
-import os.path
-import sys
-import configparser 
-import yaml
-import pandas as pd
-
-import matplotlib.pyplot as plt
-import matplotlib as mpl
-import scipy.signal
-import scipy.optimize
-import scipy.constants
-import scipy.special
-import scipy.interpolate
-import cPickle
-import hickle
-
 GUI = False
+# === Imports ===
 import config
 import control
 import support
@@ -28,20 +7,13 @@ import dpx_functions
 import dpx_support
 import system
 import dpx_settings
+import dpx_test_pulse
 
-class Dosepix(config.Config, control.Control, support.Support, dpx_functions.DPX_functions, dpx_support.DPX_support, system.System):
-    # === Imports ===
-    # from .config import *
-    # from .support import *
-    # from .dpx_support import *
-    # from .control import *
-    # from .system import *
-    # from .dpx_functions import *
-
+class Dosepix(config.Config, control.Control, support.Support, dpx_functions.DPX_functions, dpx_support.DPX_support, system.System, dpx_test_pulse.DPX_test_pulse):
     # === FLAGS ===
     USE_GUI = False
 
-    def __init__(self, portName, baudRate, configFn=None, bin_edges_file=None, params_file=None, thl_calib_files=None):
+    def __init__(self, portName, baudRate, configFn=None, thl_calib_files=None, params_file=None, bin_edges_file=None):
         if params_file is None:
             self.bin_edges_file = bin_edges_file
         else:
@@ -67,6 +39,9 @@ class Dosepix(config.Config, control.Control, support.Support, dpx_functions.DPX
 
         self.getConfigDPX(self.portName, self.baudRate, self.configFn)
 
+    def __del__(self):
+        self.close()
+        
     def getSettingsGUI(self):
         serialPorts = getSerialPorts(self)
 
@@ -79,9 +54,6 @@ class Dosepix(config.Config, control.Control, support.Support, dpx_functions.DPX
     def unsetGUI(self):
         self.USE_GUI = False
 
-    def __del__(self):
-        self.close()
-        
     def close(self):
         # = Shut down =
         self.HVDeactivate()

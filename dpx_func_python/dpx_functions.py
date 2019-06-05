@@ -72,7 +72,8 @@ class DPX_functions():
                 a.set_title('Slot%d' % slot[idx])
                 a.set_xlabel('x (px)')
                 a.set_ylabel('y (px)')
-            plt.show()
+            fig.canvas.draw()
+            plt.show(block=False)
 
         # = START MEASUREMENT =
         try:
@@ -143,16 +144,22 @@ class DPX_functions():
                         imList[sl].set_data( showList )
                         # fig.canvas.flush_events()
 
-                        plt.imshow(showList)
-                        plt.show()
+                        # plt.imshow(showList)
+                        # plt.show()
+
                 if conversion_factors is not None:
                     print 'Total dose: %.2f uSv/s' % (np.sum([np.sum(doseDict['Slot%d' % sl]) for sl in slot]))
                     print
 
                 if intPlot:
                     fig.canvas.draw()
-                    fig.canvas.flush_events()
-                    # plt.show()
+                    # fig.canvas.flush_events()
+                    # MAC: currently not working
+                    # see: https://stackoverflow.com/questions/50490426/matplotlib-fails-and-hangs-when-plotting-in-interactive-mode
+                    # plt.pause(0.0001)
+                    # plt.show(block=True)
+
+                print '%.2f Hz' % (c / (time.time() - measStart))
 
             # Loop finished
             self.pickleDump(outDict, outFn)
@@ -171,6 +178,9 @@ class DPX_functions():
             if conversion_factors:
                 self.pickleDump(doseDict, '%s_dose' % outFn.split('.p')[0] + '.p')
             raise
+
+            if intPlot:
+                plt.close('all')
 
         # Reset OMR
         for sl in slot:
