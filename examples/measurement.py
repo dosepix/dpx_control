@@ -3,8 +3,13 @@ import dpx_func_python
 
 PORT = '/dev/tty.usbserial-A907PD5F'
 CONFIG_FN = 'DPXConfig.conf'
+CONFIG_DIR = 'config/'
+CHIP_NUMS = [22, 6, 109]
+
 def main():
-    dpx = dpx_func_python.Dosepix(PORT, 2e6, CONFIG_FN)
+    thl_calib_files = [CONFIG_DIR + '/THLCalib_%d.hck' % CHIP for CHIP in CHIP_NUMS] 
+    dpx = dpx_func_python.Dosepix(PORT, 2e6, CONFIG_DIR + '/' + CONFIG_FN, thl_calib_files=thl_calib_files)
+    dpx.measureToT(slot=[1, 2, 3], intPlot=True, storeEmpty=False, logTemp=False)
 
     # dpx.TPtoToT(slot=1, column='all')
     # dpx.ADCWatch(1, ['I_krum', 'Temperature'], cnt=0)
@@ -14,7 +19,6 @@ def main():
     # dpx.ToTtoTHL_pixelDAC(slot=1, THLstep=1, I_pixeldac=0.0001, valueLow=200, valueHigh=200, valueCount=1, energy=False, plot=False)
     # dpx.ToTtoTHL(slot=1, column='all', THLstep=1, valueLow=1.5e3, valueHigh=30e3, valueCount=20, energy=True, plot=False, outFn='ToTtoTHL.p')
     # dpx.energySpectrumTHL(1)
-    # dpx.measureToT(slot=1, intPlot=True, storeEmpty=False, logTemp=False, paramsDict=paramsDict)
     # dpx.testPulseDosi(1, column='all')
     # dpx.testPulseToT(1, 10, column=0, DAC='I_krum', DACRange=range(3, 25) + range(25, 50, 5) + range(50, 120, 10), perc=False)
     # dpx.measureDose(slot=2, measurement_time=0, freq=False, frames=1000, logTemp=False, intPlot=True, conversion_factors=None) # ('conversion_factors/conversionFit_wSim_10.csv', 'conversion_factors/conversionFit_wSim_10.csv')) 
