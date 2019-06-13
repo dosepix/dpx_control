@@ -14,10 +14,14 @@ setup(name='dpx_func_python',
 	},
 	install_requires=[
                 'matplotlib',
+		'pytest',
 		'hickle',
+		'pandas',
 		'numpy',
 		'scipy',
 		'pyserial',
 		'pyyaml',
 		'configparser',
+		'sphinx',
+		'sphinx_rtd_theme'
 	])

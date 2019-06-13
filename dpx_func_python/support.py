@@ -214,3 +214,10 @@ class Support(object):
         hexNumList = np.asarray( [int(hexNum, 16) for hexNum in textwrap.wrap(res, length)] )
         return hexNumList.reshape((16, 16))
 
+    # Infinite for loop
+    def infinite_for(self):
+	x = 0
+	while True:
+	    yield
+	    x += 1
+

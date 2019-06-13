@@ -14,6 +14,60 @@ import dpx_settings as ds
 class DPX_functions():
     # TODO: Correction factor of 16/15 necessary?
     def measureDose(self, slot=1, measurement_time=120, frames=10, freq=False, outFn='doseMeasurement.p', logTemp=False, intPlot=False, conversion_factors=None):
+        """Perform measurement in DosiMode.
+
+        Parameters
+	----------
+	slot : int or list
+	    Use the specified slots on the read-out board. Can be either a 
+	    single detector or multiple ones. If using the latter, specify 
+	    the slots via a list.
+	measurement_time : float
+	    Measurement time between read-outs. The counts are integrated 
+	    over the specified time and a frame is read out over 16 columns
+	    via rolling shutter.
+	frames : int
+	    Number of frames to record.
+	freq : bool
+	    Store the count frequency by normalization via the measurement
+	    time for each frame.
+	outFn : str or None
+	    Output file in which the measurement data is stored. If `None`,
+	    no data is written to files. Otherwise the extension of the file
+	    must be '.p' or '.hck' in order to use either 'cPickle' or 
+	    'hickle' for storage. If file already exists, a number is 
+	    appended to the file and incremented if necessary.
+	logTemp : bool
+	    Log the temperature and time for each frame. If `outFn` is set, 
+	    the data is stored to a file which is named according to `outFn`
+	    with the suffix '_temp' attached.
+	intPlot : bool
+	    Use interactive plotting. The total number of counts per pixel
+	    is shown for each frame.
+	conversion_factors : (str, str), optional
+	    A tuple of two csv-files. The first file for the conversion factors
+	    of the large pixels, the second one for the ones of the small pixels.
+	    These conversion factors are applied to the correspodning counts matrices
+	    and the dose is calculated for each frame. If `outFn` 
+	    is set, the data is stored to a file which is named according
+	    to 'outFn' with the suffix '_dose' attached.
+
+	Returns
+	-------
+	out : dict
+	    Measurement data. Keys `temp` or `dose` are only available if
+	    `logTemp` or `conversion_factors` are set during function call.
+
+	    data :
+	        Number of counts per frame stored in nested list of shape
+		`(number of frames, number of columns, number of pixels per column,
+		number of bins per pixel)`, i.e. `(frames, 16, 16, 16)`.
+	    temp : (Only if `logTemp` was set)
+	    	Logged temperature in DAC values for each frame.
+	    dose : (Only if `conversion_factors` was set)
+	        Measured dose for each frame. Separated for small and large pixels.
+        """
+
         # Set Dosi Mode in OMR
         # If OMR code is list
         OMRCode = self.OMR
@@ -162,29 +216,44 @@ class DPX_functions():
                 print '%.2f Hz' % (c / (time.time() - measStart))
 
             # Loop finished
-            self.pickleDump(outDict, outFn)
-            if logTemp:
-                self.pickleDump(tempDict, '%s_temp' % outFn.split('.p')[0] + '.p')
-            if conversion_factors:
-                self.pickleDump(doseDict, '%s_dose' % outFn.split('.p')[0] + '.p')
+	    if outFn is not None:
+                self.pickleDump(outDict, outFn)
+                if logTemp:
+                    self.pickleDump(tempDict, '%s_temp' % outFn.split('.p')[0] + '.p')
+                if conversion_factors:
+                    self.pickleDump(doseDict, '%s_dose' % outFn.split('.p')[0] + '.p')
+	    returnDict = {'data': outDict}
+	    if logTemp:
+	    	returnDict['temp'] = tempDict
+	    if conversion_factors:
+	        returnDict['dose'] = doseDict
+	    return returnDict
 
         except (KeyboardInterrupt, SystemExit):
             # Store data and plot in files
             print 'KeyboardInterrupt-Exception: Storing data!'
             print 'Measurement time: %.2f min' % ((time.time() - measStart) / 60.)
-            self.pickleDump(outDict, outFn)
-            if logTemp:
-                self.pickleDump(tempDict, '%s_temp' % outFn.split('.p')[0] + '.p')
-            if conversion_factors:
-                self.pickleDump(doseDict, '%s_dose' % outFn.split('.p')[0] + '.p')
-            raise
+	    if outFn is not None:
+                self.pickleDump(outDict, outFn)
+                if logTemp:
+                    self.pickleDump(tempDict, '%s_temp' % outFn.split('.p')[0] + '.p')
+                if conversion_factors:
+                    self.pickleDump(doseDict, '%s_dose' % outFn.split('.p')[0] + '.p')
+                raise
 
             if intPlot:
                 plt.close('all')
 
-        # Reset OMR
-        for sl in slot:
-            self.DPXWriteOMRCommand(sl, self.OMR)
+            # Reset OMR
+            for sl in slot:
+                self.DPXWriteOMRCommand(sl, self.OMR)
+
+	    returnDict = {'data': outDict}
+	    if logTemp:
+	    	returnDict['temp'] = tempDict
+	    if conversion_factors:
+	        returnDict['dose'] = doseDict
+	    return returnDict
 
     # If binEdgesDict is provided, perform shifting of energy regions between
     # frames. I.e. the measured region is shifted in order to increase the
@@ -320,6 +389,30 @@ class DPX_functions():
             self.DPXWriteOMRCommand(sl, self.OMR)
 
     def measureIntegration(self, slot=1, measurement_time=10, frames=10, outFn='integrationMeasurement.p'):
+        """Perform measurement in Integration Mode.
+
+        Parameters
+	----------
+	slot : int or list
+	    Use the specified slots on the read-out board. Can be either a 
+	    single detector or multiple ones. If using the latter, specify 
+	    the slots via a list.
+	measurement_time : float
+	    Duration for wich the measured ToT values are integrated per frame.
+	frames : int
+	    Number of frames to measure.
+	outFn : str or None
+	    Output file in which the measurement data is stored. If `None`,
+	    no data is written to files. Otherwise the extension of the file
+	    must be '.p' or '.hck' in order to use either 'cPickle' or 
+	    'hickle' for storage. If file already exists, a number is 
+	    appended to the file and incremented if necessary.
+
+	Returns
+	-------
+	out : None
+        """
+
         # Set Integration Mode in OMR
         # If OMR code is list
         OMRCode = self.OMR
@@ -362,19 +455,132 @@ class DPX_functions():
         if outFn:
             self.pickleDump(outDict, outFn)
 
-    # ToT is measured in endless loop. The data is written to file after 'cnt' frames 
-    # were processed. Additionally, Keyboard Interrupts are caught in order
-    # to store data afterwards. 
-    # If storeEmpty flag is set, empty frames are stored, otherwise discarded.
-    # If logTemp flag is set, current chip temperature is stored with each frame.
-    def measureToT(self, slot=1, outDir='ToTMeasurement/', cnt=10000, storeEmpty=False, logTemp=False, paramsDict=None, intPlot=False):
+    def measurePC(self, slot=1, measurement_time=10, frames=None, outFn='pcMeasurement.p'):
+        """Perform measurement in Integration Mode.
+
+        Parameters
+	----------
+	slot : int or list
+	    Use the specified slots on the read-out board. Can be either a 
+	    single detector or multiple ones. If using the latter, specify 
+	    the slots via a list.
+	measurement_time : float
+	    Duration for wich the measured ToT values are integrated per frame.
+	frames : int or None
+	    Number of frames to measure. If set to None, an infinite loop
+	    is used.
+	outFn : str or None
+	    Output file in which the measurement data is stored. If `None`,
+	    no data is written to files. Otherwise the extension of the file
+	    must be '.p' or '.hck' in order to use either 'cPickle' or 
+	    'hickle' for storage. If file already exists, a number is 
+	    appended to the file and incremented if necessary.
+
+	Returns
+	-------
+	out : None
+        """
+
+        # Set PC Mode in OMR
+        # If OMR code is list
+        OMRCode = self.OMR
+        if not isinstance(OMRCode, basestring):
+            OMRCode[0] = 'PCMode'
+        else:
+            OMRCode = int(OMRCode, 16) & ((0b10) << 22)
+
+        # If slot is no list, transform it into one
+        if not isinstance(slot, (list,)):
+            slot = [slot]
+
+        for sl in slot:
+            self.DPXWriteOMRCommand(sl, OMRCode)
+
+        outDict = {'Slot%d' % sl: [] for sl in slot}
+	
+	# Specify frame range
+	if frames is not None:
+            frameRange = range(frames)
+	else:
+            frameRange = self.infinite_for()
+
+        # = START MEASUREMENT =
+        print 'Starting Photon Counting Measurement!'
+        print '=================================='
+        for c in range(frames):
+            # Start frame 
+            for sl in slot:
+                # Reset data registers
+                self.DPXDataResetCommand(sl)
+                self.DPXWriteOMRCommand(slot, OMRCode)
+
+            # Wait specified time
+            time.sleep(measurement_time)
+
+            # Read data and end frame
+            for sl in slot:
+                data = self.DPXReadToTDatakVpModeCommand(slot)
+                # print data
+                outDict['Slot%d' % slot].append( data.flatten() )
+                self.DPXWriteOMRCommand(sl, OMRCode)
+
+        if outFn:
+            self.pickleDump(outDict, outFn)
+
+    def measureToT(self, slot=1, cnt=10000, outDir='ToTMeasurement/', storeEmpty=False, logTemp=False, paramsDict=None, intPlot=False):
+        """Perform measurement in ToTMode.
+
+        Parameters
+	----------
+	slot : int or list
+	    Use the specified slots on the read-out board. Can be either a 
+	    single detector or multiple ones. If using the latter, specify 
+	    the slots via a list.
+	cnt : Number of frames 
+	    ToT is measured in an endless loop. The data is written to file 
+	    after 'cnt' frames were processed. Additionally, Keyboard 
+	    Interrupts are caught in order to store data afterwards. 
+	outDir : str or None
+	    Output directory in which the measurement files are stored. 
+	    A file is written after `cnt` frames. If file already exists, 
+	    a number is appended to the file and incremented.
+	storeEmpty : bool 
+	    If set, empty frames are stored, otherwise discarded.
+	logTemp : bool
+	    Log the temperature and time for each frame. If `outFn` is set, 
+	    the data is stored to a file which is named according to `outFn`
+	    with the suffix '_temp' attached.
+	intPlot : bool
+	    Use interactive plotting. The total number of counts per pixel
+	    is shown for each frame.
+	paramsDict : dict, optional
+	    If specified, measured ToT values are directly converted to their
+	    corresponding energies. `paramsDict` contains the pixel indices as
+	    keys where each value is a dictionary itself. These contain either
+	    the keys `a, b, c, t` for standard calibration factors or `a, b, c, t, h, k`
+	    if a test pulse calibration was performed.
+
+	Returns
+	-------
+	out : None
+
+	Notes
+	-----
+	The function is optimized for long term ToT measurements. It runs in 
+	an endless loop and waits for a keyboard interrupt. After `cnt` frames
+	where processed, data is written to a file in the directory specified
+	via `outDir`. Using these single files allows for a memory sufficient
+	method to store the data in histograms without loosing information and
+	without the necessecity to load the whole dataset at once.
+        """
+
         # Set Dosi Mode in OMR
         # If OMR code is list
         OMRCode = self.OMR
         if not isinstance(OMRCode, basestring):
             OMRCode[0] = 'DosiMode'
         else:
-            OMRCode = '%04x' % ((int(OMRCode, 16) & ~((0b11) << 22)) | (0b10 << 22))
+            OMRCode = '%04x' % ((int(OMRCode, 16) & ~((0b11) << 22)))
 
         # Check which slots to read out
         if isinstance(slot, int):
@@ -425,7 +631,7 @@ class DPX_functions():
             if paramsDict is not None:
                 bins = np.linspace(20, 100, 300)
             else:
-                bins = np.arange(0, 400, 1)
+                bins = np.arange(0, 1000, 1)
             histData = np.zeros(len(bins)-1)
 
             ax.set_xlim(min(bins), max(bins))
@@ -1476,7 +1682,37 @@ class DPX_functions():
 
         self.writeConfig(configFn)
 
-    def thresholdEqualization(self, slot, reps=1, I_pixeldac=0.5, intPlot=False, resPlot=True):
+    def thresholdEqualization(self, slot, reps=1, THL_offset=20, I_pixeldac=0.5, intPlot=False, resPlot=True):
+        """Perform threshold equalization of all pixels
+
+        Parameters
+	----------
+	slot : int or list
+	    Use the specified slots on the read-out board. Can be either a 
+	    single detector or multiple ones. If using the latter, specify 
+	    the slots via a list.
+	reps : int
+	    Number of repetitions to find the noise level for each pixel.
+	THL_offset : int
+	    Offset in THL which is subtracted from yielded THL value of 
+	    equalization in order to gain robustness.
+	I_pixeldac : float
+	    Current of pixel DACs. If greater than 0.2, pixel DAC to THL
+	    relation isn't linear anymore.
+	intPlot : bool
+	    Show pixel DAC to THL relation after equalization.
+	resPlot : bool
+	    Show distribution of noise level for all pixels before 
+	    and after equalization.
+
+	Returns
+	-------
+	pixelDAC : str
+	    String specifying the pixel DAC values
+	confMask : str
+	    String specifying the conf-bits for each pixel
+        """
+
         # THLlow, THLhigh = 5120, 5630
         THLlow, THLhigh = 4000, 6000
         # THLRange = np.arange(THLlow, THLhigh, 1) 
@@ -1523,7 +1759,7 @@ class DPX_functions():
         countsDict = self.getTHLLevel(slot, THLRange, pixelDACs, reps, intPlot)
         print countsDict['00'].keys(), THLRange
         gaussDict, noiseTHL = self.getNoiseLevel(countsDict, THLRange, pixelDACs, noiseLimit)
-        print 'noiseTHL1:', noiseTHL
+        # print 'noiseTHL1:', noiseTHL
 
         # Transform values to indices and get meanDict
         meanDict, noiseTHL = self.valToIdx(slot, pixelDACs, THLRange, gaussDict, noiseTHL)
@@ -1572,7 +1808,7 @@ class DPX_functions():
                         plt.plot(xFit, polyFit(xFit), ls='-', color=self.getColor('Blues', 5 + 256, pixelX * 16 + pixelY + 5))
 
         mean = 0.5 * (meanDict['00'] + meanDict['3f'])
-        print meanDict['00'], meanDict['3f'], mean
+        # print meanDict['00'], meanDict['3f'], mean
 
         if resPlot:
             plt.xlabel('DAC')
@@ -1663,7 +1899,7 @@ class DPX_functions():
         THLNew = min(edgesCenter, key=lambda x:abs(x-THLNew))
         '''
         # THLNew = self.THLEdges[list(THLRange).index(int(self.getTHLfromVolt(mean))) - 20]
-        THLNew = int(np.mean(gaussDictNew[pixelDACNew]) - 20)
+        THLNew = int(np.mean(gaussDictNew[pixelDACNew]) - THL_offset)
 
         print
         print 'Summary:'

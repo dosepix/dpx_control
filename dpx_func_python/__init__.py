@@ -14,6 +14,12 @@ class Dosepix(config.Config, control.Control, support.Support, dpx_functions.DPX
     USE_GUI = False
 
     def __init__(self, portName, baudRate, configFn=None, thl_calib_files=None, params_file=None, bin_edges_file=None):
+        """
+        Creates instance of :class:`Dosepix`
+
+        :param portName: Name of the port
+        :type name: str
+        """
         if params_file is None:
             self.bin_edges_file = bin_edges_file
         else:

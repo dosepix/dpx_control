@@ -2,7 +2,7 @@
 import dpx_func_python
 import os
 
-PORT = '/dev/tty.usbserial-A907PD5F'
+PORT = '/dev/ttyUSB0'
 CONFIG_FN = 'DPXConfig.conf'
 CONFIG_DIR = 'config/'
 CHIP_NUMS = [22, 6, 109]
@@ -12,7 +12,7 @@ def main():
     # Create config dir if not already existing
     if not os.path.exists(CONFIG_DIR):
         os.makedirs(CONFIG_DIR)
-    '''
+
     # THL measurements
     print('Ensure that detector %d is inserted at slot 1' % CHIP_NUMS[0]) 
     raw_input('Press any key to proceed')
@@ -25,7 +25,6 @@ def main():
         if chip_idx != len(CHIP_NUMS):
             print('Please disconnect board and insert detector %d into slot 1' % CHIP_NUMS[chip_idx+1])
             raw_input('Reconnect and press any key to proceed')
-    '''
 
     # Threshold equalization
     thl_calib_files = [CONFIG_DIR + '/THLCalib_%d.hck' % CHIP for CHIP in CHIP_NUMS] 
@@ -33,7 +32,7 @@ def main():
 
     # Change Ikrum values
     for chip_idx in range(3):
-        d = dpx.splitPerihperyDACs(dpx.peripherys + dpx.THLs[0], perc=False)
+        d = dpx.splitPerihperyDACs(dpx.peripherys + dpx.THLs[chip_idx], perc=False)
         d['I_krum'] = IKRUM[chip_idx]
         code = dpx.periheryDACsDictToCode(d, perc=False)
         dpx.peripherys = code[:-4]
