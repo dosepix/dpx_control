@@ -218,6 +218,6 @@ class Support(object):
     def infinite_for(self):
 	x = 0
 	while True:
-	    yield
+	    yield x
 	    x += 1
 

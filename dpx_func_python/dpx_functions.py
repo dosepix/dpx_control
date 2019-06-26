@@ -447,9 +447,9 @@ class DPX_functions():
             # Read data and end frame
             OMRCode[1] = 'OpenShutter'
             for sl in slot:
-                data = self.DPXReadToTDataIntegrationModeCommand(slot)
+                data = self.DPXReadToTDataIntegrationModeCommand(sl)
                 # print data
-                outDict['Slot%d' % slot].append( data.flatten() )
+                outDict['Slot%d' % sl].append( data.flatten() )
                 self.DPXWriteOMRCommand(sl, OMRCode)
 
         if outFn:
@@ -506,23 +506,36 @@ class DPX_functions():
 
         # = START MEASUREMENT =
         print 'Starting Photon Counting Measurement!'
-        print '=================================='
-        for c in range(frames):
+        print '====================================='
+	measStart = time.time()
+        startTime = measStart
+        for c in frameRange:
             # Start frame 
             for sl in slot:
                 # Reset data registers
                 self.DPXDataResetCommand(sl)
-                self.DPXWriteOMRCommand(slot, OMRCode)
 
             # Wait specified time
             time.sleep(measurement_time)
 
             # Read data and end frame
             for sl in slot:
-                data = self.DPXReadToTDatakVpModeCommand(slot)
+                data = self.DPXReadToTDatakVpModeCommand(sl)
                 # print data
-                outDict['Slot%d' % slot].append( data.flatten() )
+                outDict['Slot%d' % sl].append( data.flatten() )
                 self.DPXWriteOMRCommand(sl, OMRCode)
+
+            if c > 0 and not c % 100:
+	        print '%.2f Hz' % ((time.time() - startTime) / 100)
+		startTime = time.time()
+
+        except (KeyboardInterrupt, SystemExit):
+            # Store data and plot in files
+            print 'KeyboardInterrupt-Exception: Storing data!'
+            print 'Measurement time: %.2f min' % ((time.time() - measStart) / 60.)
+
+            self.pickleDump(outDict, outFn)
+            raise
 
         if outFn:
             self.pickleDump(outDict, outFn)
@@ -806,305 +819,6 @@ class DPX_functions():
         self.pickleDump(slopeDict, 'pixelSlopes.p')
 
         return slope
-
-    def ToTtoTHL(self, slot=1, column=0, THLstep=1, valueLow=0, valueHigh=460, valueCount=460, energy=False, plot=False, outFn='ToTtoTHL.p'):
-        # Description: Generate test pulses and measure their ToT
-        #              values. Afterwards, do a THL-scan in order to
-        #              find the corresponding THL value. Repeat 
-        #              multiple times to find the correlation between
-        #              ToT and THL
-        # Parameters: 
-        #   - energy: if set, iteration is performed over energies.
-        #             Else, Test Pulse DAC values are modified directly.
-
-        # Set low level to zero and high level to noise limit
-        # for the coarse measurement
-        THLlow = 0
-        THLhigh = int(self.THLs[slot-1], 16)
-
-        # Set AnalogOut to V_ThA
-        OMRCode = self.OMR
-        if not isinstance(OMRCode, basestring):
-            OMRCode[4] = 'V_ThA'
-        else:
-            OMRCode &= ~(0b11111 << 12)
-            OMRCode |= getattr(ds._OMRAnalogOutSel, 'V_ThA')
-        self.DPXWriteOMRCommand(slot, OMRCode)
-
-        valueRange = np.linspace(valueLow, valueHigh, valueCount)
-
-        # Number of test pulses for ToT measurement
-        NToT = 100
-
-        # Store results per column in dict
-        resDict = {}
-
-        # Activate DosiMode and select columns
-        columnRange = self.testPulseInit(slot, column=column)
-
-        for column in columnRange:
-            THLstart = THLhigh - 400
-            THLstop = THLhigh
-
-            # Select column
-            self.maskBitsColumn(slot, column)
-
-            # Store results in lists
-            ToTListTotal, ToTErrListTotal = [], []
-            THLListTotal, THLErrListTotal = [], []
-
-            # Loop over test pulse energies
-            for val in valueRange:
-                # Set test pulse energy
-                if energy:
-                    print 'Energy: %.2f keV' % (val/1000.)
-                else:
-                    val = int(val)
-                    print 'DAC: %04x' % val
-
-                # Activates DosiMode and selects columns
-                columnRange = self.testPulseInit(slot, column=column)
-
-                # Activate DosiMode
-                '''
-                if not isinstance(OMRCode, basestring):
-                    OMRCode[0] = 'DosiMode'
-                else:
-                    OMRCode = (int(OMRCode, 16) & ((0b11) << 22))
-                self.DPXWriteOMRCommand(slot, OMRCode)
-                '''
-                
-                # Set test pulse energy
-                DACval = self.getTestPulseVoltageDAC(slot, val, energy)
-                self.DPXWritePeripheryDACCommand(slot, DACval)
-
-                # Generate test pulses
-                dataList = []
-                for i in range(NToT):
-                    self.DPXDataResetCommand(slot)
-                    self.DPXGeneralTestPulse(slot, 1000)
-                    data = self.DPXReadToTDataDosiModeCommand(slot)[column]
-                    dataList.append( data )
-
-                # Determine corresponding ToT value
-                testPulseToT = np.mean( dataList , axis=0)
-                testPulseToTErr = np.std(dataList, axis=0) / np.sqrt( NToT )
-                print 'Test Pulse ToT:'
-                print testPulseToT
-
-                # Store in lists
-                ToTListTotal.append( testPulseToT )
-                ToTErrListTotal.append( testPulseToTErr )
-
-                # Set PCMode
-                # WARNING: 8bit counter only!
-                if not isinstance(OMRCode, basestring):
-                    OMRCode[0] = 'PCMode'
-                else:
-                    OMRCode = '%04x' % ((int(OMRCode, 16) | ((0b11) << 22)))
-                self.DPXWriteOMRCommand(slot, OMRCode)
-
-                # Loop over THLs
-                # Init result lists
-                lastTHL = 0
-                THLList = []
-                dataList = []
-                THLMeasList = []
-
-                # Dummy readout of AnalogOut
-                # self.MCGetADCvalue()
-                # THLRange = np.arange(THLlow, THLhigh, THLstep)
-                # THLRange = self.THLCalib[np.logical_and(self.THLCalib > THLlow, self.THLCalib < THLhigh)]
-                THLRange = np.asarray(self.THLEdges[slot - 1])
-                THLstop_ = THLhigh if THLstop > THLhigh else THLstop
-                THLRange = THLRange[np.logical_and(THLRange >= THLstart, THLRange <= THLstop_)]
-
-                # Do a fast measurement to estimate the position of the edge for each pixel
-                THLFastList = []
-                dataFastList = []
-                THLFastStep = 5
-                NPulses = 30        # Has to be less than 256
-
-                for cnt, THL in enumerate(THLRange[::THLFastStep]): # :THLFastStep]):
-                    # Set new THL
-                    self.DPXWritePeripheryDACCommand(slot, DACval[:-4] + '%04x' % THL)
-
-                    # Start measurement
-                    self.DPXDataResetCommand(slot)
-                    for i in range(NPulses):
-                        self.DPXGeneralTestPulse(slot, 1000)
-                    data = self.DPXReadToTDatakVpModeCommand(slot)[column]
-                    data[data > NPulses] = NPulses
-
-                    # Store data in lists
-                    THLFastList.append( THL )
-                    dataFastList.append( data )
-
-                if not np.any(THLFastList):
-                    continue
-
-                print 'THLFastList'
-                print THLFastList
-                print np.asarray(dataFastList).T
-
-                # Check if array is empty
-                if not np.count_nonzero(dataFastList):
-                    # If so, energy is set too low
-                    valueCount -= 1
-                    ToTListTotal.pop()
-                    ToTErrListTotal.pop()
-                    continue
-
-                # Get derivative and find maximum for every pixel
-                xFastDer = np.asarray(THLFastList[:-1]) + THLFastStep / 2.
-                dataFastDer = [xFastDer[np.argmax(np.diff(data) / float(THLFastStep))] for data in np.asarray(dataFastList).T if np.count_nonzero(data)]
-
-                print 'dataFastDer'
-                print dataFastDer
-
-                # Get mean THL value
-                meanTHL = np.mean( dataFastDer )
-
-                # Set THL range to new estimated region
-                regSel = np.logical_and(THLRange >= min(dataFastDer) - THLFastStep, THLRange <= max(dataFastDer) + THLFastStep)
-                THLRange = THLRange[regSel]
-                print 'THLRange'
-                print THLRange
-                # THLRange = THLRange[abs(THLRange - meanTHL) < 3 * THLFastStep]
-
-                # Do a slow but precise measurement with small THL steps
-                for cnt, THL in enumerate(THLRange[::THLstep]):
-                    self.statusBar(float(cnt)/len(THLRange[::THLstep]) * 100 + 1)
-                    # for V in np.linspace(0.34, 0.36, 1000):
-                    # THL = self.getTHLfromVolt(V)
-                    # THLmeas = np.mean( [float(int(self.MCGetADCvalue(), 16)) for i in range(3) ] )
-                    # THLMeasList.append( THLmeas )
-                    # print THL, '%04x' % THL
-
-                    # Set new THL
-                    self.DPXWritePeripheryDACCommand(slot, DACval[:-4] + '%04x' % THL)
-                    # print DACval[:-4] + '%04x' % THL
-                    # print self.peripherys + '%04x' % THL
-
-                    # Generate test pulse and measure ToT in integrationMode
-                    # dataTemp = np.zeros(16)
-                    self.DPXDataResetCommand(slot)
-                    for i in range(NPulses):
-                        self.DPXGeneralTestPulse(slot, 1000)
-                    data = self.DPXReadToTDatakVpModeCommand(slot)[column]
-                    # print data
-
-                    # Store data in lists
-                    THLList.append( THL )
-                    dataList.append( data )
-
-                    # lastTHL = THLmeas
-                print
-
-                # Calculate derivative of THL spectrum
-                xDer = np.asarray(THLList[:-1]) + 0.5*THLstep
-                dataDer = [np.diff(data) / float(THLstep) for data in np.asarray(dataList).T]
-
-                peakList = []
-                peakErrList = []
-                # Transpose to access data of each pixel
-                for data in np.asarray(dataList).T:
-                    # Convert to corrected THL
-                    THLListCorr = [self.getVoltFromTHLFit(elm, slot) for elm in THLList]
-                    THLListFit = np.linspace(min(THLListCorr), max(THLListCorr), 1000)
-
-                    # Perform erf-Fit
-                    p0 = [THLListCorr[int(len(THLListCorr) / 2.)], 3.]
-                    try:
-                        popt, pcov = scipy.optimize.curve_fit(lambda x, b, c: self.erfFit(x, NPulses, b, c), THLListCorr, data, p0=p0)
-                        perr = np.sqrt(np.diag(pcov))
-                        print popt
-                    except:
-                        popt = p0
-                        perr = len(p0) * [0]
-                        print 'Fit failed!'
-                        pass
-
-                    # Return fit parameters
-                    # a: Amplitude
-                    # b: x-offset
-                    # c: scale
-                    b, c = popt
-                    peakList.append( b )
-                    # Convert to sigma
-                    peakErrList.append( perr[1] / np.sqrt(2) )
-
-                    # Savitzky-Golay filter the data
-                    # Ensure odd window length
-                    windowLength = int(len(THLRange[::THLstep]) / 10.)
-                    if not windowLength % 2:
-                        windowLength += 1
-
-                    # Plots
-                    if plot:
-                        try:
-                            dataFilt = scipy.signal.savgol_filter(data, windowLength, 3)
-                            plt.plot(THLListCorr, dataFilt)
-                            plt.plot(*self.getDerivative(THLListCorr, dataFilt))
-                        except:
-                            pass
-
-                        plt.plot(THLListFit, self.erfFit(THLListFit, NPulses, b, c), ls='-')
-                        plt.plot(THLListFit, self.normalErf(THLListFit, NPulses, b, c), ls='-')
-                        plt.plot(THLListCorr, data, marker='x', ls='')
-                        plt.show()
-
-                peakList, peakErrList = np.asarray(peakList), np.asarray(peakErrList)
-                peakList[peakErrList > 50] = np.nan
-                peakErrList[peakErrList > 50] = np.nan
-                print peakList, peakErrList
-
-                # Set start value for next scan
-                print 'Start, Stop'
-                THLstart, THLstop = np.nanmin(THLList) - 400, np.nanmax(THLList) + 400
-                print THLstart, THLstop
-
-                # Convert back to THL
-                # peakList = [THLRange[int(peak + 0.5)] + (peak % 1) for peak in peakList]
-
-                THLListTotal.append( peakList )
-                THLErrListTotal.append( peakErrList )
-                print
-
-            # Transform to arrays
-            THLListTotal = np.asarray(THLListTotal).T
-            THLErrListTotal = np.asarray(THLErrListTotal).T
-            ToTListTotal = np.asarray(ToTListTotal).T
-            ToTErrListTotal = np.asarray(ToTErrListTotal).T
-
-            print THLListTotal
-            print THLErrListTotal
-            print ToTListTotal
-            print ToTErrListTotal
-
-            resDict[column] = {'THL': THLListTotal, 'THLErr': THLErrListTotal, 'ToT': ToTListTotal, 'ToTErr': ToTErrListTotal}
-
-        if plot:
-            # Show results in plot for last accessed column
-            fig, ax = plt.subplots()
-            for i in range(len(THLListTotal)):
-                ax.errorbar(THLListTotal[i], ToTListTotal[i], xerr=THLErrListTotal[i], yerr=ToTErrListTotal[i], color=self.getColor('Blues', len(ToTListTotal), i), marker='x')
-
-            ax.grid()
-            plt.xlabel('THL (DAC)')
-            plt.ylabel('ToT')
-
-            # TODO: Perform fit
-            plt.show()
-
-        # Save to pickle file
-        if outFn:
-            # Create dictionary
-            # d = {'THL': THLListTotal, 'THLErr': THLErrListTotal, 'ToT': ToTListTotal, 'ToTErr': ToTErrListTotal}
-
-            self.pickleDump(resDict, outFn)
-
-        return resDict
 
     def energySpectrumTHL(self, slot=1, THLhigh=4975, THLlow=2000, THLstep=1, timestep=0.1, intPlot=True, outFn='energySpectrumTHL.p', slopeFn='pixelSlopes.p'):
         # Description: Measure cumulative energy spectrum 
