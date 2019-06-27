@@ -385,6 +385,43 @@ class DPX_test_pulse(object):
 
         return resDict
 
+    def ToTtoTHL_pixelDAC(self, slot=1, THLstep=1, I_pixeldac=0.1, valueLow=0, valueHigh=460, valueCount=460, energy=False, plot=False):
+        pixelDACs = ['00', '3f']
+
+        # Set I_pixeldac
+        if I_pixeldac:
+            dPeripherys = self.splitPerihperyDACs(self.peripherys + self.THLs[0], perc=True)
+            dPeripherys['I_pixeldac'] = I_pixeldac
+            code = self.periheryDACsDictToCode(dPeripherys, perc=True)
+            self.peripherys = code[:-4]
+            self.DPXWritePeripheryDACCommand(slot, code)
+
+        dMeas = {}
+        slopeDict = {'slope': []}
+
+        for column in range(16):
+            for pixelDAC in pixelDACs:
+                # Set pixel DAC values
+                self.DPXWritePixelDACCommand(slot, pixelDAC*256, file=False)
+
+                d = self.ToTtoTHL(slot=slot, column=column, THLstep=THLstep, valueLow=valueLow, valueHigh=valueHigh, valueCount=valueCount, energy=energy, plot=plot)
+
+                # Get THL positions
+                dMeas[pixelDAC] = d['THL']
+
+            # Get slope
+            slope = (dMeas['00'] - dMeas['3f']) / 63.
+
+            print 'Pixel slope for column %d:' % column
+            print slope
+            print 'Mean slope: %.2f +/- %.2f' % (np.mean(slope), np.std(slope))
+
+            slopeDict['slope'].append( slope )
+
+        self.pickleDump(slopeDict, 'pixelSlopes.p')
+
+        return slope
+
     def TPtoToT(self, slot=1, column=0, outFn='TPtoToT.p'):
         # Description: Generate test pulses and measure ToT afterwards
         #              to match test pulse voltage and ToT value.
