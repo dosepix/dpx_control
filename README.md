@@ -1,7 +1,7 @@
 # Dosepix Control Software for python2.7
-Module name: dpx\_func\_python
-Author: Sebastian Schmidt (ECAP)
-E-Mail: sebastian.seb.schmidt@fau.de
+Module name: dpx\_func\_python  
+Author: Sebastian Schmidt (ECAP)  
+E-Mail: sebastian.seb.schmidt@fau.de  
 
 ## Installation
 ### via pip
@@ -48,9 +48,9 @@ Important parameters are:
 | `portName`          | Name of the used com-port of the PC. For Linux, it usually is `/dev/ttyUSB0`. For Windows, the port name has the form of 'COMX'. |
 | `baudRate`          | Used baud rate of the connection between DPX test board and PC. This is set to 2e6 in the board's current firmware and shouldn't be modified here. |
 | `configFn`          | Configuration file containing important parameters of the used Dosepix detectors. |
-| `thl\_calib\_files` | The DAC value and corresponding voltage of the threshold (THL) show a dependency of a sloped sawtooth. By measuring this dependency, a corrected threshold value can be used. Only important for certain tasks like threshold equalization or threshold scan measurements. |
-| `params\_file`      | File containing the calibration curve parameters (a, b, c, t) for each detector and pixel. Only needed for dose measurements as it is used to specify the bin edges in DosiMode. |
-| `bin\_edges\_file`  | File containing the bin edges used in DosiMode. If `params_file` is set, the file should contain the bin edges in energy. Else, it should contain the bin edges in ToT. |
+| `thl_calib_files` | The DAC value and corresponding voltage of the threshold (THL) show a dependency of a sloped sawtooth. By measuring this dependency, a corrected threshold value can be used. Only important for certain tasks like threshold equalization or threshold scan measurements. |
+| `params_file`      | File containing the calibration curve parameters (a, b, c, t) for each detector and pixel. Only needed for dose measurements as it is used to specify the bin edges in DosiMode. |
+| `bin_edges_file`  | File containing the bin edges used in DosiMode. If `params_file` is set, the file should contain the bin edges in energy. Else, it should contain the bin edges in ToT. |
 
 A measurement can be started by using the `dpx` object. For example a ToT-measurement:
 ```python
@@ -71,6 +71,7 @@ CALIB_THL = False
 ```
 `CONFIG_FN` specifies the file in which the configuration of the current setup is stored. This file will be created in the directory specified in `CONFIG_DIR`.  If the configuration directory does not exist, the program will create the folder by itself.  
 `CHIP_NUMS` are the identification numbers of the used detectors, usually written on the backside of the COB.  
+
 This equalization procedure includes THL measurementes which are optional. They are performed if the flag `CALIB_THL` is set to `True`. Afterwards, a THL-calibration file is created for each detector. This improves the equalization procedure but is not a necessity. At the current revision of the DPX test board, the measurement of the relation between THL DAC and THL voltage is only possible at Slot 1. Therefore, only one detector can be measured at a time.  
 **IMPORTANT:** the board has to be disconnected from power when switching detectors!  
 
