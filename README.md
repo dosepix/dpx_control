@@ -41,7 +41,8 @@ dpx = dpx_func_python.Dosepix(portName, baudRate=2e6, configFN=None, thl_calib_f
 ```
 
 This creates an object `dpx` of the class `Dosepix`.  
-Important parameters are:
+Important parameters are:  
+
 | Parameter | Function |
 | :-------- | :------- |
 | `portName`          | Name of the used com-port of the PC. For Linux, it usually is `/dev/ttyUSB0`. For Windows, the port name has the form of 'COMX'. |
