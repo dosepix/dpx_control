@@ -42,13 +42,14 @@ dpx = dpx_func_python.Dosepix(portName, baudRate=2e6, configFN=None, thl_calib_f
 
 This creates an object `dpx` of the class `Dosepix`.  
 Important parameters are:
-| Parameter | Function |                                                                      |
+| Parameter | Function |
+| :-------- | :------- |
 | `portName`          | Name of the used com-port of the PC. For Linux, it usually is `/dev/ttyUSB0`. For Windows, the port name has the form of 'COMX'. |
 | `baudRate`          | Used baud rate of the connection between DPX test board and PC. This is set to 2e6 in the board's current firmware and shouldn't be modified here. |
 | `configFn`          | Configuration file containing important parameters of the used Dosepix detectors. |
 | `thl\_calib\_files` | The DAC value and corresponding voltage of the threshold (THL) show a dependency of a sloped sawtooth. By measuring this dependency, a corrected threshold value can be used. Only important for certain tasks like threshold equalization or threshold scan measurements. |
 | `params\_file`      | File containing the calibration curve parameters (a, b, c, t) for each detector and pixel. Only needed for dose measurements as it is used to specify the bin edges in DosiMode. |
-| `bin\_edges\_file`  | File containing the bin edges used in DosiMode. If `params\_file` is set, the file should contain the bin edges in energy. Else, it should contain the bin edges in ToT. |
+| `bin\_edges\_file`  | File containing the bin edges used in DosiMode. If `params_file` is set, the file should contain the bin edges in energy. Else, it should contain the bin edges in ToT. |
 
 A measurement can be started by using the `dpx` object. For example a ToT-measurement:
 ```python
