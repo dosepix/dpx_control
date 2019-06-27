@@ -1,4 +1,6 @@
 import numpy as np
+import matplotlib.pyplot as plt
+import scipy.optimize
 
 import dpx_settings as ds
 
@@ -100,14 +102,15 @@ class DPX_test_pulse(object):
         if not isinstance(OMRCode, basestring):
             OMRCode[4] = 'V_ThA'
         else:
-            OMRCode &= ~(0b11111 << 12)
+            OMRCode = int(OMRCode, 16) & ~(0b11111 << 12)
             OMRCode |= getattr(ds._OMRAnalogOutSel, 'V_ThA')
+            OMRCode = '%06x' % OMRCode
         self.DPXWriteOMRCommand(slot, OMRCode)
 
-        valueRange = np.linspace(valueLow, valueHigh, valueStep)
+        valueRange = np.arange(valueLow, valueHigh, valueStep)
 
         # Number of test pulses for ToT measurement
-        NToT = 100
+        NToT = 30
 
         # Store results per column in dict
         resDict = {}
@@ -116,7 +119,7 @@ class DPX_test_pulse(object):
         columnRange = self.testPulseInit(slot, column=column)
 
         for column in columnRange:
-            THLstart = THLhigh - 400
+            THLstart = THLhigh - 1200
             THLstop = THLhigh
 
             # Select column
@@ -139,13 +142,11 @@ class DPX_test_pulse(object):
                 columnRange = self.testPulseInit(slot, column=column)
 
                 # Activate DosiMode
-                '''
                 if not isinstance(OMRCode, basestring):
                     OMRCode[0] = 'DosiMode'
                 else:
-                    OMRCode = (int(OMRCode, 16) & ((0b11) << 22))
+                    OMRCode = '%06x' % (int(OMRCode, 16) & ~((0b11) << 22))
                 self.DPXWriteOMRCommand(slot, OMRCode)
-                '''
                 
                 # Set test pulse energy
                 DACval = self.getTestPulseVoltageDAC(slot, val, energy)
@@ -174,8 +175,9 @@ class DPX_test_pulse(object):
                 if not isinstance(OMRCode, basestring):
                     OMRCode[0] = 'PCMode'
                 else:
-                    OMRCode = '%04x' % ((int(OMRCode, 16) | ((0b11) << 22)))
+                    OMRCode = '%06x' % ((int(OMRCode, 16) & ~((0b11) << 22)) | (0b10 << 22))
                 self.DPXWriteOMRCommand(slot, OMRCode)
+                print OMRCode
 
                 # Loop over THLs
                 # Init result lists
@@ -188,7 +190,10 @@ class DPX_test_pulse(object):
                 # self.MCGetADCvalue()
                 # THLRange = np.arange(THLlow, THLhigh, THLstep)
                 # THLRange = self.THLCalib[np.logical_and(self.THLCalib > THLlow, self.THLCalib < THLhigh)]
-                THLRange = np.asarray(self.THLEdges[slot - 1])
+                if len(self.THLEdges) == 0 or self.THLEdges[slot - 1] is None:
+                    THLRange = np.arange(THLlow, THLhigh)
+                else:
+                    THLRange = np.asarray(self.THLEdges[slot - 1])
                 THLstop_ = THLhigh if THLstop > THLhigh else THLstop
                 THLRange = THLRange[np.logical_and(THLRange >= THLstart, THLRange <= THLstop_)]
 
@@ -223,7 +228,7 @@ class DPX_test_pulse(object):
                 # Check if array is empty
                 if not np.count_nonzero(dataFastList):
                     # If so, energy is set too low
-                    valueCount -= 1
+                    # valueCount -= 1
                     ToTListTotal.pop()
                     ToTErrListTotal.pop()
                     continue
@@ -287,7 +292,8 @@ class DPX_test_pulse(object):
                     THLListFit = np.linspace(min(THLListCorr), max(THLListCorr), 1000)
 
                     # Perform erf-Fit
-                    p0 = [THLListCorr[int(len(THLListCorr) / 2.)], 3.]
+                    # p0 = [THLListCorr[int(len(THLListCorr) / 2.)], 3.]
+                    p0 = [np.mean(THLListCorr), 3.]
                     try:
                         popt, pcov = scipy.optimize.curve_fit(lambda x, b, c: self.erfFit(x, NPulses, b, c), THLListCorr, data, p0=p0)
                         perr = np.sqrt(np.diag(pcov))

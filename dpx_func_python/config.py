@@ -57,6 +57,11 @@ class Config(object):
                 self.THLCalib.append( np.asarray(d['ADC']) )
 
                 THLLow, THLHigh, THLFitParams = self.THLCalibToEdges(d)
+
+                # Rounding
+                THLLow = np.ceil(THLLow)
+                THLHigh = np.floor(THLHigh)
+
                 self.THLEdgesLow.append(THLLow), self.THLEdgesHigh.append(THLHigh), self.THLFitParams.append(THLFitParams)
                 print self.THLEdgesLow[-1], self.THLEdgesHigh[-1]
                 

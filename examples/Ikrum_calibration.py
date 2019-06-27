@@ -37,7 +37,7 @@ def main():
         code = dpx.periheryDACsDictToCode(d, perc=False)
         dpx.peripherys = code[:-4]
         dpx.DPXWritePeripheryDACCommand(chip_idx + 1, code)
-    
+
     dpx.thresholdEqualizationConfig(CONFIG_DIR + '/' + CONFIG_FN, I_pixeldac=None, reps=1, intPlot=False, resPlot=True)
     dpx.close()
 

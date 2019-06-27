@@ -488,6 +488,7 @@ class DPX_functions():
             OMRCode[0] = 'PCMode'
         else:
             OMRCode = int(OMRCode, 16) & ((0b10) << 22)
+            OMRCode = '%04x' % ((int(self.OMR, 16) & ~((0b11) << 22)) | (0b10 << 22))
 
         # If slot is no list, transform it into one
         if not isinstance(slot, (list,)):
@@ -504,30 +505,31 @@ class DPX_functions():
 	else:
             frameRange = self.infinite_for()
 
-        # = START MEASUREMENT =
-        print 'Starting Photon Counting Measurement!'
-        print '====================================='
-	measStart = time.time()
-        startTime = measStart
-        for c in frameRange:
-            # Start frame 
-            for sl in slot:
-                # Reset data registers
-                self.DPXDataResetCommand(sl)
+        try:
+            # = START MEASUREMENT =
+            print 'Starting Photon Counting Measurement!'
+            print '====================================='
+            measStart = time.time()
+            startTime = measStart
+            for c in frameRange:
+                # Start frame 
+                for sl in slot:
+                    # Reset data registers
+                    self.DPXDataResetCommand(sl)
 
-            # Wait specified time
-            time.sleep(measurement_time)
+                # Wait specified time
+                time.sleep(measurement_time)
 
-            # Read data and end frame
-            for sl in slot:
-                data = self.DPXReadToTDatakVpModeCommand(sl)
-                # print data
-                outDict['Slot%d' % sl].append( data.flatten() )
-                self.DPXWriteOMRCommand(sl, OMRCode)
+                # Read data and end frame
+                for sl in slot:
+                    data = self.DPXReadToTDatakVpModeCommand(sl)
+                    # print data
+                    outDict['Slot%d' % sl].append( data.flatten() )
+                    self.DPXWriteOMRCommand(sl, OMRCode)
 
-            if c > 0 and not c % 100:
-	        print '%.2f Hz' % ((time.time() - startTime) / 100)
-		startTime = time.time()
+                if c > 0 and not c % 100:
+                    print '%.2f Hz' % ((time.time() - startTime) / 100)
+                    startTime = time.time()
 
         except (KeyboardInterrupt, SystemExit):
             # Store data and plot in files
