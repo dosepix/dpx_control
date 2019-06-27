@@ -1,0 +1,399 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>dpx_func_python.config &mdash; dpx_func_python 0.1 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="../../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../../_static/jquery.js"></script>
+        <script type="text/javascript" src="../../_static/underscore.js"></script>
+        <script type="text/javascript" src="../../_static/doctools.js"></script>
+        <script type="text/javascript" src="../../_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="../../_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../index.html" class="icon icon-home"> dpx_func_python
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Submodules:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../src/dpx_functions.html">DPX_functions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../src/config.html">Config</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">dpx_func_python</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../index.html">Module code</a> &raquo;</li>
+        
+          <li><a href="../dpx_func_python.html">dpx_func_python</a> &raquo;</li>
+        
+      <li>dpx_func_python.config</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for dpx_func_python.config</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">serial</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">os.path</span>
+<span class="kn">import</span> <span class="nn">yaml</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">hickle</span>
+<span class="kn">import</span> <span class="nn">cPickle</span>
+<span class="kn">import</span> <span class="nn">configparser</span>
+
+<div class="viewcode-block" id="Config"><a class="viewcode-back" href="../../dpx_func_python.html#dpx_func_python.config.Config">[docs]</a><span class="k">class</span> <span class="nc">Config</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+<div class="viewcode-block" id="Config.getConfigDPX"><a class="viewcode-back" href="../../dpx_func_python.html#dpx_func_python.config.Config.getConfigDPX">[docs]</a>    <span class="k">def</span> <span class="nf">getConfigDPX</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">portName</span><span class="p">,</span> <span class="n">baudRate</span><span class="p">,</span> <span class="n">configFn</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ser</span> <span class="o">=</span> <span class="n">serial</span><span class="o">.</span><span class="n">Serial</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">portName</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">baudRate</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">ser</span><span class="o">.</span><span class="n">is_open</span><span class="p">,</span> <span class="s1">&#39;Error: Could not establish serial connection!&#39;</span>
+
+        <span class="c1"># Read config</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">peripherys</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">OMR</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">THLs</span> <span class="o">=</span> <span class="p">[[]]</span> <span class="o">*</span> <span class="mi">3</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">confBits</span> <span class="o">=</span> <span class="p">[[]]</span> <span class="o">*</span> <span class="mi">3</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pixelDAC</span> <span class="o">=</span> <span class="p">[[]]</span> <span class="o">*</span> <span class="mi">3</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">binEdges</span> <span class="o">=</span> <span class="p">[[]]</span> <span class="o">*</span> <span class="mi">3</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">configFn</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isfile</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">configFn</span><span class="p">):</span>
+            <span class="nb">print</span> <span class="s1">&#39;Config file not found. Please run THL equalization first. Using standard values.&#39;</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">peripherys</span> <span class="o">=</span> <span class="s1">&#39;dc310bc864508230768080ff0064&#39;</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">OMR</span> <span class="o">=</span> <span class="s1">&#39;39ffc0&#39;</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">THLs</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;153b&#39;</span><span class="p">]</span> <span class="o">*</span> <span class="mi">3</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">confBits</span> <span class="o">=</span> <span class="p">[[</span><span class="s1">&#39;0&#39;</span><span class="p">]</span><span class="o">*</span><span class="mi">512</span><span class="p">]</span> <span class="o">*</span> <span class="mi">3</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">pixelDAC</span> <span class="o">=</span> <span class="p">[[</span><span class="s1">&#39;0&#39;</span><span class="p">]</span><span class="o">*</span><span class="mi">512</span><span class="p">]</span> <span class="o">*</span> <span class="mi">3</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">binEdges</span> <span class="o">=</span> <span class="p">[[</span><span class="s1">&#39;0&#39;</span><span class="p">]</span><span class="o">*</span><span class="mi">1024</span><span class="p">]</span> <span class="o">*</span> <span class="mi">3</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">readConfig</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">configFn</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">initDPX</span><span class="p">()</span>
+
+        <span class="c1"># If no THL calibration file is present</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">thl_calib_files</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="nb">print</span> <span class="s1">&#39;Warning: No THL calibration file set! Functions using the THL edges won</span><span class="se">\&#39;</span><span class="s1">t be usuable&#39;</span>
+            <span class="k">return</span>
+
+        <span class="c1"># Load THL calibration data</span>
+        <span class="k">for</span> <span class="n">thl_calib_file</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">thl_calib_files</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">thl_calib_file</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isfile</span><span class="p">(</span><span class="n">thl_calib_file</span><span class="p">):</span>
+                <span class="nb">print</span> <span class="s1">&#39;Need the specified THL Calibration file </span><span class="si">%s</span><span class="s1">!&#39;</span> <span class="o">%</span> <span class="n">thl_calib_file</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">THLEdgesLow</span><span class="o">.</span><span class="n">append</span><span class="p">(</span> <span class="kc">None</span> <span class="p">)</span> <span class="c1"># [   0,  662, 1175, 1686, 2193, 2703, 3215, 3728, 4241, 4751, 5263, 5777, 6284, 6784, 7312]</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">THLEdgesHigh</span><span class="o">.</span><span class="n">append</span><span class="p">(</span> <span class="kc">None</span> <span class="p">)</span> <span class="c1"># [ 388,  889, 1397, 1904, 2416, 2927, 3440, 3952, 4464, 4976, 5488, 5991, 6488, 7009, 8190]</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">THLEdges</span><span class="o">.</span><span class="n">append</span><span class="p">(</span> <span class="kc">None</span> <span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">THLFitParams</span><span class="o">.</span><span class="n">append</span><span class="p">(</span> <span class="kc">None</span> <span class="p">)</span>
+
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">thl_calib_file</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s1">&#39;.p&#39;</span><span class="p">):</span>
+                    <span class="n">d</span> <span class="o">=</span> <span class="n">cPickle</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="nb">open</span><span class="p">(</span><span class="n">thl_calib_file</span><span class="p">,</span> <span class="s1">&#39;rb&#39;</span><span class="p">))</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">d</span> <span class="o">=</span> <span class="n">hickle</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">thl_calib_file</span><span class="p">)</span>
+
+                <span class="bp">self</span><span class="o">.</span><span class="n">voltCalib</span><span class="o">.</span><span class="n">append</span><span class="p">(</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">d</span><span class="p">[</span><span class="s1">&#39;Volt&#39;</span><span class="p">])</span> <span class="o">/</span> <span class="nb">max</span><span class="p">(</span><span class="n">d</span><span class="p">[</span><span class="s1">&#39;Volt&#39;</span><span class="p">])</span> <span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">THLCalib</span><span class="o">.</span><span class="n">append</span><span class="p">(</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">d</span><span class="p">[</span><span class="s1">&#39;ADC&#39;</span><span class="p">])</span> <span class="p">)</span>
+
+                <span class="n">THLLow</span><span class="p">,</span> <span class="n">THLHigh</span><span class="p">,</span> <span class="n">THLFitParams</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">THLCalibToEdges</span><span class="p">(</span><span class="n">d</span><span class="p">)</span>
+
+                <span class="c1"># Rounding</span>
+                <span class="n">THLLow</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ceil</span><span class="p">(</span><span class="n">THLLow</span><span class="p">)</span>
+                <span class="n">THLHigh</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">floor</span><span class="p">(</span><span class="n">THLHigh</span><span class="p">)</span>
+
+                <span class="bp">self</span><span class="o">.</span><span class="n">THLEdgesLow</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">THLLow</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">THLEdgesHigh</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">THLHigh</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">THLFitParams</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">THLFitParams</span><span class="p">)</span>
+                <span class="nb">print</span> <span class="bp">self</span><span class="o">.</span><span class="n">THLEdgesLow</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">THLEdgesHigh</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+                
+                <span class="c1"># Combine</span>
+                <span class="n">THLEdges</span> <span class="o">=</span> <span class="p">[]</span>
+                <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">THLEdgesLow</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])):</span>
+                    <span class="n">THLEdges</span> <span class="o">+=</span> <span class="nb">list</span><span class="p">(</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">THLEdgesLow</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">][</span><span class="n">i</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">THLEdgesHigh</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">][</span><span class="n">i</span><span class="p">]</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">THLEdges</span><span class="o">.</span><span class="n">append</span><span class="p">(</span> <span class="n">THLEdges</span> <span class="p">)</span> </div>
+
+<div class="viewcode-block" id="Config.splitPerihperyDACs"><a class="viewcode-back" href="../../dpx_func_python.html#dpx_func_python.config.Config.splitPerihperyDACs">[docs]</a>    <span class="k">def</span> <span class="nf">splitPerihperyDACs</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">code</span><span class="p">,</span> <span class="n">perc</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">perc</span><span class="p">:</span>
+            <span class="n">percEightBit</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span> <span class="mi">2</span><span class="o">**</span><span class="mi">8</span> <span class="p">)</span>
+            <span class="n">percNineBit</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span> <span class="mi">2</span><span class="o">**</span><span class="mi">9</span> <span class="p">)</span>
+            <span class="n">percThirteenBit</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span> <span class="mi">2</span><span class="o">**</span><span class="mi">13</span> <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">percEightBit</span><span class="p">,</span> <span class="n">percNineBit</span><span class="p">,</span> <span class="n">percThirteenBit</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span>
+
+
+        <span class="n">code</span> <span class="o">=</span> <span class="nb">bin</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">code</span><span class="p">,</span> <span class="mi">16</span><span class="p">))</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;0b&#39;</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="nb">print</span> <span class="n">code</span>
+        <span class="n">d</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;V_ThA&#39;</span><span class="p">:</span> <span class="nb">int</span><span class="p">(</span><span class="n">code</span><span class="p">[</span><span class="mi">115</span><span class="p">:],</span> <span class="mi">2</span><span class="p">)</span> <span class="o">/</span> <span class="n">percThirteenBit</span><span class="p">,</span>
+            <span class="s1">&#39;V_tpref_fine&#39;</span><span class="p">:</span> <span class="nb">int</span><span class="p">(</span><span class="n">code</span><span class="p">[</span><span class="mi">103</span><span class="p">:</span><span class="mi">112</span><span class="p">],</span> <span class="mi">2</span><span class="p">)</span> <span class="o">/</span> <span class="n">percNineBit</span><span class="p">,</span>
+            <span class="s1">&#39;V_tpref_coarse&#39;</span><span class="p">:</span> <span class="nb">int</span><span class="p">(</span><span class="n">code</span><span class="p">[</span><span class="mi">88</span><span class="p">:</span><span class="mi">96</span><span class="p">],</span> <span class="mi">2</span><span class="p">)</span> <span class="o">/</span> <span class="n">percEightBit</span><span class="p">,</span> 
+            <span class="s1">&#39;I_tpbufout&#39;</span><span class="p">:</span> <span class="nb">int</span><span class="p">(</span><span class="n">code</span><span class="p">[</span><span class="mi">80</span><span class="p">:</span><span class="mi">88</span><span class="p">],</span> <span class="mi">2</span><span class="p">)</span> <span class="o">/</span> <span class="n">percEightBit</span><span class="p">,</span> 
+            <span class="s1">&#39;I_tpbufin&#39;</span><span class="p">:</span> <span class="nb">int</span><span class="p">(</span><span class="n">code</span><span class="p">[</span><span class="mi">72</span><span class="p">:</span><span class="mi">80</span><span class="p">],</span> <span class="mi">2</span><span class="p">)</span> <span class="o">/</span> <span class="n">percEightBit</span><span class="p">,</span> 
+            <span class="s1">&#39;I_disc2&#39;</span><span class="p">:</span> <span class="nb">int</span><span class="p">(</span><span class="n">code</span><span class="p">[</span><span class="mi">64</span><span class="p">:</span><span class="mi">72</span><span class="p">],</span> <span class="mi">2</span><span class="p">)</span> <span class="o">/</span> <span class="n">percEightBit</span><span class="p">,</span> 
+            <span class="s1">&#39;I_disc1&#39;</span><span class="p">:</span> <span class="nb">int</span><span class="p">(</span><span class="n">code</span><span class="p">[</span><span class="mi">56</span><span class="p">:</span><span class="mi">64</span><span class="p">],</span> <span class="mi">2</span><span class="p">)</span> <span class="o">/</span> <span class="n">percEightBit</span><span class="p">,</span> 
+            <span class="s1">&#39;V_casc_preamp&#39;</span><span class="p">:</span> <span class="nb">int</span><span class="p">(</span><span class="n">code</span><span class="p">[</span><span class="mi">48</span><span class="p">:</span><span class="mi">56</span><span class="p">],</span> <span class="mi">2</span><span class="p">)</span> <span class="o">/</span> <span class="n">percEightBit</span><span class="p">,</span> 
+            <span class="s1">&#39;V_gnd&#39;</span><span class="p">:</span> <span class="nb">int</span><span class="p">(</span><span class="n">code</span><span class="p">[</span><span class="mi">40</span><span class="p">:</span><span class="mi">48</span><span class="p">],</span> <span class="mi">2</span><span class="p">)</span> <span class="o">/</span> <span class="n">percEightBit</span><span class="p">,</span> 
+            <span class="s1">&#39;I_preamp&#39;</span><span class="p">:</span> <span class="nb">int</span><span class="p">(</span><span class="n">code</span><span class="p">[</span><span class="mi">32</span><span class="p">:</span><span class="mi">40</span><span class="p">],</span> <span class="mi">2</span><span class="p">)</span> <span class="o">/</span> <span class="n">percEightBit</span><span class="p">,</span> 
+            <span class="s1">&#39;V_fbk&#39;</span><span class="p">:</span> <span class="nb">int</span><span class="p">(</span><span class="n">code</span><span class="p">[</span><span class="mi">24</span><span class="p">:</span><span class="mi">32</span><span class="p">],</span> <span class="mi">2</span><span class="p">)</span> <span class="o">/</span> <span class="n">percEightBit</span><span class="p">,</span> 
+            <span class="s1">&#39;I_krum&#39;</span><span class="p">:</span> <span class="nb">int</span><span class="p">(</span><span class="n">code</span><span class="p">[</span><span class="mi">16</span><span class="p">:</span><span class="mi">24</span><span class="p">],</span> <span class="mi">2</span><span class="p">)</span> <span class="o">/</span> <span class="n">percEightBit</span><span class="p">,</span> 
+            <span class="s1">&#39;I_pixeldac&#39;</span><span class="p">:</span> <span class="nb">int</span><span class="p">(</span><span class="n">code</span><span class="p">[</span><span class="mi">8</span><span class="p">:</span><span class="mi">16</span><span class="p">],</span> <span class="mi">2</span><span class="p">)</span> <span class="o">/</span> <span class="n">percEightBit</span><span class="p">,</span> 
+            <span class="s1">&#39;V_casc_reset&#39;</span><span class="p">:</span> <span class="nb">int</span><span class="p">(</span><span class="n">code</span><span class="p">[:</span><span class="mi">8</span><span class="p">],</span> <span class="mi">2</span><span class="p">)</span> <span class="o">/</span> <span class="n">percEightBit</span><span class="p">}</span>
+
+        <span class="nb">print</span> <span class="s1">&#39;PeripheryDAC values in&#39;</span><span class="p">,</span>
+        <span class="k">if</span> <span class="n">perc</span><span class="p">:</span>
+            <span class="nb">print</span> <span class="s1">&#39;percent:&#39;</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="nb">print</span> <span class="s1">&#39;DAC:&#39;</span>
+        <span class="nb">print</span> <span class="n">yaml</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="n">d</span><span class="p">,</span> <span class="n">indent</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">default_flow_style</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="nb">print</span> 
+
+        <span class="k">return</span> <span class="n">d</span></div>
+
+<div class="viewcode-block" id="Config.periheryDACsDictToCode"><a class="viewcode-back" href="../../dpx_func_python.html#dpx_func_python.config.Config.periheryDACsDictToCode">[docs]</a>    <span class="k">def</span> <span class="nf">periheryDACsDictToCode</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">d</span><span class="p">,</span> <span class="n">perc</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">perc</span><span class="p">:</span>
+            <span class="n">percEightBit</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span> <span class="mi">2</span><span class="o">**</span><span class="mi">8</span> <span class="p">)</span>
+            <span class="n">percNineBit</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span> <span class="mi">2</span><span class="o">**</span><span class="mi">9</span> <span class="p">)</span>
+            <span class="n">percThirteenBit</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span> <span class="mi">2</span><span class="o">**</span><span class="mi">13</span> <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">percEightBit</span><span class="p">,</span> <span class="n">percNineBit</span><span class="p">,</span> <span class="n">percThirteenBit</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span>
+
+        <span class="n">code</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">code</span> <span class="o">|=</span> <span class="nb">int</span><span class="p">(</span><span class="n">d</span><span class="p">[</span><span class="s1">&#39;V_ThA&#39;</span><span class="p">]</span> <span class="o">*</span> <span class="n">percThirteenBit</span><span class="p">)</span> 
+        <span class="n">code</span> <span class="o">|=</span> <span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">d</span><span class="p">[</span><span class="s1">&#39;V_tpref_fine&#39;</span><span class="p">]</span> <span class="o">*</span> <span class="n">percNineBit</span><span class="p">)</span> <span class="o">&lt;&lt;</span> <span class="mi">25</span> <span class="o">-</span> <span class="mi">9</span><span class="p">)</span>
+        <span class="n">code</span> <span class="o">|=</span> <span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">d</span><span class="p">[</span><span class="s1">&#39;V_tpref_coarse&#39;</span><span class="p">]</span> <span class="o">*</span> <span class="n">percEightBit</span><span class="p">)</span> <span class="o">&lt;&lt;</span> <span class="mi">40</span> <span class="o">-</span> <span class="mi">8</span><span class="p">)</span>
+        <span class="n">code</span> <span class="o">|=</span> <span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">d</span><span class="p">[</span><span class="s1">&#39;I_tpbufout&#39;</span><span class="p">]</span> <span class="o">*</span> <span class="n">percEightBit</span><span class="p">)</span> <span class="o">&lt;&lt;</span> <span class="mi">48</span> <span class="o">-</span> <span class="mi">8</span><span class="p">)</span>
+        <span class="n">code</span> <span class="o">|=</span> <span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">d</span><span class="p">[</span><span class="s1">&#39;I_tpbufin&#39;</span><span class="p">]</span> <span class="o">*</span> <span class="n">percEightBit</span><span class="p">)</span> <span class="o">&lt;&lt;</span> <span class="mi">56</span> <span class="o">-</span> <span class="mi">8</span><span class="p">)</span>
+        <span class="n">code</span> <span class="o">|=</span> <span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">d</span><span class="p">[</span><span class="s1">&#39;I_disc2&#39;</span><span class="p">]</span> <span class="o">*</span> <span class="n">percEightBit</span><span class="p">)</span> <span class="o">&lt;&lt;</span> <span class="mi">64</span> <span class="o">-</span> <span class="mi">8</span><span class="p">)</span>
+        <span class="n">code</span> <span class="o">|=</span> <span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">d</span><span class="p">[</span><span class="s1">&#39;I_disc1&#39;</span><span class="p">]</span> <span class="o">*</span> <span class="n">percEightBit</span><span class="p">)</span> <span class="o">&lt;&lt;</span> <span class="mi">72</span> <span class="o">-</span> <span class="mi">8</span><span class="p">)</span>
+        <span class="n">code</span> <span class="o">|=</span> <span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">d</span><span class="p">[</span><span class="s1">&#39;V_casc_preamp&#39;</span><span class="p">]</span> <span class="o">*</span> <span class="n">percEightBit</span><span class="p">)</span> <span class="o">&lt;&lt;</span> <span class="mi">80</span> <span class="o">-</span> <span class="mi">8</span><span class="p">)</span>
+        <span class="n">code</span> <span class="o">|=</span> <span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">d</span><span class="p">[</span><span class="s1">&#39;V_gnd&#39;</span><span class="p">]</span> <span class="o">*</span> <span class="n">percEightBit</span><span class="p">)</span> <span class="o">&lt;&lt;</span> <span class="mi">88</span> <span class="o">-</span> <span class="mi">8</span><span class="p">)</span>
+        <span class="n">code</span> <span class="o">|=</span> <span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">d</span><span class="p">[</span><span class="s1">&#39;I_preamp&#39;</span><span class="p">]</span> <span class="o">*</span> <span class="n">percEightBit</span><span class="p">)</span> <span class="o">&lt;&lt;</span> <span class="mi">96</span> <span class="o">-</span> <span class="mi">8</span><span class="p">)</span>
+        <span class="n">code</span> <span class="o">|=</span> <span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">d</span><span class="p">[</span><span class="s1">&#39;V_fbk&#39;</span><span class="p">]</span> <span class="o">*</span> <span class="n">percEightBit</span><span class="p">)</span> <span class="o">&lt;&lt;</span> <span class="mi">104</span> <span class="o">-</span> <span class="mi">8</span><span class="p">)</span>
+        <span class="n">code</span> <span class="o">|=</span> <span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">d</span><span class="p">[</span><span class="s1">&#39;I_krum&#39;</span><span class="p">]</span> <span class="o">*</span> <span class="n">percEightBit</span><span class="p">)</span> <span class="o">&lt;&lt;</span> <span class="mi">112</span> <span class="o">-</span> <span class="mi">8</span><span class="p">)</span>
+        <span class="n">code</span> <span class="o">|=</span> <span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">d</span><span class="p">[</span><span class="s1">&#39;I_pixeldac&#39;</span><span class="p">]</span> <span class="o">*</span> <span class="n">percEightBit</span><span class="p">)</span> <span class="o">&lt;&lt;</span> <span class="mi">120</span> <span class="o">-</span> <span class="mi">8</span><span class="p">)</span>
+        <span class="n">code</span> <span class="o">|=</span> <span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">d</span><span class="p">[</span><span class="s1">&#39;V_casc_reset&#39;</span><span class="p">]</span> <span class="o">*</span> <span class="n">percEightBit</span><span class="p">)</span> <span class="o">&lt;&lt;</span> <span class="mi">128</span> <span class="o">-</span> <span class="mi">8</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="nb">hex</span><span class="p">(</span><span class="n">code</span><span class="p">)</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;0x&#39;</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">][:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span></div>
+
+<div class="viewcode-block" id="Config.readConfig"><a class="viewcode-back" href="../../dpx_func_python.html#dpx_func_python.config.Config.readConfig">[docs]</a>    <span class="k">def</span> <span class="nf">readConfig</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">configFn</span><span class="p">):</span>
+        <span class="n">config</span> <span class="o">=</span> <span class="n">configparser</span><span class="o">.</span><span class="n">ConfigParser</span><span class="p">()</span>
+        <span class="n">config</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">configFn</span><span class="p">)</span>
+
+        <span class="c1"># Mandatory sections</span>
+        <span class="n">sectionList</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;General&#39;</span><span class="p">,</span> <span class="s1">&#39;OMR&#39;</span><span class="p">,</span> <span class="s1">&#39;Slot1&#39;</span><span class="p">,</span> <span class="s1">&#39;Slot2&#39;</span><span class="p">,</span> <span class="s1">&#39;Slot3&#39;</span><span class="p">]</span>
+
+        <span class="c1"># Check if set, else throw error</span>
+        <span class="k">for</span> <span class="n">section</span> <span class="ow">in</span> <span class="n">config</span><span class="o">.</span><span class="n">sections</span><span class="p">():</span>
+            <span class="k">assert</span> <span class="n">section</span> <span class="ow">in</span> <span class="n">sectionList</span><span class="p">,</span> <span class="s1">&#39;Config: </span><span class="si">%s</span><span class="s1"> is a mandatory section and has to be specified&#39;</span> <span class="o">%</span> <span class="n">section</span>
+
+        <span class="c1"># Read General</span>
+        <span class="k">if</span> <span class="s1">&#39;peripheryDAC&#39;</span> <span class="ow">in</span> <span class="n">config</span><span class="p">[</span><span class="s1">&#39;General&#39;</span><span class="p">]:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">peripherys</span> <span class="o">=</span> <span class="n">config</span><span class="p">[</span><span class="s1">&#39;General&#39;</span><span class="p">][</span><span class="s1">&#39;peripheryDAC&#39;</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">3</span> <span class="o">+</span> <span class="mi">1</span><span class="p">):</span>
+                <span class="k">assert</span> <span class="s1">&#39;peripheryDAC&#39;</span> <span class="ow">in</span> <span class="n">config</span><span class="p">[</span><span class="s1">&#39;Slot</span><span class="si">%d</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">i</span><span class="p">],</span> <span class="s1">&#39;Config: peripheryDAC has to be set in either General or the Slots!&#39;</span>
+
+        <span class="c1"># Read OMR</span>
+        <span class="k">if</span> <span class="s1">&#39;code&#39;</span> <span class="ow">in</span> <span class="n">config</span><span class="p">[</span><span class="s1">&#39;OMR&#39;</span><span class="p">]:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">OMR</span> <span class="o">=</span> <span class="n">config</span><span class="p">[</span><span class="s1">&#39;OMR&#39;</span><span class="p">][</span><span class="s1">&#39;code&#39;</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">OMRList</span> <span class="o">=</span> <span class="p">[]</span>
+
+            <span class="n">OMRCodeList</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;OperationMode&#39;</span><span class="p">,</span> <span class="s1">&#39;GlobalShutter&#39;</span><span class="p">,</span> <span class="s1">&#39;PLL&#39;</span><span class="p">,</span> <span class="s1">&#39;Polarity&#39;</span><span class="p">,</span> <span class="s1">&#39;AnalogOutSel&#39;</span><span class="p">,</span> <span class="s1">&#39;AnalogInSel&#39;</span><span class="p">,</span> <span class="s1">&#39;OMRDisableColClkGate&#39;</span><span class="p">]</span>
+            <span class="k">for</span> <span class="n">OMRCode</span> <span class="ow">in</span> <span class="n">OMRCodeList</span><span class="p">:</span>
+                <span class="k">assert</span> <span class="n">OMRCode</span> <span class="ow">in</span> <span class="n">config</span><span class="p">[</span><span class="s1">&#39;OMR&#39;</span><span class="p">],</span> <span class="s1">&#39;Config: </span><span class="si">%s</span><span class="s1"> has to be specified in OMR section!&#39;</span> <span class="o">%</span> <span class="n">OMRCode</span>
+
+                <span class="n">OMRList</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">config</span><span class="p">[</span><span class="s1">&#39;OMR&#39;</span><span class="p">][</span><span class="n">OMRCode</span><span class="p">])</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">OMR</span> <span class="o">=</span> <span class="n">OMRList</span>
+
+        <span class="c1"># Read slot specific data</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">3</span> <span class="o">+</span> <span class="mi">1</span><span class="p">):</span>
+            <span class="k">assert</span> <span class="s1">&#39;Slot</span><span class="si">%d</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">config</span><span class="o">.</span><span class="n">sections</span><span class="p">(),</span> <span class="s1">&#39;Config: Slot </span><span class="si">%d</span><span class="s1"> is a mandatory section!&#39;</span> <span class="o">%</span> <span class="n">i</span>
+
+            <span class="c1"># THL</span>
+            <span class="k">assert</span> <span class="s1">&#39;THL&#39;</span> <span class="ow">in</span> <span class="n">config</span><span class="p">[</span><span class="s1">&#39;Slot</span><span class="si">%d</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">i</span><span class="p">],</span> <span class="s1">&#39;Config: THL has to be specified in Slot</span><span class="si">%d</span><span class="s1"> section!&#39;</span> <span class="o">%</span> <span class="n">i</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">THLs</span><span class="p">[</span><span class="n">i</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">config</span><span class="p">[</span><span class="s1">&#39;Slot</span><span class="si">%d</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">i</span><span class="p">][</span><span class="s1">&#39;THL&#39;</span><span class="p">]</span>
+
+            <span class="c1"># confBits - optional field</span>
+            <span class="k">if</span> <span class="s1">&#39;confBits&#39;</span> <span class="ow">in</span> <span class="n">config</span><span class="p">[</span><span class="s1">&#39;Slot</span><span class="si">%d</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">i</span><span class="p">]:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">confBits</span><span class="p">[</span><span class="n">i</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">config</span><span class="p">[</span><span class="s1">&#39;Slot</span><span class="si">%d</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">i</span><span class="p">][</span><span class="s1">&#39;confBits&#39;</span><span class="p">]</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="c1"># Use all pixels</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">confBits</span><span class="p">[</span><span class="n">i</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;00&#39;</span> <span class="o">*</span> <span class="mi">256</span>
+
+            <span class="c1"># pixelDAC</span>
+            <span class="k">assert</span> <span class="s1">&#39;pixelDAC&#39;</span> <span class="ow">in</span> <span class="n">config</span><span class="p">[</span><span class="s1">&#39;Slot</span><span class="si">%d</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">i</span><span class="p">],</span> <span class="s1">&#39;Config: pixelDAC has to be specified in Slot</span><span class="si">%d</span><span class="s1"> section!&#39;</span> <span class="o">%</span> <span class="n">i</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">pixelDAC</span><span class="p">[</span><span class="n">i</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">config</span><span class="p">[</span><span class="s1">&#39;Slot</span><span class="si">%d</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">i</span><span class="p">][</span><span class="s1">&#39;pixelDAC&#39;</span><span class="p">]</span>
+
+            <span class="c1"># binEdges</span>
+            <span class="k">assert</span> <span class="s1">&#39;binEdges&#39;</span> <span class="ow">in</span> <span class="n">config</span><span class="p">[</span><span class="s1">&#39;Slot</span><span class="si">%d</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">i</span><span class="p">],</span> <span class="s1">&#39;Config: binEdges has to be specified in Slot</span><span class="si">%d</span><span class="s1"> section!&#39;</span> <span class="o">%</span> <span class="n">i</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">binEdges</span><span class="p">[</span><span class="n">i</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">config</span><span class="p">[</span><span class="s1">&#39;Slot</span><span class="si">%d</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">i</span><span class="p">][</span><span class="s1">&#39;binEdges&#39;</span><span class="p">]</span>
+
+        <span class="k">return</span></div>
+
+<div class="viewcode-block" id="Config.writeConfig"><a class="viewcode-back" href="../../dpx_func_python.html#dpx_func_python.config.Config.writeConfig">[docs]</a>    <span class="k">def</span> <span class="nf">writeConfig</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">configFn</span><span class="p">):</span>
+        <span class="n">config</span> <span class="o">=</span> <span class="n">configparser</span><span class="o">.</span><span class="n">ConfigParser</span><span class="p">()</span>
+        <span class="n">config</span><span class="p">[</span><span class="s1">&#39;General&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;peripheryDAC&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">peripherys</span><span class="p">}</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">OMR</span><span class="p">,</span> <span class="n">basestring</span><span class="p">):</span>
+            <span class="n">OMRCodeList</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;OperationMode&#39;</span><span class="p">,</span> <span class="s1">&#39;GlobalShutter&#39;</span><span class="p">,</span> <span class="s1">&#39;PLL&#39;</span><span class="p">,</span> <span class="s1">&#39;Polarity&#39;</span><span class="p">,</span> <span class="s1">&#39;AnalogOutSel&#39;</span><span class="p">,</span> <span class="s1">&#39;AnalogInSel&#39;</span><span class="p">,</span> <span class="s1">&#39;OMRDisableColClkGate&#39;</span><span class="p">]</span>
+            <span class="n">config</span><span class="p">[</span><span class="s1">&#39;OMR&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="n">OMRCode</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">OMR</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">OMRCode</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">OMRCodeList</span><span class="p">)}</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">config</span><span class="p">[</span><span class="s1">&#39;OMR&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;code&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">OMR</span><span class="p">}</span>
+
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">3</span> <span class="o">+</span> <span class="mi">1</span><span class="p">):</span>
+            <span class="n">config</span><span class="p">[</span><span class="s1">&#39;Slot</span><span class="si">%d</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;pixelDAC&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">pixelDAC</span><span class="p">[</span><span class="n">i</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="s1">&#39;binEdges&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">binEdges</span><span class="p">[</span><span class="n">i</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="s1">&#39;confBits&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">confBits</span><span class="p">[</span><span class="n">i</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="s1">&#39;binEdges&#39;</span><span class="p">:</span> <span class="s1">&#39;&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">binEdges</span><span class="p">[</span><span class="n">i</span><span class="o">-</span><span class="mi">1</span><span class="p">]),</span> <span class="s1">&#39;THL&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">THLs</span><span class="p">[</span><span class="n">i</span><span class="o">-</span><span class="mi">1</span><span class="p">]}</span>
+
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">configFn</span><span class="p">,</span> <span class="s1">&#39;w&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">configFile</span><span class="p">:</span>
+            <span class="n">config</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">configFile</span><span class="p">)</span></div></div>
+
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2019, Sebastian Schmidt
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

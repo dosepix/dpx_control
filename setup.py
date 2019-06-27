@@ -23,5 +23,6 @@ setup(name='dpx_func_python',
 		'pyyaml',
 		'configparser',
 		'sphinx',
+                'numpydoc',
 		'sphinx_rtd_theme'
 	])

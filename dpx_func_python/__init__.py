@@ -7,9 +7,8 @@ import dpx_functions
 import dpx_support
 import system
 import dpx_settings
-import dpx_test_pulse
 
-class Dosepix(config.Config, control.Control, support.Support, dpx_functions.DPX_functions, dpx_support.DPX_support, system.System, dpx_test_pulse.DPX_test_pulse):
+class Dosepix(config.Config, control.Control, support.Support, dpx_functions.DPX_functions, dpx_support.DPX_support, system.System):
     # === FLAGS ===
     USE_GUI = False
 

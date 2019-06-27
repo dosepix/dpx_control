@@ -1,0 +1,703 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>dpx_func_python.control &mdash; dpx_func_python 0.1 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="../../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../../_static/jquery.js"></script>
+        <script type="text/javascript" src="../../_static/underscore.js"></script>
+        <script type="text/javascript" src="../../_static/doctools.js"></script>
+        <script type="text/javascript" src="../../_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="../../_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../index.html" class="icon icon-home"> dpx_func_python
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Submodules:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../src/dpx_functions.html">DPX_functions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../src/config.html">Config</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">dpx_func_python</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../index.html">Module code</a> &raquo;</li>
+        
+          <li><a href="../dpx_func_python.html">dpx_func_python</a> &raquo;</li>
+        
+      <li>dpx_func_python.control</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for dpx_func_python.control</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">time</span>
+<span class="kn">from</span> <span class="nn">collections</span> <span class="k">import</span> <span class="n">namedtuple</span>
+<span class="kn">import</span> <span class="nn">cPickle</span>
+<span class="kn">import</span> <span class="nn">hickle</span>
+
+<span class="n">DEBUG</span> <span class="o">=</span> <span class="kc">False</span>
+<span class="kn">import</span> <span class="nn">dpx_settings</span> <span class="k">as</span> <span class="nn">ds</span>
+
+<div class="viewcode-block" id="Control"><a class="viewcode-back" href="../../dpx_func_python.html#dpx_func_python.control.Control">[docs]</a><span class="k">class</span> <span class="nc">Control</span><span class="p">():</span>
+<div class="viewcode-block" id="Control.initDPX"><a class="viewcode-back" href="../../dpx_func_python.html#dpx_func_python.control.Control.initDPX">[docs]</a>    <span class="k">def</span> <span class="nf">initDPX</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="c1"># Start HV</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">HVSetDac</span><span class="p">(</span><span class="s1">&#39;0000&#39;</span><span class="p">)</span>
+        <span class="nb">print</span> <span class="s1">&#39;HV DAC set to </span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">HVGetDac</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">HVActivate</span><span class="p">()</span>
+        <span class="c1"># Set voltage to 3.3V</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">VCVoltageSet3V3</span><span class="p">()</span>
+
+        <span class="c1"># Check if HV is enabled</span>
+        <span class="nb">print</span> <span class="s1">&#39;Check if HV is activated...&#39;</span><span class="p">,</span>
+        <span class="c1"># Try five times</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">5</span><span class="p">):</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">HVGetState</span><span class="p">():</span>
+                <span class="nb">print</span> <span class="s1">&#39;done!&#39;</span>
+                <span class="k">break</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">HVActivate</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">assert</span> <span class="s1">&#39;HV could not be activated!&#39;</span>
+
+        <span class="nb">print</span> <span class="s1">&#39;Voltage set to </span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">VCGetVoltage</span><span class="p">()</span>
+
+        <span class="c1"># Disable LED</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">MCLEDdisable</span><span class="p">()</span>
+
+        <span class="c1"># Wait</span>
+        <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mf">0.5</span><span class="p">)</span>
+
+        <span class="c1"># Global reset</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">3</span> <span class="o">+</span> <span class="mi">1</span><span class="p">):</span>
+            <span class="c1"># Do three times</span>
+            <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">3</span><span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">DPXGlobalReset</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>
+        <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mf">0.5</span><span class="p">)</span>
+
+        <span class="c1"># = Write Settings =</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">3</span> <span class="o">+</span> <span class="mi">1</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">DPXWriteConfigurationCommand</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">confBits</span><span class="p">[</span><span class="n">i</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">DPXWriteOMRCommand</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">OMR</span><span class="p">)</span>
+
+            <span class="c1"># Merge peripheryDACcode and THL value</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">DPXWritePeripheryDACCommand</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">peripherys</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">THLs</span><span class="p">[</span><span class="n">i</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+            <span class="nb">print</span> <span class="s1">&#39;Periphery DAC on Slot </span><span class="si">%d</span><span class="s1"> set to: </span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">DPXReadPeripheryDACCommand</span><span class="p">(</span><span class="n">i</span><span class="p">))</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">DPXWritePixelDACCommand</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">pixelDAC</span><span class="p">[</span><span class="n">i</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+            <span class="nb">print</span> <span class="s1">&#39;Pixel DAC on Slot </span><span class="si">%d</span><span class="s1"> set to: </span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">DPXReadPixelDACCommand</span><span class="p">(</span><span class="n">i</span><span class="p">))</span>
+        <span class="nb">print</span>
+        <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mf">0.5</span><span class="p">)</span>
+
+        <span class="c1"># = Data Reset =</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">3</span> <span class="o">+</span> <span class="mi">1</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">DPXDataResetCommand</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>
+
+        <span class="c1"># = Dummy Readout =</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">3</span> <span class="o">+</span> <span class="mi">1</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">DPXReadToTDataDosiModeCommand</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>
+
+        <span class="c1"># = Bin Edges =</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">params_file</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">bin_edges_file</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="nb">print</span> <span class="bp">self</span><span class="o">.</span><span class="n">bin_edges_file</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">bin_edges_file</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s1">&#39;.p&#39;</span><span class="p">):</span>
+                <span class="n">binEdgesDict</span> <span class="o">=</span> <span class="n">cPickle</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="nb">open</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">bin_edges_file</span><span class="p">,</span> <span class="s1">&#39;rb&#39;</span><span class="p">))</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">binEdgesDict</span> <span class="o">=</span> <span class="n">hickle</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">bin_edges_file</span><span class="p">)</span>
+
+            <span class="k">for</span> <span class="n">slot</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">3</span> <span class="o">+</span> <span class="mi">1</span><span class="p">):</span>
+                <span class="k">for</span> <span class="n">idx</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">16</span><span class="p">):</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">DPXWriteSingleThresholdCommand</span><span class="p">(</span><span class="n">slot</span><span class="p">,</span> <span class="n">binEdgesDict</span><span class="p">[</span><span class="s1">&#39;Slot</span><span class="si">%d</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">slot</span><span class="p">][</span><span class="n">idx</span><span class="p">])</span>
+
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">params_file</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="nb">print</span> <span class="s1">&#39;Warning: No parameters for the bin edges specified. Using default values.&#39;</span>
+
+                <span class="n">gray</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">7</span><span class="p">,</span> <span class="mi">15</span><span class="p">,</span> <span class="mi">13</span><span class="p">,</span> <span class="mi">12</span><span class="p">,</span> <span class="mi">14</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">11</span><span class="p">,</span> <span class="mi">9</span><span class="p">,</span> <span class="mi">8</span><span class="p">]</span>
+                <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">3</span> <span class="o">+</span> <span class="mi">1</span><span class="p">):</span>
+                    <span class="k">for</span> <span class="n">binEdge</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">16</span><span class="p">):</span>
+                        <span class="n">gc</span> <span class="o">=</span> <span class="n">gray</span><span class="p">[</span><span class="n">binEdge</span><span class="p">]</span>
+                        <span class="n">binEdges</span> <span class="o">=</span> <span class="p">(</span><span class="s1">&#39;</span><span class="si">%01x</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">gc</span> <span class="o">+</span> <span class="s1">&#39;</span><span class="si">%03x</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="mi">20</span><span class="o">*</span><span class="n">binEdge</span> <span class="o">+</span> <span class="mi">15</span><span class="p">))</span> <span class="o">*</span> <span class="mi">256</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">DPXWriteSingleThresholdCommand</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">binEdges</span><span class="p">)</span>
+
+            <span class="k">else</span><span class="p">:</span>
+                <span class="c1"># TODO: Add energy bins to config file</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">params_file</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s1">&#39;.p&#39;</span><span class="p">):</span>
+                    <span class="n">paramsDict</span> <span class="o">=</span> <span class="n">cPickle</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="nb">open</span><span class="p">(</span><span class="n">PARAMS_FILE</span><span class="p">,</span> <span class="s1">&#39;rb&#39;</span><span class="p">))</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">paramsDict</span> <span class="o">=</span> <span class="n">hickle</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">PARAMS_FILE</span><span class="p">)</span>
+
+                <span class="bp">self</span><span class="o">.</span><span class="n">binEdges</span> <span class="o">=</span> <span class="p">{}</span>
+                <span class="k">for</span> <span class="n">slot</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">3</span> <span class="o">+</span> <span class="mi">1</span><span class="p">):</span>
+                    <span class="n">binEdges</span> <span class="o">=</span> <span class="n">BIN_EDGES</span><span class="p">[</span><span class="s1">&#39;Slot</span><span class="si">%d</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">slot</span><span class="p">]</span> <span class="c1"># [0]</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">setBinEdges</span><span class="p">(</span><span class="n">slot</span><span class="p">,</span> <span class="n">paramsDict</span><span class="p">[</span><span class="s1">&#39;Slot</span><span class="si">%d</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">slot</span><span class="p">],</span> <span class="n">binEdges</span><span class="p">)</span>
+
+        <span class="c1"># = Empty Bins =</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">3</span> <span class="o">+</span> <span class="mi">1</span><span class="p">):</span>
+            <span class="c1"># Loop over bins</span>
+            <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">16</span> <span class="o">+</span> <span class="mi">1</span><span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">DPXWriteColSelCommand</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="mi">16</span> <span class="o">-</span> <span class="n">col</span><span class="p">)</span>
+                <span class="c1"># Dummy readout</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">DPXReadBinDataDosiModeCommand</span><span class="p">(</span><span class="n">i</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Control.getResponse"><a class="viewcode-back" href="../../dpx_func_python.html#dpx_func_python.control.Control.getResponse">[docs]</a>    <span class="k">def</span> <span class="nf">getResponse</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">res</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ser</span><span class="o">.</span><span class="n">readline</span><span class="p">()</span>
+        <span class="k">while</span> <span class="n">res</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">!=</span> <span class="s1">&#39;</span><span class="se">\x02</span><span class="s1">&#39;</span><span class="p">:</span>
+            <span class="n">res</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ser</span><span class="o">.</span><span class="n">readline</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="n">DEBUG</span><span class="p">:</span>
+            <span class="nb">print</span> <span class="n">res</span>
+        <span class="k">return</span> <span class="n">res</span></div>
+
+<div class="viewcode-block" id="Control.getDPXResponse"><a class="viewcode-back" href="../../dpx_func_python.html#dpx_func_python.control.Control.getDPXResponse">[docs]</a>    <span class="k">def</span> <span class="nf">getDPXResponse</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="c1"># res = &#39;&#39;</span>
+        <span class="c1"># while not res:</span>
+        <span class="n">res</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">getResponse</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="n">DEBUG</span><span class="p">:</span>
+            <span class="nb">print</span> <span class="s1">&#39;Length:&#39;</span><span class="p">,</span> <span class="n">res</span><span class="p">[</span><span class="mi">11</span><span class="p">:</span><span class="mi">17</span><span class="p">]</span>
+        <span class="n">cmdLength</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span> <span class="n">res</span><span class="p">[</span><span class="mi">11</span><span class="p">:</span><span class="mi">17</span><span class="p">]</span> <span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">DEBUG</span><span class="p">:</span>
+            <span class="nb">print</span> <span class="s1">&#39;CmdData:&#39;</span><span class="p">,</span> <span class="n">res</span><span class="p">[</span><span class="mi">17</span><span class="p">:</span><span class="mi">17</span><span class="o">+</span><span class="n">cmdLength</span><span class="p">]</span>
+        <span class="n">cmdData</span> <span class="o">=</span> <span class="n">res</span><span class="p">[</span><span class="mi">17</span><span class="p">:</span><span class="mi">17</span><span class="o">+</span><span class="n">cmdLength</span><span class="p">]</span>
+
+        <span class="k">return</span> <span class="n">cmdData</span></div>
+
+<div class="viewcode-block" id="Control.getReceiverFromSlot"><a class="viewcode-back" href="../../dpx_func_python.html#dpx_func_python.control.Control.getReceiverFromSlot">[docs]</a>    <span class="k">def</span> <span class="nf">getReceiverFromSlot</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">slot</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">slot</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">receiver</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">_receiverDPX1</span>
+        <span class="k">elif</span> <span class="n">slot</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="n">receiver</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">_receiverDPX2</span>
+        <span class="k">elif</span> <span class="n">slot</span> <span class="o">==</span> <span class="mi">3</span><span class="p">:</span>
+            <span class="n">receiver</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">_receiverDPX3</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">assert</span> <span class="s1">&#39;Error: Function needs to access one of the three slots.&#39;</span>
+
+        <span class="k">return</span> <span class="n">receiver</span></div>
+
+    <span class="c1"># Convert the bin edges from energy to ToT and write them to the designated registers</span>
+<div class="viewcode-block" id="Control.setBinEdges"><a class="viewcode-back" href="../../dpx_func_python.html#dpx_func_python.control.Control.setBinEdges">[docs]</a>    <span class="k">def</span> <span class="nf">setBinEdges</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">slot</span><span class="p">,</span> <span class="n">paramDict</span><span class="p">,</span> <span class="n">binEdgesEnergyList</span><span class="p">):</span>
+        <span class="c1"># assert len(paramDict) == 256, &#39;getBinEdges: Number of pixels in paramDict differs from 256!&#39;</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">paramDict</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">256</span><span class="p">:</span>
+            <span class="n">paramDict</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">fillParamDict</span><span class="p">(</span><span class="n">paramDict</span><span class="p">)</span>
+
+        <span class="c1"># The indices of the bins are specified via the following gray code</span>
+        <span class="n">gray</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">7</span><span class="p">,</span> <span class="mi">15</span><span class="p">,</span> <span class="mi">13</span><span class="p">,</span> <span class="mi">12</span><span class="p">,</span> <span class="mi">14</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">11</span><span class="p">,</span> <span class="mi">9</span><span class="p">,</span> <span class="mi">8</span><span class="p">]</span>
+
+        <span class="c1"># Check if paramDict was made using THL calibration.</span>
+        <span class="c1"># If so, additional parameters h and k are present in the dict</span>
+        <span class="k">if</span> <span class="s1">&#39;h&#39;</span> <span class="ow">in</span> <span class="n">paramDict</span><span class="p">[</span><span class="n">paramDict</span><span class="o">.</span><span class="n">keys</span><span class="p">()[</span><span class="mi">0</span><span class="p">]]</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+            <span class="n">fEnergyConv</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">fEnergyConv</span> <span class="o">=</span> <span class="kc">False</span>
+
+        <span class="n">binEdgesTotal</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">binEdgesEnergy</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span> <span class="n">binEdgesEnergyList</span> <span class="p">)</span>
+
+        <span class="n">binEdgesList</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">nanCnt</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">for</span> <span class="n">pixel</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">paramDict</span><span class="o">.</span><span class="n">keys</span><span class="p">()):</span>
+            <span class="n">params</span> <span class="o">=</span> <span class="n">paramDict</span><span class="p">[</span><span class="n">pixel</span><span class="p">]</span>
+            <span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">c</span><span class="p">,</span> <span class="n">t</span> <span class="o">=</span> <span class="n">params</span><span class="p">[</span><span class="s1">&#39;a&#39;</span><span class="p">],</span> <span class="n">params</span><span class="p">[</span><span class="s1">&#39;b&#39;</span><span class="p">],</span> <span class="n">params</span><span class="p">[</span><span class="s1">&#39;c&#39;</span><span class="p">],</span> <span class="n">params</span><span class="p">[</span><span class="s1">&#39;t&#39;</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">fEnergyConv</span><span class="p">:</span>
+                <span class="n">h</span><span class="p">,</span> <span class="n">k</span> <span class="o">=</span> <span class="n">params</span><span class="p">[</span><span class="s1">&#39;h&#39;</span><span class="p">],</span> <span class="n">params</span><span class="p">[</span><span class="s1">&#39;k&#39;</span><span class="p">]</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">h</span><span class="p">,</span> <span class="n">k</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span>
+
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">binEdgesEnergy</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">17</span><span class="p">:</span> <span class="c1"># binEdgesEnergy.shape[1] &gt; 0:</span>
+                <span class="n">beEnergy</span> <span class="o">=</span> <span class="n">binEdgesEnergy</span><span class="p">[</span><span class="n">pixel</span><span class="p">]</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">beEnergy</span> <span class="o">=</span> <span class="n">binEdgesEnergy</span>
+
+            <span class="c1"># Convert energy to ToT</span>
+            <span class="k">if</span> <span class="n">h</span> <span class="o">==</span> <span class="mi">1</span> <span class="ow">and</span> <span class="n">k</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">binEdgesToT</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">energyToToTFitHyp</span><span class="p">(</span><span class="n">beEnergy</span><span class="p">,</span> <span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">c</span><span class="p">,</span> <span class="n">t</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">binEdgesToT</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">EnergyToToTSimple</span><span class="p">(</span><span class="n">beEnergy</span><span class="p">,</span> <span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">c</span><span class="p">,</span> <span class="n">t</span><span class="p">,</span> <span class="n">h</span><span class="p">,</span> <span class="n">k</span><span class="p">)</span>
+
+            <span class="c1"># Round the values - do not use floor function as this leads to bias</span>
+            <span class="n">binEdgesToT</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">around</span><span class="p">(</span> <span class="n">binEdgesToT</span> <span class="p">)</span>
+            <span class="n">binEdgesToT</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nan_to_num</span><span class="p">(</span><span class="n">binEdgesToT</span><span class="p">)</span>
+            <span class="n">binEdgesToT</span><span class="p">[</span><span class="n">binEdgesToT</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="n">binEdgesToT</span><span class="p">[</span><span class="n">binEdgesToT</span> <span class="o">&gt;</span> <span class="mi">4095</span><span class="p">]</span> <span class="o">=</span> <span class="mi">4095</span>
+            <span class="n">binEdgesList</span><span class="o">.</span><span class="n">append</span><span class="p">(</span> <span class="n">binEdgesToT</span> <span class="p">)</span>
+
+        <span class="c1"># Transpose matrix to get pixel values</span>
+        <span class="n">binEdgesList</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">binEdgesList</span><span class="p">)</span><span class="o">.</span><span class="n">T</span>
+        <span class="n">cmdTotal</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span>
+        <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="n">gc</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">gray</span><span class="p">):</span>
+            <span class="c1"># print binEdgesList[idx]</span>
+            <span class="c1"># Construct command</span>
+            <span class="n">cmd</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span> <span class="p">[(</span><span class="s1">&#39;</span><span class="si">%01x</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">gc</span><span class="p">)</span> <span class="o">+</span> <span class="p">(</span><span class="s1">&#39;</span><span class="si">%03x</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">be</span><span class="p">)</span> <span class="k">for</span> <span class="n">be</span> <span class="ow">in</span> <span class="n">binEdgesList</span><span class="p">[</span><span class="n">idx</span><span class="p">]]</span> <span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">DPXWriteSingleThresholdCommand</span><span class="p">(</span><span class="n">slot</span><span class="p">,</span> <span class="n">cmd</span><span class="p">)</span>
+            <span class="n">cmdTotal</span> <span class="o">+=</span> <span class="n">cmd</span>
+        <span class="nb">print</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">binEdges</span><span class="p">[</span><span class="s1">&#39;Slot</span><span class="si">%d</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">slot</span><span class="p">]</span> <span class="o">=</span> <span class="n">binEdgesList</span></div>
+        <span class="c1"># binEdgesTotal.append( binEdgesTotal )</span>
+        <span class="c1"># self.binEdges = binEdgesTotal</span>
+
+<div class="viewcode-block" id="Control.clearBins"><a class="viewcode-back" href="../../dpx_func_python.html#dpx_func_python.control.Control.clearBins">[docs]</a>    <span class="k">def</span> <span class="nf">clearBins</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">slot</span><span class="p">):</span>
+        <span class="c1"># Clear bins</span>
+        <span class="c1"># Only call this at start since it takes a long time</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">slot</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">3</span><span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">DPXDataResetCommand</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">DPXReadToTDataDosiModeCommand</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>
+
+            <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">16</span><span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">DPXWriteColSelCommand</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="mi">16</span> <span class="o">-</span> <span class="n">col</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">DPXReadBinDataDosiModeCommand</span><span class="p">(</span><span class="n">i</span><span class="p">)</span></div>
+
+    <span class="c1"># === HV SECTION ===</span>
+<div class="viewcode-block" id="Control.HVSetDac"><a class="viewcode-back" href="../../dpx_func_python.html#dpx_func_python.control.Control.HVSetDac">[docs]</a>    <span class="k">def</span> <span class="nf">HVSetDac</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">DAC</span><span class="p">):</span>
+        <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">DAC</span><span class="p">)</span> <span class="o">==</span> <span class="mi">4</span><span class="p">,</span> <span class="s1">&#39;Error: DAC command has to be of size 4!&#39;</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">sendCmd</span><span class="p">([</span><span class="n">ds</span><span class="o">.</span><span class="n">_receiverHV</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">_subReceiverNone</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">_senderPC</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">_HVsetDAC</span><span class="p">,</span> <span class="s1">&#39;</span><span class="si">%06d</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="nb">len</span><span class="p">(</span><span class="n">DAC</span><span class="p">),</span> <span class="n">DAC</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">_CRC</span><span class="p">])</span></div>
+
+<div class="viewcode-block" id="Control.HVGetDac"><a class="viewcode-back" href="../../dpx_func_python.html#dpx_func_python.control.Control.HVGetDac">[docs]</a>    <span class="k">def</span> <span class="nf">HVGetDac</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sendCmd</span><span class="p">([</span><span class="n">ds</span><span class="o">.</span><span class="n">_receiverHV</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">_subReceiverNone</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">_senderPC</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">_HVgetDAC</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">_commandNoneLength</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">_commandNone</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">_CRC</span><span class="p">])</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">getDPXResponse</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="Control.HVActivate"><a class="viewcode-back" href="../../dpx_func_python.html#dpx_func_python.control.Control.HVActivate">[docs]</a>    <span class="k">def</span> <span class="nf">HVActivate</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sendCmd</span><span class="p">([</span><span class="n">ds</span><span class="o">.</span><span class="n">_receiverHV</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">_subReceiverNone</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">_senderPC</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">_HVenable</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">_commandNoneLength</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">_commandNone</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">_CRC</span><span class="p">])</span></div>
+
+<div class="viewcode-block" id="Control.HVDeactivate"><a class="viewcode-back" href="../../dpx_func_python.html#dpx_func_python.control.Control.HVDeactivate">[docs]</a>    <span class="k">def</span> <span class="nf">HVDeactivate</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sendCmd</span><span class="p">([</span><span class="n">ds</span><span class="o">.</span><span class="n">_receiverHV</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">_subReceiverNone</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">_senderPC</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">_HVdisable</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">_commandNoneLength</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">_commandNone</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">_CRC</span><span class="p">])</span></div>
+
+<div class="viewcode-block" id="Control.HVGetState"><a class="viewcode-back" href="../../dpx_func_python.html#dpx_func_python.control.Control.HVGetState">[docs]</a>    <span class="k">def</span> <span class="nf">HVGetState</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sendCmd</span><span class="p">([</span><span class="n">ds</span><span class="o">.</span><span class="n">_receiverHV</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">_subReceiverNone</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">_senderPC</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">_HVisEnabled</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">_commandNoneLength</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">_CRC</span><span class="p">])</span>
+
+        <span class="n">res</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">getDPXResponse</span><span class="p">())</span>
+
+        <span class="k">if</span> <span class="n">res</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">True</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">False</span></div>
+
+    <span class="c1"># === VC SECTION ===</span>
+<div class="viewcode-block" id="Control.VCVoltageSet3V3"><a class="viewcode-back" href="../../dpx_func_python.html#dpx_func_python.control.Control.VCVoltageSet3V3">[docs]</a>    <span class="k">def</span> <span class="nf">VCVoltageSet3V3</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sendCmd</span><span class="p">([</span><span class="n">ds</span><span class="o">.</span><span class="n">_receiverVC</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">_subReceiverNone</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">_senderPC</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">_VCset3V3</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">_commandNoneLength</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">_commandNone</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">_CRC</span><span class="p">])</span></div>
+
+<div class="viewcode-block" id="Control.VCVoltageSet1V8"><a class="viewcode-back" href="../../dpx_func_python.html#dpx_func_python.control.Control.VCVoltageSet1V8">[docs]</a>    <span class="k">def</span> <span class="nf">VCVoltageSet1V8</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sendCmd</span><span class="p">([</span><span class="n">ds</span><span class="o">.</span><span class="n">_receiverVC</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">_subReceiverNone</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">_senderPC</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">_VCset1V8</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">_commandNoneLength</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">_commandNone</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">_CRC</span><span class="p">])</span></div>
+
+<div class="viewcode-block" id="Control.VCGetVoltage"><a class="viewcode-back" href="../../dpx_func_python.html#dpx_func_python.control.Control.VCGetVoltage">[docs]</a>    <span class="k">def</span> <span class="nf">VCGetVoltage</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sendCmd</span><span class="p">([</span><span class="n">ds</span><span class="o">.</span><span class="n">_receiverVC</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">_subReceiverNone</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">_senderPC</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">_VCgetVoltage</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">_commandNoneLength</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">_commandNone</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">_CRC</span><span class="p">])</span>
+
+        <span class="n">res</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">getDPXResponse</span><span class="p">())</span>
+        <span class="k">if</span> <span class="n">res</span><span class="p">:</span>
+            <span class="k">return</span> <span class="s1">&#39;3.3V&#39;</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="s1">&#39;1.8V&#39;</span></div>
+
+    <span class="c1"># === MC SECTION ===</span>
+<div class="viewcode-block" id="Control.MCLEDenable"><a class="viewcode-back" href="../../dpx_func_python.html#dpx_func_python.control.Control.MCLEDenable">[docs]</a>    <span class="k">def</span> <span class="nf">MCLEDenable</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sendCmd</span><span class="p">([</span><span class="n">ds</span><span class="o">.</span><span class="n">_receiverMC</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">_subReceiverNone</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">_senderPC</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">_MCLEDenable</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">_commandNoneLength</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">_commandNone</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">_CRC</span><span class="p">])</span></div>
+
+<div class="viewcode-block" id="Control.MCLEDdisable"><a class="viewcode-back" href="../../dpx_func_python.html#dpx_func_python.control.Control.MCLEDdisable">[docs]</a>    <span class="k">def</span> <span class="nf">MCLEDdisable</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sendCmd</span><span class="p">([</span><span class="n">ds</span><span class="o">.</span><span class="n">_receiverMC</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">_subReceiverNone</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">_senderPC</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">_MCLEDdisable</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">_commandNoneLength</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">_commandNone</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">_CRC</span><span class="p">])</span></div>
+
+<div class="viewcode-block" id="Control.MCGetADCvalue"><a class="viewcode-back" href="../../dpx_func_python.html#dpx_func_python.control.Control.MCGetADCvalue">[docs]</a>    <span class="k">def</span> <span class="nf">MCGetADCvalue</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sendCmd</span><span class="p">([</span><span class="n">ds</span><span class="o">.</span><span class="n">_receiverMC</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">_subReceiverNone</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">_senderPC</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">_MCgetADCvalue</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">_commandNoneLength</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">_commandNone</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">_CRC</span><span class="p">])</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">getDPXResponse</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="Control.MCGetFirmwareVersion"><a class="viewcode-back" href="../../dpx_func_python.html#dpx_func_python.control.Control.MCGetFirmwareVersion">[docs]</a>    <span class="k">def</span> <span class="nf">MCGetFirmwareVersion</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sendCmd</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">receiverMC</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">_subReceiverNone</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">_senderPC</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">_MCgetVersion</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">_commandNoneLength</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">_commandNone</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">_CRC</span><span class="p">])</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">getDPXResponse</span><span class="p">()</span></div>
+
+    <span class="c1"># === DPX SECTION ===</span>
+<div class="viewcode-block" id="Control.OMRListToHex"><a class="viewcode-back" href="../../dpx_func_python.html#dpx_func_python.control.Control.OMRListToHex">[docs]</a>    <span class="k">def</span> <span class="nf">OMRListToHex</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">OMRCode</span><span class="p">):</span>
+        <span class="n">OMRCodeList</span> <span class="o">=</span> <span class="n">OMRCode</span>
+        <span class="n">OMRTypeList</span> <span class="o">=</span> <span class="p">[</span><span class="n">ds</span><span class="o">.</span><span class="n">_OMROperationMode</span><span class="p">,</span>
+        <span class="n">ds</span><span class="o">.</span><span class="n">_OMRGlobalShutter</span><span class="p">,</span>
+        <span class="n">ds</span><span class="o">.</span><span class="n">_OMRPLL</span><span class="p">,</span>
+        <span class="n">ds</span><span class="o">.</span><span class="n">_OMRPolarity</span><span class="p">,</span>
+        <span class="n">ds</span><span class="o">.</span><span class="n">_OMRAnalogOutSel</span><span class="p">,</span>
+        <span class="n">ds</span><span class="o">.</span><span class="n">_OMRAnalogInSel</span><span class="p">,</span>
+        <span class="n">ds</span><span class="o">.</span><span class="n">_OMRDisableColClkGate</span><span class="p">]</span>
+
+        <span class="n">OMRCode</span> <span class="o">=</span> <span class="mh">0x000000</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">OMR</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">OMRCodeList</span><span class="p">):</span>
+            <span class="n">OMRCode</span> <span class="o">|=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">OMRTypeList</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">OMR</span><span class="p">)</span>
+
+        <span class="n">OMRCode</span> <span class="o">=</span> <span class="s1">&#39;</span><span class="si">%04x</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">OMRCode</span><span class="p">)</span> <span class="c1"># hex(OMRCode).split(&#39;0x&#39;)[-1]</span>
+
+        <span class="k">return</span> <span class="n">OMRCode</span></div>
+
+<div class="viewcode-block" id="Control.DPXWriteOMRCommand"><a class="viewcode-back" href="../../dpx_func_python.html#dpx_func_python.control.Control.DPXWriteOMRCommand">[docs]</a>    <span class="k">def</span> <span class="nf">DPXWriteOMRCommand</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">slot</span><span class="p">,</span> <span class="n">OMRCode</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">OMRCode</span><span class="p">)</span> <span class="ow">is</span> <span class="nb">list</span><span class="p">:</span>
+            <span class="n">OMRCode</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">OMRListToHex</span><span class="p">(</span><span class="n">OMRCode</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">OMRCode</span><span class="p">)</span> <span class="ow">is</span> <span class="nb">int</span><span class="p">:</span>
+            <span class="n">OMRCode</span> <span class="o">=</span> <span class="s1">&#39;</span><span class="si">%x</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">OMRCode</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">sendCmd</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">getReceiverFromSlot</span><span class="p">(</span><span class="n">slot</span><span class="p">),</span> <span class="n">ds</span><span class="o">.</span><span class="n">_subReceiverNone</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">_senderPC</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">_DPXwriteOMRCommand</span><span class="p">,</span> <span class="s1">&#39;</span><span class="si">%06d</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="nb">len</span><span class="p">(</span><span class="n">OMRCode</span><span class="p">),</span> <span class="n">OMRCode</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">_CRC</span><span class="p">])</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">getDPXResponse</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="Control.DPXReadOMRCommand"><a class="viewcode-back" href="../../dpx_func_python.html#dpx_func_python.control.Control.DPXReadOMRCommand">[docs]</a>    <span class="k">def</span> <span class="nf">DPXReadOMRCommand</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">slot</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sendCmd</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">getReceiverFromSlot</span><span class="p">(</span><span class="n">slot</span><span class="p">),</span> <span class="n">ds</span><span class="o">.</span><span class="n">_subReceiverNone</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">_senderPC</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">_DPXreadOMRCommand</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">_commandNoneLength</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">_commandNone</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">_CRC</span><span class="p">])</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">getDPXResponse</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="Control.DPXReadDigitalThresholdsCommand"><a class="viewcode-back" href="../../dpx_func_python.html#dpx_func_python.control.Control.DPXReadDigitalThresholdsCommand">[docs]</a>    <span class="k">def</span> <span class="nf">DPXReadDigitalThresholdsCommand</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">slot</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sendCmd</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">getReceiverFromSlot</span><span class="p">(</span><span class="n">slot</span><span class="p">),</span> <span class="n">ds</span><span class="o">.</span><span class="n">_subReceiverNone</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">_senderPC</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">_DPXreadDigitalThresholdsCommand</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">_commandNoneLength</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">_commandNone</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">_CRC</span><span class="p">])</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">getDPXResponse</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="Control.DPXGlobalReset"><a class="viewcode-back" href="../../dpx_func_python.html#dpx_func_python.control.Control.DPXGlobalReset">[docs]</a>    <span class="k">def</span> <span class="nf">DPXGlobalReset</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">slot</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sendCmd</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">getReceiverFromSlot</span><span class="p">(</span><span class="n">slot</span><span class="p">),</span> <span class="n">ds</span><span class="o">.</span><span class="n">_subReceiverNone</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">_senderPC</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">_DPXglobalResetCommand</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">_commandNoneLength</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">_commandNone</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">_CRC</span><span class="p">])</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">getDPXResponse</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="Control.DPXWriteConfigurationCommand"><a class="viewcode-back" href="../../dpx_func_python.html#dpx_func_python.control.Control.DPXWriteConfigurationCommand">[docs]</a>    <span class="k">def</span> <span class="nf">DPXWriteConfigurationCommand</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">slot</span><span class="p">,</span> <span class="n">confBitsFn</span><span class="p">,</span> <span class="n">file</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">file</span><span class="p">:</span>
+            <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">confBitsFn</span><span class="p">,</span> <span class="s1">&#39;r&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+                <span class="n">confBits</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+            <span class="n">confBits</span> <span class="o">=</span> <span class="n">confBits</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span>
+            <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">confBits</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span> <span class="ow">or</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">confBits</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span> <span class="ow">and</span> <span class="n">confBits</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;&#39;</span><span class="p">),</span> <span class="s2">&quot;Conf-Bits file must contain only one line!&quot;</span>
+            <span class="n">confBits</span> <span class="o">=</span> <span class="n">confBits</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">confBits</span> <span class="o">=</span> <span class="n">confBitsFn</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">sendCmd</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">getReceiverFromSlot</span><span class="p">(</span><span class="n">slot</span><span class="p">),</span> <span class="n">ds</span><span class="o">.</span><span class="n">_subReceiverNone</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">_senderPC</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">_DPXwriteConfigurationCommand</span><span class="p">,</span> <span class="s1">&#39;</span><span class="si">%06d</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="nb">len</span><span class="p">(</span><span class="n">confBits</span><span class="p">),</span> <span class="n">confBits</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">_CRC</span><span class="p">])</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">getDPXResponse</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="Control.DPXWriteSingleThresholdCommand"><a class="viewcode-back" href="../../dpx_func_python.html#dpx_func_python.control.Control.DPXWriteSingleThresholdCommand">[docs]</a>    <span class="k">def</span> <span class="nf">DPXWriteSingleThresholdCommand</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">slot</span><span class="p">,</span> <span class="n">THFn</span><span class="p">,</span> <span class="n">file</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">file</span><span class="p">:</span>
+            <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">THFn</span><span class="p">,</span> <span class="s1">&#39;r&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+                <span class="n">TH</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">TH</span> <span class="o">=</span> <span class="n">THFn</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">sendCmd</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">getReceiverFromSlot</span><span class="p">(</span><span class="n">slot</span><span class="p">),</span> <span class="n">ds</span><span class="o">.</span><span class="n">_subReceiverNone</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">_senderPC</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">_DPXwriteSingleThresholdCommand</span><span class="p">,</span> <span class="s1">&#39;</span><span class="si">%06d</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="nb">len</span><span class="p">(</span><span class="n">TH</span><span class="p">),</span> <span class="n">TH</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">_CRC</span><span class="p">])</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">getDPXResponse</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="Control.DPXWriteColSelCommand"><a class="viewcode-back" href="../../dpx_func_python.html#dpx_func_python.control.Control.DPXWriteColSelCommand">[docs]</a>    <span class="k">def</span> <span class="nf">DPXWriteColSelCommand</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">slot</span><span class="p">,</span> <span class="n">col</span><span class="p">):</span>
+        <span class="n">colCode</span> <span class="o">=</span> <span class="s1">&#39;</span><span class="si">%02x</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">col</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sendCmd</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">getReceiverFromSlot</span><span class="p">(</span><span class="n">slot</span><span class="p">),</span> <span class="n">ds</span><span class="o">.</span><span class="n">_subReceiverNone</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">_senderPC</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">_DPXwriteColSelCommand</span><span class="p">,</span> <span class="s1">&#39;</span><span class="si">%06d</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="nb">len</span><span class="p">(</span><span class="n">colCode</span><span class="p">),</span> <span class="n">colCode</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">_CRC</span><span class="p">])</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">getDPXResponse</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="Control.DPXWritePeripheryDACCommand"><a class="viewcode-back" href="../../dpx_func_python.html#dpx_func_python.control.Control.DPXWritePeripheryDACCommand">[docs]</a>    <span class="k">def</span> <span class="nf">DPXWritePeripheryDACCommand</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">slot</span><span class="p">,</span> <span class="n">code</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sendCmd</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">getReceiverFromSlot</span><span class="p">(</span><span class="n">slot</span><span class="p">),</span> <span class="n">ds</span><span class="o">.</span><span class="n">_subReceiverNone</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">_senderPC</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">_DPXwritePeripheryDACCommand</span><span class="p">,</span> <span class="s1">&#39;</span><span class="si">%06d</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="nb">len</span><span class="p">(</span><span class="n">code</span><span class="p">),</span> <span class="n">code</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">_CRC</span><span class="p">])</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">getDPXResponse</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="Control.DPXReadPeripheryDACCommand"><a class="viewcode-back" href="../../dpx_func_python.html#dpx_func_python.control.Control.DPXReadPeripheryDACCommand">[docs]</a>    <span class="k">def</span> <span class="nf">DPXReadPeripheryDACCommand</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">slot</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sendCmd</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">getReceiverFromSlot</span><span class="p">(</span><span class="n">slot</span><span class="p">),</span> <span class="n">ds</span><span class="o">.</span><span class="n">_subReceiverNone</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">_senderPC</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">_DPXreadPeripheryDACCommand</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">_commandNoneLength</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">_commandNone</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">_CRC</span><span class="p">])</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">getDPXResponse</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="Control.DPXWritePixelDACCommand"><a class="viewcode-back" href="../../dpx_func_python.html#dpx_func_python.control.Control.DPXWritePixelDACCommand">[docs]</a>    <span class="k">def</span> <span class="nf">DPXWritePixelDACCommand</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">slot</span><span class="p">,</span> <span class="n">code</span><span class="p">,</span> <span class="n">file</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">file</span><span class="p">:</span>
+            <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">code</span><span class="p">,</span> <span class="s1">&#39;r&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+                <span class="n">code</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">read</span><span class="p">()</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+
+        <span class="c1"># else: use code string</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">sendCmd</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">getReceiverFromSlot</span><span class="p">(</span><span class="n">slot</span><span class="p">),</span> <span class="n">ds</span><span class="o">.</span><span class="n">_subReceiverNone</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">_senderPC</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">_DPXwritePixelDACCommand</span><span class="p">,</span> <span class="s1">&#39;</span><span class="si">%06d</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="nb">len</span><span class="p">(</span><span class="n">code</span><span class="p">),</span> <span class="n">code</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">_CRC</span><span class="p">])</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">getDPXResponse</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="Control.DPXReadPixelDACCommand"><a class="viewcode-back" href="../../dpx_func_python.html#dpx_func_python.control.Control.DPXReadPixelDACCommand">[docs]</a>    <span class="k">def</span> <span class="nf">DPXReadPixelDACCommand</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">slot</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sendCmd</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">getReceiverFromSlot</span><span class="p">(</span><span class="n">slot</span><span class="p">),</span> <span class="n">ds</span><span class="o">.</span><span class="n">_subReceiverNone</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">_senderPC</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">_DPXreadPixelDACCommand</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">_commandNoneLength</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">_commandNone</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">_CRC</span><span class="p">])</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">getDPXResponse</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="Control.DPXDataResetCommand"><a class="viewcode-back" href="../../dpx_func_python.html#dpx_func_python.control.Control.DPXDataResetCommand">[docs]</a>    <span class="k">def</span> <span class="nf">DPXDataResetCommand</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">slot</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sendCmd</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">getReceiverFromSlot</span><span class="p">(</span><span class="n">slot</span><span class="p">),</span> <span class="n">ds</span><span class="o">.</span><span class="n">_subReceiverNone</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">_senderPC</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">_DPXdataResetCommand</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">_commandNoneLength</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">_commandNone</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">_CRC</span><span class="p">])</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">getDPXResponse</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="Control.DPXReadBinDataDosiModeCommand"><a class="viewcode-back" href="../../dpx_func_python.html#dpx_func_python.control.Control.DPXReadBinDataDosiModeCommand">[docs]</a>    <span class="k">def</span> <span class="nf">DPXReadBinDataDosiModeCommand</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">slot</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sendCmd</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">getReceiverFromSlot</span><span class="p">(</span><span class="n">slot</span><span class="p">),</span> <span class="n">ds</span><span class="o">.</span><span class="n">_subReceiverNone</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">_senderPC</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">_DPXreadBinDataDosiModeCommand</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">_commandNoneLength</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">_commandNone</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">_CRC</span><span class="p">])</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">convertToDecimal</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">getDPXResponse</span><span class="p">())</span></div>
+
+<div class="viewcode-block" id="Control.DPXReadToTDataDosiModeCommand"><a class="viewcode-back" href="../../dpx_func_python.html#dpx_func_python.control.Control.DPXReadToTDataDosiModeCommand">[docs]</a>    <span class="k">def</span> <span class="nf">DPXReadToTDataDosiModeCommand</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">slot</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sendCmd</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">getReceiverFromSlot</span><span class="p">(</span><span class="n">slot</span><span class="p">),</span> <span class="n">ds</span><span class="o">.</span><span class="n">_subReceiverNone</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">_senderPC</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">_DPXreadToTDataDosiModeCommand</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">_commandNoneLength</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">_commandNone</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">_CRC</span><span class="p">])</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">convertToDecimal</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">getDPXResponse</span><span class="p">())</span></div>
+
+<div class="viewcode-block" id="Control.DPXReadToTDataDosiModeMultiCommand"><a class="viewcode-back" href="../../dpx_func_python.html#dpx_func_python.control.Control.DPXReadToTDataDosiModeMultiCommand">[docs]</a>    <span class="k">def</span> <span class="nf">DPXReadToTDataDosiModeMultiCommand</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">slot</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sendCmd</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">getReceiverFromSlot</span><span class="p">(</span><span class="n">slot</span><span class="p">),</span> <span class="n">ds</span><span class="o">.</span><span class="n">_subReceiverNone</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">_senderPC</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">_DPXreadToTDataDosiModeMultiCommand</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">_commandNoneLength</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">_commandNone</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">_CRC</span><span class="p">])</span>
+
+        <span class="n">res</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">getDPXResponse</span><span class="p">()</span>
+
+        <span class="c1"># Read response and </span>
+        <span class="n">x</span> <span class="o">=</span> <span class="p">[</span><span class="nb">ord</span><span class="p">(</span><span class="n">char</span><span class="p">)</span> <span class="k">for</span> <span class="n">char</span> <span class="ow">in</span> <span class="n">res</span><span class="p">]</span>
+        <span class="n">x1</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span> <span class="n">x</span><span class="p">[::</span><span class="mi">2</span><span class="p">]</span> <span class="p">)</span>
+        <span class="n">x2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span> <span class="n">x</span><span class="p">[</span><span class="mi">1</span><span class="p">::</span><span class="mi">2</span><span class="p">]</span> <span class="p">)</span>
+        <span class="c1"># print [bin(x) for x in x1]</span>
+        <span class="c1"># print [bin(x) for x in x2]</span>
+
+        <span class="n">x1</span> <span class="o">-=</span> <span class="mi">32</span>
+        <span class="n">x2</span><span class="p">[</span><span class="n">x1</span> <span class="o">&gt;=</span> <span class="mi">128</span><span class="p">]</span> <span class="o">-=</span> <span class="mi">100</span>
+        <span class="n">x1</span><span class="p">[</span><span class="n">x1</span> <span class="o">&gt;=</span> <span class="mi">128</span><span class="p">]</span> <span class="o">-=</span> <span class="mi">128</span>
+        <span class="c1"># print x1</span>
+        <span class="c1"># print x2</span>
+
+        <span class="n">x1</span> <span class="o">&lt;&lt;=</span> <span class="mi">8</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="n">x1</span> <span class="o">+</span> <span class="n">x2</span>
+        <span class="c1"># print </span>
+        <span class="c1"># print [bin(x_) for x_ in x]</span>
+
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">x</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Control.DPXReadToTDataIntegrationModeCommand"><a class="viewcode-back" href="../../dpx_func_python.html#dpx_func_python.control.Control.DPXReadToTDataIntegrationModeCommand">[docs]</a>    <span class="k">def</span> <span class="nf">DPXReadToTDataIntegrationModeCommand</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">slot</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sendCmd</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">getReceiverFromSlot</span><span class="p">(</span><span class="n">slot</span><span class="p">),</span> <span class="n">ds</span><span class="o">.</span><span class="n">_subReceiverNone</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">_senderPC</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">_DPXreadToTDataIntegrationModeCommand</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">_commandNoneLength</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">_commandNone</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">_CRC</span><span class="p">])</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">convertToDecimal</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">getDPXResponse</span><span class="p">(),</span> <span class="mi">6</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Control.DPXReadToTDatakVpModeCommand"><a class="viewcode-back" href="../../dpx_func_python.html#dpx_func_python.control.Control.DPXReadToTDatakVpModeCommand">[docs]</a>    <span class="k">def</span> <span class="nf">DPXReadToTDatakVpModeCommand</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">slot</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sendCmd</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">getReceiverFromSlot</span><span class="p">(</span><span class="n">slot</span><span class="p">),</span> <span class="n">ds</span><span class="o">.</span><span class="n">_subReceiverNone</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">_senderPC</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">_DPXreadToTDatakVpModeCommand</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">_commandNoneLength</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">_commandNone</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">_CRC</span><span class="p">])</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">convertToDecimal</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">getDPXResponse</span><span class="p">(),</span> <span class="mi">2</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Control.DPXGeneralTestPulse"><a class="viewcode-back" href="../../dpx_func_python.html#dpx_func_python.control.Control.DPXGeneralTestPulse">[docs]</a>    <span class="k">def</span> <span class="nf">DPXGeneralTestPulse</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">slot</span><span class="p">,</span> <span class="n">length</span><span class="p">):</span>
+        <span class="n">lengthHex</span> <span class="o">=</span> <span class="s1">&#39;</span><span class="si">%04x</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">length</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">sendCmd</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">getReceiverFromSlot</span><span class="p">(</span><span class="n">slot</span><span class="p">),</span> <span class="n">ds</span><span class="o">.</span><span class="n">_subReceiverNone</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">_senderPC</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">_DPXgeneralTestPulse</span><span class="p">,</span> <span class="s1">&#39;</span><span class="si">%06d</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="nb">len</span><span class="p">(</span><span class="n">lengthHex</span><span class="p">),</span> <span class="n">lengthHex</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">_CRC</span><span class="p">])</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">getDPXResponse</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="Control.DPXGeneralMultiTestPulse"><a class="viewcode-back" href="../../dpx_func_python.html#dpx_func_python.control.Control.DPXGeneralMultiTestPulse">[docs]</a>    <span class="k">def</span> <span class="nf">DPXGeneralMultiTestPulse</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">slot</span><span class="p">,</span> <span class="n">length</span><span class="p">):</span>
+        <span class="n">lengthHex</span> <span class="o">=</span> <span class="s1">&#39;</span><span class="si">%04x</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">length</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">sendCmd</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">getReceiverFromSlot</span><span class="p">(</span><span class="n">slot</span><span class="p">),</span> <span class="n">ds</span><span class="o">.</span><span class="n">_subReceiverNone</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">_senderPC</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">_DPXgeneralMultiTestPulse</span><span class="p">,</span> <span class="s1">&#39;</span><span class="si">%06d</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="nb">len</span><span class="p">(</span><span class="n">lengthHex</span><span class="p">),</span> <span class="n">lengthHex</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">_CRC</span><span class="p">])</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">getDPXResponse</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="Control.sendCmd"><a class="viewcode-back" href="../../dpx_func_python.html#dpx_func_python.control.Control.sendCmd">[docs]</a>    <span class="k">def</span> <span class="nf">sendCmd</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cmdList</span><span class="p">):</span>
+        <span class="c1"># Typical command string:</span>
+        <span class="c1"># RRrrrSSSssCCCllllllcccc</span>
+        <span class="c1"># R - receiver</span>
+        <span class="c1"># r - subreceiver</span>
+        <span class="c1"># s - sender</span>
+        <span class="c1"># C - command</span>
+        <span class="c1"># l - command length</span>
+        <span class="c1"># c - CRC (unused, usually set to FFFF)</span>
+
+        <span class="c1"># self.ser.write(ds._startOfTransmission.encode())</span>
+        <span class="n">cmdOut</span> <span class="o">=</span> <span class="p">[</span><span class="n">ds</span><span class="o">.</span><span class="n">_startOfTransmission</span><span class="o">.</span><span class="n">encode</span><span class="p">()]</span>
+
+        <span class="k">if</span> <span class="n">DEBUG</span><span class="p">:</span>
+            <span class="nb">print</span> <span class="n">ds</span><span class="o">.</span><span class="n">_startOfTransmission</span><span class="o">.</span><span class="n">encode</span><span class="p">(),</span>
+        <span class="k">for</span> <span class="n">cmd</span> <span class="ow">in</span> <span class="n">cmdList</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">cmd</span><span class="p">:</span>
+                <span class="k">continue</span>
+            <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">cmd</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">DEBUG</span><span class="p">:</span>
+                    <span class="nb">print</span> <span class="n">unichr</span><span class="p">(</span><span class="nb">ord</span><span class="p">(</span><span class="n">c</span><span class="p">)),</span>
+
+                <span class="n">cmdOut</span><span class="o">.</span><span class="n">append</span><span class="p">(</span> <span class="n">unichr</span><span class="p">(</span><span class="nb">ord</span><span class="p">(</span><span class="n">c</span><span class="p">))</span><span class="o">.</span><span class="n">encode</span><span class="p">()</span> <span class="p">)</span>
+                <span class="c1"># self.ser.write(unichr(ord(c)).encode())</span>
+            <span class="k">if</span> <span class="n">DEBUG</span><span class="p">:</span>
+                <span class="nb">print</span> <span class="s1">&#39; &#39;</span><span class="p">,</span>
+
+        <span class="k">if</span> <span class="n">DEBUG</span><span class="p">:</span>
+            <span class="nb">print</span> <span class="n">ds</span><span class="o">.</span><span class="n">_endOfTransmission</span><span class="o">.</span><span class="n">encode</span><span class="p">()</span>
+
+        <span class="n">cmdOut</span><span class="o">.</span><span class="n">append</span><span class="p">(</span> <span class="n">ds</span><span class="o">.</span><span class="n">_endOfTransmission</span><span class="o">.</span><span class="n">encode</span><span class="p">()</span> <span class="p">)</span>
+        <span class="c1"># self.ser.write(ds._endOfTransmission.encode())</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ser</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">cmdOut</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Control.getBinEdges"><a class="viewcode-back" href="../../dpx_func_python.html#dpx_func_python.control.Control.getBinEdges">[docs]</a>    <span class="k">def</span> <span class="nf">getBinEdges</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">slot</span><span class="p">,</span> <span class="n">energyDict</span><span class="p">,</span> <span class="n">paramDict</span><span class="p">,</span> <span class="n">transposePixelMatrix</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">c</span><span class="p">,</span> <span class="n">t</span> <span class="o">=</span> <span class="n">paramDict</span><span class="p">[</span><span class="s1">&#39;a&#39;</span><span class="p">],</span> <span class="n">paramDict</span><span class="p">[</span><span class="s1">&#39;b&#39;</span><span class="p">],</span> <span class="n">paramDict</span><span class="p">[</span><span class="s1">&#39;c&#39;</span><span class="p">],</span> <span class="n">paramDict</span><span class="p">[</span><span class="s1">&#39;t&#39;</span><span class="p">]</span>
+        <span class="n">grayCode</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">7</span><span class="p">,</span> <span class="mi">15</span><span class="p">,</span> <span class="mi">13</span><span class="p">,</span> <span class="mi">12</span><span class="p">,</span> <span class="mi">14</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">11</span><span class="p">,</span> <span class="mi">9</span><span class="p">,</span> <span class="mi">8</span><span class="p">]</span>
+
+        <span class="k">if</span> <span class="n">slot</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">energyType</span> <span class="o">=</span> <span class="s1">&#39;free&#39;</span>
+        <span class="k">elif</span> <span class="n">slot</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">energyType</span> <span class="o">=</span> <span class="s1">&#39;Al&#39;</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">energyType</span> <span class="o">=</span> <span class="s1">&#39;Sn&#39;</span>
+
+        <span class="n">binEdgeString</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span>
+        <span class="k">for</span> <span class="n">pixel</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">256</span><span class="p">):</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">isBig</span><span class="p">(</span><span class="n">pixel</span><span class="p">):</span>
+                <span class="n">energyList</span> <span class="o">=</span> <span class="n">energyDict</span><span class="p">[</span><span class="s1">&#39;large&#39;</span><span class="p">][</span><span class="n">energyType</span><span class="p">]</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">energyList</span> <span class="o">=</span> <span class="n">energyDict</span><span class="p">[</span><span class="s1">&#39;large&#39;</span><span class="p">][</span><span class="n">energyType</span><span class="p">]</span>
+
+            <span class="n">energyList</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">()</span>
+
+            <span class="c1"># Convert to ToT</span>
+            <span class="n">ToTList</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">energyToToT</span><span class="p">(</span><span class="n">energyList</span><span class="p">,</span> <span class="n">a</span><span class="p">[</span><span class="n">pixel</span><span class="p">],</span> <span class="n">b</span><span class="p">[</span><span class="n">pixel</span><span class="p">],</span> <span class="n">c</span><span class="p">[</span><span class="n">pixel</span><span class="p">],</span> <span class="n">d</span><span class="p">[</span><span class="n">pixel</span><span class="p">])</span>
+
+            <span class="k">for</span> <span class="n">binEdge</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">16</span><span class="p">):</span>
+                <span class="n">grayC</span> <span class="o">=</span> <span class="n">grayCode</span><span class="p">[</span><span class="n">binEdge</span><span class="p">]</span>
+                <span class="n">ToT</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span> <span class="n">ToTList</span><span class="p">[</span><span class="n">binEdge</span><span class="p">]</span> <span class="p">)</span>
+
+                <span class="n">binEdgeString</span> <span class="o">+=</span> <span class="p">(</span><span class="s1">&#39;</span><span class="si">%01x</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">grayC</span><span class="p">)</span>
+                <span class="n">binEdgeString</span> <span class="o">+=</span> <span class="p">(</span><span class="s1">&#39;</span><span class="si">%03x</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">ToT</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">binEdgeString</span></div></div>
+
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2019, Sebastian Schmidt
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

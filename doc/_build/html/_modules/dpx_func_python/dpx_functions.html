@@ -1,0 +1,1160 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>dpx_func_python.dpx_functions &mdash; dpx_func_python 0.1 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="../../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../../_static/jquery.js"></script>
+        <script type="text/javascript" src="../../_static/underscore.js"></script>
+        <script type="text/javascript" src="../../_static/doctools.js"></script>
+        <script type="text/javascript" src="../../_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="../../_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../index.html" class="icon icon-home"> dpx_func_python
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Submodules:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../src/dpx_functions.html">DPX_functions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../src/config.html">Config</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">dpx_func_python</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../index.html">Module code</a> &raquo;</li>
+        
+          <li><a href="../dpx_func_python.html">dpx_func_python</a> &raquo;</li>
+        
+      <li>dpx_func_python.dpx_functions</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for dpx_func_python.dpx_functions</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">time</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">os.path</span>
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+<span class="kn">import</span> <span class="nn">scipy.signal</span>
+<span class="kn">import</span> <span class="nn">scipy.optimize</span>
+<span class="kn">import</span> <span class="nn">cPickle</span>
+<span class="kn">import</span> <span class="nn">hickle</span>
+
+<span class="kn">import</span> <span class="nn">dpx_settings</span> <span class="k">as</span> <span class="nn">ds</span>
+
+<div class="viewcode-block" id="DPX_functions"><a class="viewcode-back" href="../../src/dpx_functions.html#dpx_func_python.dpx_functions.DPX_functions">[docs]</a><span class="k">class</span> <span class="nc">DPX_functions</span><span class="p">():</span>
+    <span class="c1"># TODO: Correction factor of 16/15 necessary?</span>
+<div class="viewcode-block" id="DPX_functions.measureDose"><a class="viewcode-back" href="../../src/dpx_functions.html#dpx_func_python.dpx_functions.DPX_functions.measureDose">[docs]</a>    <span class="k">def</span> <span class="nf">measureDose</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">slot</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">measurement_time</span><span class="o">=</span><span class="mi">120</span><span class="p">,</span> <span class="n">frames</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">freq</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">outFn</span><span class="o">=</span><span class="s1">&#39;doseMeasurement.p&#39;</span><span class="p">,</span> <span class="n">logTemp</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">intPlot</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">conversion_factors</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Perform measurement in DosiMode.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">	----------</span>
+<span class="sd">	slot : int or list</span>
+<span class="sd">	    Use the specified slots on the read-out board. Can be either a </span>
+<span class="sd">	    single detector or multiple ones. If using the latter, specify </span>
+<span class="sd">	    the slots via a list.</span>
+<span class="sd">	measurement_time : float</span>
+<span class="sd">	    Measurement time between read-outs. The counts are integrated </span>
+<span class="sd">	    over the specified time and a frame is read out over 16 columns</span>
+<span class="sd">	    via rolling shutter.</span>
+<span class="sd">	frames : int</span>
+<span class="sd">	    Number of frames to record.</span>
+<span class="sd">	freq : bool</span>
+<span class="sd">	    Store the count frequency by normalization via the measurement</span>
+<span class="sd">	    time for each frame.</span>
+<span class="sd">	outFn : str or None</span>
+<span class="sd">	    Output file in which the measurement data is stored. If `None`,</span>
+<span class="sd">	    no data is written to files. Otherwise the extension of the file</span>
+<span class="sd">	    must be &#39;.p&#39; or &#39;.hck&#39; in order to use either &#39;cPickle&#39; or </span>
+<span class="sd">	    &#39;hickle&#39; for storage. If file already exists, a number is </span>
+<span class="sd">	    appended to the file and incremented if necessary.</span>
+<span class="sd">	logTemp : bool</span>
+<span class="sd">	    Log the temperature and time for each frame. If `outFn` is set, </span>
+<span class="sd">	    the data is stored to a file which is named according to `outFn`</span>
+<span class="sd">	    with the suffix &#39;_temp&#39; attached.</span>
+<span class="sd">	intPlot : bool</span>
+<span class="sd">	    Use interactive plotting. The total number of counts per pixel</span>
+<span class="sd">	    is shown for each frame.</span>
+<span class="sd">	conversion_factors : (str, str), optional</span>
+<span class="sd">	    A tuple of two csv-files. The first file for the conversion factors</span>
+<span class="sd">	    of the large pixels, the second one for the ones of the small pixels.</span>
+<span class="sd">	    These conversion factors are applied to the correspodning counts matrices</span>
+<span class="sd">	    and the dose is calculated for each frame. If `outFn` </span>
+<span class="sd">	    is set, the data is stored to a file which is named according</span>
+<span class="sd">	    to &#39;outFn&#39; with the suffix &#39;_dose&#39; attached.</span>
+
+<span class="sd">	Returns</span>
+<span class="sd">	-------</span>
+<span class="sd">	out : dict</span>
+<span class="sd">	    Measurement data. Keys `temp` or `dose` are only available if</span>
+<span class="sd">	    `logTemp` or `conversion_factors` are set during function call.</span>
+
+<span class="sd">	    data :</span>
+<span class="sd">	        Number of counts per frame stored in nested list of shape</span>
+<span class="sd">		`(number of frames, number of columns, number of pixels per column,</span>
+<span class="sd">		number of bins per pixel)`, i.e. `(frames, 16, 16, 16)`.</span>
+<span class="sd">	    temp : (Only if `logTemp` was set)</span>
+<span class="sd">	    	Logged temperature in DAC values for each frame.</span>
+<span class="sd">	    dose : (Only if `conversion_factors` was set)</span>
+<span class="sd">	        Measured dose for each frame. Separated for small and large pixels.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="c1"># Set Dosi Mode in OMR</span>
+        <span class="c1"># If OMR code is list</span>
+        <span class="n">OMRCode</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">OMR</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">OMRCode</span><span class="p">,</span> <span class="n">basestring</span><span class="p">):</span>
+            <span class="n">OMRCode</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;DosiMode&#39;</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">OMRCode</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">OMRCode</span><span class="p">,</span> <span class="mi">16</span><span class="p">)</span> <span class="o">&amp;</span> <span class="o">~</span><span class="p">((</span><span class="mb">0b11</span><span class="p">)</span> <span class="o">&lt;&lt;</span> <span class="mi">22</span><span class="p">)</span>
+
+        <span class="c1"># If slot is no list, transform it into one</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">slot</span><span class="p">,</span> <span class="p">(</span><span class="nb">list</span><span class="p">,)):</span>
+            <span class="n">slot</span> <span class="o">=</span> <span class="p">[</span><span class="n">slot</span><span class="p">]</span>
+
+        <span class="c1"># Set ADC out to temperature if requested</span>
+        <span class="k">if</span> <span class="n">logTemp</span><span class="p">:</span>
+            <span class="n">tempDict</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;temp&#39;</span><span class="p">:</span> <span class="p">[],</span> <span class="s1">&#39;time&#39;</span><span class="p">:</span> <span class="p">[]}</span>
+
+            <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">OMR</span><span class="p">)</span> <span class="ow">is</span> <span class="nb">list</span><span class="p">:</span>
+                <span class="n">OMRCode_</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">OMRListToHex</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">OMR</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">OMRCode_</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">OMR</span>
+            <span class="n">OMRCode_</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">OMRCode_</span><span class="p">,</span> <span class="mi">16</span><span class="p">)</span>
+
+            <span class="n">OMRCode_</span> <span class="o">&amp;=</span> <span class="o">~</span><span class="p">(</span><span class="mb">0b11111</span> <span class="o">&lt;&lt;</span> <span class="mi">12</span><span class="p">)</span>
+            <span class="n">OMRCode_</span> <span class="o">|=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">ds</span><span class="o">.</span><span class="n">_OMRAnalogOutSel</span><span class="p">,</span> <span class="s1">&#39;Temperature&#39;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">DPXWriteOMRCommand</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="nb">hex</span><span class="p">(</span><span class="n">OMRCode_</span><span class="p">)</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;0x&#39;</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+
+        <span class="c1"># Initial reset </span>
+        <span class="k">for</span> <span class="n">sl</span> <span class="ow">in</span> <span class="n">slot</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">DPXWriteOMRCommand</span><span class="p">(</span><span class="n">sl</span><span class="p">,</span> <span class="n">OMRCode</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">DPXDataResetCommand</span><span class="p">(</span><span class="n">sl</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">clearBins</span><span class="p">(</span><span class="n">slot</span><span class="p">)</span>
+
+        <span class="c1"># Load conversion factors if requested</span>
+        <span class="k">if</span> <span class="n">conversion_factors</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">slot</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">3</span><span class="p">:</span>
+                <span class="nb">print</span> <span class="s1">&#39;WARNING: Need three detectors to determine total dose!&#39;</span>
+            <span class="n">cvLarge</span><span class="p">,</span> <span class="n">cvSmall</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="n">conversion_factors</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">header</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span> <span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="n">conversion_factors</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">header</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span> <span class="p">)</span>
+            <span class="n">doseDict</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;Slot</span><span class="si">%d</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">sl</span><span class="p">:</span> <span class="p">[]</span> <span class="k">for</span> <span class="n">sl</span> <span class="ow">in</span> <span class="n">slot</span><span class="p">}</span>
+            <span class="n">isLarge</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">isLarge</span><span class="p">(</span><span class="n">pixel</span><span class="p">)</span> <span class="k">for</span> <span class="n">pixel</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">256</span><span class="p">)])</span>
+
+        <span class="c1"># Data storage</span>
+        <span class="n">outDict</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;Slot</span><span class="si">%d</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">sl</span><span class="p">:</span> <span class="p">[]</span> <span class="k">for</span> <span class="n">sl</span> <span class="ow">in</span> <span class="n">slot</span><span class="p">}</span>
+
+        <span class="c1"># Interactive plot</span>
+        <span class="k">if</span> <span class="n">intPlot</span><span class="p">:</span>
+            <span class="nb">print</span> <span class="s1">&#39;Warning: plotting takes time, therefore data should be stored as frequency instead of counts!&#39;</span>
+            <span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">slot</span><span class="p">),</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">5</span><span class="o">*</span><span class="nb">len</span><span class="p">(</span><span class="n">slot</span><span class="p">),</span> <span class="mi">5</span><span class="p">))</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">ion</span><span class="p">()</span>
+            <span class="n">imList</span> <span class="o">=</span> <span class="p">{}</span>
+
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">slot</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="n">ax</span> <span class="o">=</span> <span class="p">[</span><span class="n">ax</span><span class="p">]</span>
+
+            <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="n">a</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">ax</span><span class="p">):</span>
+                <span class="n">imList</span><span class="p">[</span><span class="n">slot</span><span class="p">[</span><span class="n">idx</span><span class="p">]]</span> <span class="o">=</span> <span class="n">a</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="mi">12</span><span class="p">,</span> <span class="mi">16</span><span class="p">)))</span>
+                <span class="n">a</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">&#39;Slot</span><span class="si">%d</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">slot</span><span class="p">[</span><span class="n">idx</span><span class="p">])</span>
+                <span class="n">a</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s1">&#39;x (px)&#39;</span><span class="p">)</span>
+                <span class="n">a</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s1">&#39;y (px)&#39;</span><span class="p">)</span>
+            <span class="n">fig</span><span class="o">.</span><span class="n">canvas</span><span class="o">.</span><span class="n">draw</span><span class="p">()</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">(</span><span class="n">block</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+        <span class="c1"># = START MEASUREMENT =</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="nb">print</span> <span class="s1">&#39;Starting Dose Measurement!&#39;</span>
+            <span class="nb">print</span> <span class="s1">&#39;=========================&#39;</span>
+            <span class="n">measStart</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+            <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">frames</span><span class="p">):</span>
+                <span class="n">startTime</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+
+                <span class="c1"># Measure temperature?</span>
+                <span class="k">if</span> <span class="n">logTemp</span><span class="p">:</span>
+                    <span class="n">temp</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">MCGetADCvalue</span><span class="p">(),</span> <span class="mi">16</span><span class="p">))</span>
+                    <span class="n">tempDict</span><span class="p">[</span><span class="s1">&#39;temp&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span> <span class="n">temp</span> <span class="p">)</span>
+                    <span class="n">tempDict</span><span class="p">[</span><span class="s1">&#39;time&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">measStart</span> <span class="p">)</span>
+
+                <span class="c1"># for sl in slot:</span>
+                <span class="c1">#    self.DPXDataResetCommand(sl)</span>
+                <span class="c1">#    self.clearBins([sl])</span>
+                <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="n">measurement_time</span><span class="p">)</span>
+
+                <span class="c1"># = Readout =</span>
+                <span class="n">doseList</span> <span class="o">=</span> <span class="p">[]</span>
+                <span class="k">for</span> <span class="n">sl</span> <span class="ow">in</span> <span class="n">slot</span><span class="p">:</span>
+                    <span class="n">outList</span> <span class="o">=</span> <span class="p">[]</span>
+                    <span class="n">showList</span> <span class="o">=</span> <span class="p">[]</span>
+
+                    <span class="c1"># Loop over columns</span>
+                    <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">16</span><span class="p">):</span>
+                        <span class="n">measTime</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">startTime</span><span class="p">)</span>
+                        <span class="c1"># self.DPXDataResetCommand(sl)</span>
+                        <span class="c1"># self.clearBins([sl])</span>
+
+                        <span class="bp">self</span><span class="o">.</span><span class="n">DPXWriteColSelCommand</span><span class="p">(</span><span class="n">sl</span><span class="p">,</span> <span class="mi">16</span> <span class="o">-</span> <span class="n">col</span><span class="p">)</span>
+                        <span class="n">out</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span> <span class="bp">self</span><span class="o">.</span><span class="n">DPXReadBinDataDosiModeCommand</span><span class="p">(</span><span class="n">sl</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span> <span class="p">)</span>
+                        <span class="c1"># out[out &gt;= 2**15] = np.nan</span>
+
+                        <span class="c1"># Calculate frequency if requested</span>
+                        <span class="k">if</span> <span class="n">freq</span><span class="p">:</span>
+                            <span class="n">out</span> <span class="o">=</span> <span class="n">out</span> <span class="o">/</span> <span class="n">measTime</span>
+
+                        <span class="c1"># Bug: discard strange values in matrix</span>
+                        <span class="c1"># print np.nanmean(out), np.nanstd(out), np.nansum(out)</span>
+                        <span class="c1"># out[abs(out - np.nanmean(out)) &gt; 3 * np.nanstd(out)] = 0</span>
+                        
+                        <span class="c1"># plt.imshow(out.T[2:-2].T)</span>
+                        <span class="c1"># plt.show()</span>
+                        <span class="c1"># print out</span>
+
+                        <span class="n">outList</span><span class="o">.</span><span class="n">append</span><span class="p">(</span> <span class="n">out</span> <span class="p">)</span>
+                        <span class="n">showList</span><span class="o">.</span><span class="n">append</span><span class="p">(</span> <span class="n">np</span><span class="o">.</span><span class="n">nansum</span><span class="p">(</span><span class="n">out</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)[</span><span class="mi">2</span><span class="p">:</span><span class="o">-</span><span class="mi">2</span><span class="p">]</span> <span class="p">)</span>
+
+                    <span class="c1"># Append to outDict</span>
+                    <span class="n">data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">outList</span><span class="p">)</span>
+                    <span class="n">outDict</span><span class="p">[</span><span class="s1">&#39;Slot</span><span class="si">%d</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">sl</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span> <span class="n">data</span> <span class="p">)</span>
+
+                    <span class="c1"># plt.imshow(showList)</span>
+                    <span class="c1"># plt.show()</span>
+
+                    <span class="k">if</span> <span class="n">conversion_factors</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                        <span class="n">dLarge</span><span class="p">,</span> <span class="n">dSmall</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">data</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">((</span><span class="mi">256</span><span class="p">,</span> <span class="mi">16</span><span class="p">))[</span><span class="n">isLarge</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">data</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">((</span><span class="mi">256</span><span class="p">,</span> <span class="mi">16</span><span class="p">))[</span><span class="o">~</span><span class="n">isLarge</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+                        <span class="n">doseLarge</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nan_to_num</span><span class="p">(</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">dLarge</span><span class="p">,</span> <span class="n">cvLarge</span><span class="p">[:,(</span><span class="n">sl</span><span class="o">-</span><span class="mi">1</span><span class="p">)])</span> <span class="o">/</span> <span class="p">(</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">measStart</span><span class="p">)</span> <span class="p">)</span>
+                        <span class="n">doseSmall</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nan_to_num</span><span class="p">(</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">dSmall</span><span class="p">,</span> <span class="n">cvSmall</span><span class="p">[:,(</span><span class="n">sl</span><span class="o">-</span><span class="mi">1</span><span class="p">)])</span> <span class="o">/</span> <span class="p">(</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">measStart</span><span class="p">)</span> <span class="p">)</span>
+                        <span class="nb">print</span> <span class="s1">&#39;Slot </span><span class="si">%d</span><span class="s1">: </span><span class="si">%.2f</span><span class="s1"> uSv/s (large), </span><span class="si">%.2f</span><span class="s1"> uSv/s (small)&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">sl</span><span class="p">,</span> <span class="n">doseLarge</span><span class="p">,</span> <span class="n">doseSmall</span><span class="p">)</span>
+                        <span class="n">doseDict</span><span class="p">[</span><span class="s1">&#39;Slot</span><span class="si">%d</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">sl</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span> <span class="p">(</span><span class="n">doseLarge</span><span class="p">,</span> <span class="n">doseSmall</span><span class="p">)</span> <span class="p">)</span>
+
+                    <span class="k">if</span> <span class="n">intPlot</span><span class="p">:</span>
+                        <span class="nb">print</span> <span class="n">showList</span>
+                        <span class="n">imList</span><span class="p">[</span><span class="n">sl</span><span class="p">]</span><span class="o">.</span><span class="n">set_data</span><span class="p">(</span> <span class="n">showList</span> <span class="p">)</span>
+                        <span class="c1"># fig.canvas.flush_events()</span>
+
+                        <span class="c1"># plt.imshow(showList)</span>
+                        <span class="c1"># plt.show()</span>
+
+                <span class="k">if</span> <span class="n">conversion_factors</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="nb">print</span> <span class="s1">&#39;Total dose: </span><span class="si">%.2f</span><span class="s1"> uSv/s&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">([</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">doseDict</span><span class="p">[</span><span class="s1">&#39;Slot</span><span class="si">%d</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">sl</span><span class="p">])</span> <span class="k">for</span> <span class="n">sl</span> <span class="ow">in</span> <span class="n">slot</span><span class="p">]))</span>
+                    <span class="nb">print</span>
+
+                <span class="k">if</span> <span class="n">intPlot</span><span class="p">:</span>
+                    <span class="n">fig</span><span class="o">.</span><span class="n">canvas</span><span class="o">.</span><span class="n">draw</span><span class="p">()</span>
+                    <span class="c1"># fig.canvas.flush_events()</span>
+                    <span class="c1"># MAC: currently not working</span>
+                    <span class="c1"># see: https://stackoverflow.com/questions/50490426/matplotlib-fails-and-hangs-when-plotting-in-interactive-mode</span>
+                    <span class="c1"># plt.pause(0.0001)</span>
+                    <span class="c1"># plt.show(block=True)</span>
+
+                <span class="nb">print</span> <span class="s1">&#39;</span><span class="si">%.2f</span><span class="s1"> Hz&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">c</span> <span class="o">/</span> <span class="p">(</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">measStart</span><span class="p">))</span>
+
+            <span class="c1"># Loop finished</span>
+	    <span class="k">if</span> <span class="n">outFn</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">pickleDump</span><span class="p">(</span><span class="n">outDict</span><span class="p">,</span> <span class="n">outFn</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">logTemp</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">pickleDump</span><span class="p">(</span><span class="n">tempDict</span><span class="p">,</span> <span class="s1">&#39;</span><span class="si">%s</span><span class="s1">_temp&#39;</span> <span class="o">%</span> <span class="n">outFn</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;.p&#39;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="s1">&#39;.p&#39;</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">conversion_factors</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">pickleDump</span><span class="p">(</span><span class="n">doseDict</span><span class="p">,</span> <span class="s1">&#39;</span><span class="si">%s</span><span class="s1">_dose&#39;</span> <span class="o">%</span> <span class="n">outFn</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;.p&#39;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="s1">&#39;.p&#39;</span><span class="p">)</span>
+	    <span class="n">returnDict</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;data&#39;</span><span class="p">:</span> <span class="n">outDict</span><span class="p">}</span>
+	    <span class="k">if</span> <span class="n">logTemp</span><span class="p">:</span>
+	    	<span class="n">returnDict</span><span class="p">[</span><span class="s1">&#39;temp&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">tempDict</span>
+	    <span class="k">if</span> <span class="n">conversion_factors</span><span class="p">:</span>
+	        <span class="n">returnDict</span><span class="p">[</span><span class="s1">&#39;dose&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">doseDict</span>
+	    <span class="k">return</span> <span class="n">returnDict</span>
+
+        <span class="k">except</span> <span class="p">(</span><span class="ne">KeyboardInterrupt</span><span class="p">,</span> <span class="ne">SystemExit</span><span class="p">):</span>
+            <span class="c1"># Store data and plot in files</span>
+            <span class="nb">print</span> <span class="s1">&#39;KeyboardInterrupt-Exception: Storing data!&#39;</span>
+            <span class="nb">print</span> <span class="s1">&#39;Measurement time: </span><span class="si">%.2f</span><span class="s1"> min&#39;</span> <span class="o">%</span> <span class="p">((</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">measStart</span><span class="p">)</span> <span class="o">/</span> <span class="mf">60.</span><span class="p">)</span>
+	    <span class="k">if</span> <span class="n">outFn</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">pickleDump</span><span class="p">(</span><span class="n">outDict</span><span class="p">,</span> <span class="n">outFn</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">logTemp</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">pickleDump</span><span class="p">(</span><span class="n">tempDict</span><span class="p">,</span> <span class="s1">&#39;</span><span class="si">%s</span><span class="s1">_temp&#39;</span> <span class="o">%</span> <span class="n">outFn</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;.p&#39;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="s1">&#39;.p&#39;</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">conversion_factors</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">pickleDump</span><span class="p">(</span><span class="n">doseDict</span><span class="p">,</span> <span class="s1">&#39;</span><span class="si">%s</span><span class="s1">_dose&#39;</span> <span class="o">%</span> <span class="n">outFn</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;.p&#39;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="s1">&#39;.p&#39;</span><span class="p">)</span>
+                <span class="k">raise</span>
+
+            <span class="k">if</span> <span class="n">intPlot</span><span class="p">:</span>
+                <span class="n">plt</span><span class="o">.</span><span class="n">close</span><span class="p">(</span><span class="s1">&#39;all&#39;</span><span class="p">)</span>
+
+            <span class="c1"># Reset OMR</span>
+            <span class="k">for</span> <span class="n">sl</span> <span class="ow">in</span> <span class="n">slot</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">DPXWriteOMRCommand</span><span class="p">(</span><span class="n">sl</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">OMR</span><span class="p">)</span>
+
+	    <span class="n">returnDict</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;data&#39;</span><span class="p">:</span> <span class="n">outDict</span><span class="p">}</span>
+	    <span class="k">if</span> <span class="n">logTemp</span><span class="p">:</span>
+	    	<span class="n">returnDict</span><span class="p">[</span><span class="s1">&#39;temp&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">tempDict</span>
+	    <span class="k">if</span> <span class="n">conversion_factors</span><span class="p">:</span>
+	        <span class="n">returnDict</span><span class="p">[</span><span class="s1">&#39;dose&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">doseDict</span>
+	    <span class="k">return</span> <span class="n">returnDict</span></div>
+
+<div class="viewcode-block" id="DPX_functions.measureIntegration"><a class="viewcode-back" href="../../src/dpx_functions.html#dpx_func_python.dpx_functions.DPX_functions.measureIntegration">[docs]</a>    <span class="k">def</span> <span class="nf">measureIntegration</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">slot</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">measurement_time</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">frames</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">outFn</span><span class="o">=</span><span class="s1">&#39;integrationMeasurement.p&#39;</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Perform measurement in Integration Mode.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">	----------</span>
+<span class="sd">	slot : int or list</span>
+<span class="sd">	    Use the specified slots on the read-out board. Can be either a </span>
+<span class="sd">	    single detector or multiple ones. If using the latter, specify </span>
+<span class="sd">	    the slots via a list.</span>
+<span class="sd">	measurement_time : float</span>
+<span class="sd">	    Duration for wich the measured ToT values are integrated per frame.</span>
+<span class="sd">	frames : int</span>
+<span class="sd">	    Number of frames to measure.</span>
+<span class="sd">	outFn : str or None</span>
+<span class="sd">	    Output file in which the measurement data is stored. If `None`,</span>
+<span class="sd">	    no data is written to files. Otherwise the extension of the file</span>
+<span class="sd">	    must be &#39;.p&#39; or &#39;.hck&#39; in order to use either &#39;cPickle&#39; or </span>
+<span class="sd">	    &#39;hickle&#39; for storage. If file already exists, a number is </span>
+<span class="sd">	    appended to the file and incremented if necessary.</span>
+
+<span class="sd">	Returns</span>
+<span class="sd">	-------</span>
+<span class="sd">	out : None</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="c1"># Set Integration Mode in OMR</span>
+        <span class="c1"># If OMR code is list</span>
+        <span class="n">OMRCode</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">OMR</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">OMRCode</span><span class="p">,</span> <span class="n">basestring</span><span class="p">):</span>
+            <span class="n">OMRCode</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;IntegrationMode&#39;</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">OMRCode</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">OMRCode</span><span class="p">,</span> <span class="mi">16</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">((</span><span class="mb">0b11</span><span class="p">)</span> <span class="o">&lt;&lt;</span> <span class="mi">22</span><span class="p">)</span>
+
+        <span class="c1"># If slot is no list, transform it into one</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">slot</span><span class="p">,</span> <span class="p">(</span><span class="nb">list</span><span class="p">,)):</span>
+            <span class="n">slot</span> <span class="o">=</span> <span class="p">[</span><span class="n">slot</span><span class="p">]</span>
+
+        <span class="k">for</span> <span class="n">sl</span> <span class="ow">in</span> <span class="n">slot</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">DPXWriteOMRCommand</span><span class="p">(</span><span class="n">sl</span><span class="p">,</span> <span class="n">OMRCode</span><span class="p">)</span>
+
+        <span class="n">outDict</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;Slot</span><span class="si">%d</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">sl</span><span class="p">:</span> <span class="p">[]</span> <span class="k">for</span> <span class="n">sl</span> <span class="ow">in</span> <span class="n">slot</span><span class="p">}</span>
+
+        <span class="c1"># = START MEASUREMENT =</span>
+        <span class="nb">print</span> <span class="s1">&#39;Starting ToT Integral Measurement!&#39;</span>
+        <span class="nb">print</span> <span class="s1">&#39;==================================&#39;</span>
+        <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">frames</span><span class="p">):</span>
+            <span class="c1"># Start frame </span>
+            <span class="n">OMRCode</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;ClosedShutter&#39;</span>
+            <span class="k">for</span> <span class="n">sl</span> <span class="ow">in</span> <span class="n">slot</span><span class="p">:</span>
+                <span class="c1"># Reset data registers</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">DPXDataResetCommand</span><span class="p">(</span><span class="n">sl</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">DPXWriteOMRCommand</span><span class="p">(</span><span class="n">slot</span><span class="p">,</span> <span class="n">OMRCode</span><span class="p">)</span>
+
+            <span class="c1"># Wait specified time</span>
+            <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="n">measurement_time</span><span class="p">)</span>
+
+            <span class="c1"># Read data and end frame</span>
+            <span class="n">OMRCode</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;OpenShutter&#39;</span>
+            <span class="k">for</span> <span class="n">sl</span> <span class="ow">in</span> <span class="n">slot</span><span class="p">:</span>
+                <span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">DPXReadToTDataIntegrationModeCommand</span><span class="p">(</span><span class="n">sl</span><span class="p">)</span>
+                <span class="c1"># print data</span>
+                <span class="n">outDict</span><span class="p">[</span><span class="s1">&#39;Slot</span><span class="si">%d</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">sl</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span> <span class="n">data</span><span class="o">.</span><span class="n">flatten</span><span class="p">()</span> <span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">DPXWriteOMRCommand</span><span class="p">(</span><span class="n">sl</span><span class="p">,</span> <span class="n">OMRCode</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">outFn</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">pickleDump</span><span class="p">(</span><span class="n">outDict</span><span class="p">,</span> <span class="n">outFn</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="DPX_functions.measurePC"><a class="viewcode-back" href="../../src/dpx_functions.html#dpx_func_python.dpx_functions.DPX_functions.measurePC">[docs]</a>    <span class="k">def</span> <span class="nf">measurePC</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">slot</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">measurement_time</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">frames</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">outFn</span><span class="o">=</span><span class="s1">&#39;pcMeasurement.p&#39;</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Perform measurement in Integration Mode.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">	----------</span>
+<span class="sd">	slot : int or list</span>
+<span class="sd">	    Use the specified slots on the read-out board. Can be either a </span>
+<span class="sd">	    single detector or multiple ones. If using the latter, specify </span>
+<span class="sd">	    the slots via a list.</span>
+<span class="sd">	measurement_time : float</span>
+<span class="sd">	    Duration for wich the measured ToT values are integrated per frame.</span>
+<span class="sd">	frames : int or None</span>
+<span class="sd">	    Number of frames to measure. If set to None, an infinite loop</span>
+<span class="sd">	    is used.</span>
+<span class="sd">	outFn : str or None</span>
+<span class="sd">	    Output file in which the measurement data is stored. If `None`,</span>
+<span class="sd">	    no data is written to files. Otherwise the extension of the file</span>
+<span class="sd">	    must be &#39;.p&#39; or &#39;.hck&#39; in order to use either &#39;cPickle&#39; or </span>
+<span class="sd">	    &#39;hickle&#39; for storage. If file already exists, a number is </span>
+<span class="sd">	    appended to the file and incremented if necessary.</span>
+
+<span class="sd">	Returns</span>
+<span class="sd">	-------</span>
+<span class="sd">	out : None</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="c1"># Set PC Mode in OMR</span>
+        <span class="c1"># If OMR code is list</span>
+        <span class="n">OMRCode</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">OMR</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">OMRCode</span><span class="p">,</span> <span class="n">basestring</span><span class="p">):</span>
+            <span class="n">OMRCode</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;PCMode&#39;</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">OMRCode</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">OMRCode</span><span class="p">,</span> <span class="mi">16</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">((</span><span class="mb">0b10</span><span class="p">)</span> <span class="o">&lt;&lt;</span> <span class="mi">22</span><span class="p">)</span>
+            <span class="n">OMRCode</span> <span class="o">=</span> <span class="s1">&#39;</span><span class="si">%04x</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="p">((</span><span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">OMR</span><span class="p">,</span> <span class="mi">16</span><span class="p">)</span> <span class="o">&amp;</span> <span class="o">~</span><span class="p">((</span><span class="mb">0b11</span><span class="p">)</span> <span class="o">&lt;&lt;</span> <span class="mi">22</span><span class="p">))</span> <span class="o">|</span> <span class="p">(</span><span class="mb">0b10</span> <span class="o">&lt;&lt;</span> <span class="mi">22</span><span class="p">))</span>
+
+        <span class="c1"># If slot is no list, transform it into one</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">slot</span><span class="p">,</span> <span class="p">(</span><span class="nb">list</span><span class="p">,)):</span>
+            <span class="n">slot</span> <span class="o">=</span> <span class="p">[</span><span class="n">slot</span><span class="p">]</span>
+
+        <span class="k">for</span> <span class="n">sl</span> <span class="ow">in</span> <span class="n">slot</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">DPXWriteOMRCommand</span><span class="p">(</span><span class="n">sl</span><span class="p">,</span> <span class="n">OMRCode</span><span class="p">)</span>
+
+        <span class="n">outDict</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;Slot</span><span class="si">%d</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">sl</span><span class="p">:</span> <span class="p">[]</span> <span class="k">for</span> <span class="n">sl</span> <span class="ow">in</span> <span class="n">slot</span><span class="p">}</span>
+	
+	<span class="c1"># Specify frame range</span>
+	<span class="k">if</span> <span class="n">frames</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">frameRange</span> <span class="o">=</span> <span class="nb">range</span><span class="p">(</span><span class="n">frames</span><span class="p">)</span>
+	<span class="k">else</span><span class="p">:</span>
+            <span class="n">frameRange</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">infinite_for</span><span class="p">()</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="c1"># = START MEASUREMENT =</span>
+            <span class="nb">print</span> <span class="s1">&#39;Starting Photon Counting Measurement!&#39;</span>
+            <span class="nb">print</span> <span class="s1">&#39;=====================================&#39;</span>
+            <span class="n">measStart</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+            <span class="n">startTime</span> <span class="o">=</span> <span class="n">measStart</span>
+            <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">frameRange</span><span class="p">:</span>
+                <span class="c1"># Start frame </span>
+                <span class="k">for</span> <span class="n">sl</span> <span class="ow">in</span> <span class="n">slot</span><span class="p">:</span>
+                    <span class="c1"># Reset data registers</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">DPXDataResetCommand</span><span class="p">(</span><span class="n">sl</span><span class="p">)</span>
+
+                <span class="c1"># Wait specified time</span>
+                <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="n">measurement_time</span><span class="p">)</span>
+
+                <span class="c1"># Read data and end frame</span>
+                <span class="k">for</span> <span class="n">sl</span> <span class="ow">in</span> <span class="n">slot</span><span class="p">:</span>
+                    <span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">DPXReadToTDatakVpModeCommand</span><span class="p">(</span><span class="n">sl</span><span class="p">)</span>
+                    <span class="c1"># print data</span>
+                    <span class="n">outDict</span><span class="p">[</span><span class="s1">&#39;Slot</span><span class="si">%d</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">sl</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span> <span class="n">data</span><span class="o">.</span><span class="n">flatten</span><span class="p">()</span> <span class="p">)</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">DPXWriteOMRCommand</span><span class="p">(</span><span class="n">sl</span><span class="p">,</span> <span class="n">OMRCode</span><span class="p">)</span>
+
+                <span class="k">if</span> <span class="n">c</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">c</span> <span class="o">%</span> <span class="mi">100</span><span class="p">:</span>
+                    <span class="nb">print</span> <span class="s1">&#39;</span><span class="si">%.2f</span><span class="s1"> Hz&#39;</span> <span class="o">%</span> <span class="p">((</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">startTime</span><span class="p">)</span> <span class="o">/</span> <span class="mi">100</span><span class="p">)</span>
+                    <span class="n">startTime</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+
+        <span class="k">except</span> <span class="p">(</span><span class="ne">KeyboardInterrupt</span><span class="p">,</span> <span class="ne">SystemExit</span><span class="p">):</span>
+            <span class="c1"># Store data and plot in files</span>
+            <span class="nb">print</span> <span class="s1">&#39;KeyboardInterrupt-Exception: Storing data!&#39;</span>
+            <span class="nb">print</span> <span class="s1">&#39;Measurement time: </span><span class="si">%.2f</span><span class="s1"> min&#39;</span> <span class="o">%</span> <span class="p">((</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">measStart</span><span class="p">)</span> <span class="o">/</span> <span class="mf">60.</span><span class="p">)</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">pickleDump</span><span class="p">(</span><span class="n">outDict</span><span class="p">,</span> <span class="n">outFn</span><span class="p">)</span>
+            <span class="k">raise</span>
+
+        <span class="k">if</span> <span class="n">outFn</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">pickleDump</span><span class="p">(</span><span class="n">outDict</span><span class="p">,</span> <span class="n">outFn</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="DPX_functions.measureToT"><a class="viewcode-back" href="../../src/dpx_functions.html#dpx_func_python.dpx_functions.DPX_functions.measureToT">[docs]</a>    <span class="k">def</span> <span class="nf">measureToT</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">slot</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">cnt</span><span class="o">=</span><span class="mi">10000</span><span class="p">,</span> <span class="n">outDir</span><span class="o">=</span><span class="s1">&#39;ToTMeasurement/&#39;</span><span class="p">,</span> <span class="n">storeEmpty</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">logTemp</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">paramsDict</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">intPlot</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Perform measurement in ToTMode.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">	----------</span>
+<span class="sd">	slot : int or list</span>
+<span class="sd">	    Use the specified slots on the read-out board. Can be either a </span>
+<span class="sd">	    single detector or multiple ones. If using the latter, specify </span>
+<span class="sd">	    the slots via a list.</span>
+<span class="sd">	cnt : Number of frames </span>
+<span class="sd">	    ToT is measured in an endless loop. The data is written to file </span>
+<span class="sd">	    after &#39;cnt&#39; frames were processed. Additionally, Keyboard </span>
+<span class="sd">	    Interrupts are caught in order to store data afterwards. </span>
+<span class="sd">	outDir : str or None</span>
+<span class="sd">	    Output directory in which the measurement files are stored. </span>
+<span class="sd">	    A file is written after `cnt` frames. If file already exists, </span>
+<span class="sd">	    a number is appended to the file and incremented.</span>
+<span class="sd">	storeEmpty : bool </span>
+<span class="sd">	    If set, empty frames are stored, otherwise discarded.</span>
+<span class="sd">	logTemp : bool</span>
+<span class="sd">	    Log the temperature and time for each frame. If `outFn` is set, </span>
+<span class="sd">	    the data is stored to a file which is named according to `outFn`</span>
+<span class="sd">	    with the suffix &#39;_temp&#39; attached.</span>
+<span class="sd">	intPlot : bool</span>
+<span class="sd">	    Use interactive plotting. The total number of counts per pixel</span>
+<span class="sd">	    is shown for each frame.</span>
+<span class="sd">	paramsDict : dict, optional</span>
+<span class="sd">	    If specified, measured ToT values are directly converted to their</span>
+<span class="sd">	    corresponding energies. `paramsDict` contains the pixel indices as</span>
+<span class="sd">	    keys where each value is a dictionary itself. These contain either</span>
+<span class="sd">	    the keys `a, b, c, t` for standard calibration factors or `a, b, c, t, h, k`</span>
+<span class="sd">	    if a test pulse calibration was performed.</span>
+
+<span class="sd">	Returns</span>
+<span class="sd">	-------</span>
+<span class="sd">	out : None</span>
+
+<span class="sd">	Notes</span>
+<span class="sd">	-----</span>
+<span class="sd">	The function is optimized for long term ToT measurements. It runs in </span>
+<span class="sd">	an endless loop and waits for a keyboard interrupt. After `cnt` frames</span>
+<span class="sd">	where processed, data is written to a file in the directory specified</span>
+<span class="sd">	via `outDir`. Using these single files allows for a memory sufficient</span>
+<span class="sd">	method to store the data in histograms without loosing information and</span>
+<span class="sd">	without the necessecity to load the whole dataset at once.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="c1"># Set Dosi Mode in OMR</span>
+        <span class="c1"># If OMR code is list</span>
+        <span class="n">OMRCode</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">OMR</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">OMRCode</span><span class="p">,</span> <span class="n">basestring</span><span class="p">):</span>
+            <span class="n">OMRCode</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;DosiMode&#39;</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">OMRCode</span> <span class="o">=</span> <span class="s1">&#39;</span><span class="si">%04x</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="p">((</span><span class="nb">int</span><span class="p">(</span><span class="n">OMRCode</span><span class="p">,</span> <span class="mi">16</span><span class="p">)</span> <span class="o">&amp;</span> <span class="o">~</span><span class="p">((</span><span class="mb">0b11</span><span class="p">)</span> <span class="o">&lt;&lt;</span> <span class="mi">22</span><span class="p">)))</span>
+
+        <span class="c1"># Check which slots to read out</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">slot</span><span class="p">,</span> <span class="nb">int</span><span class="p">):</span>
+            <span class="n">slotList</span> <span class="o">=</span> <span class="p">[</span><span class="n">slot</span><span class="p">]</span>
+        <span class="k">elif</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">slot</span><span class="p">,</span> <span class="n">basestring</span><span class="p">):</span>
+            <span class="n">slotList</span> <span class="o">=</span> <span class="n">slot</span>
+
+        <span class="c1"># Set mode in slots</span>
+        <span class="k">for</span> <span class="n">slot</span> <span class="ow">in</span> <span class="n">slotList</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">DPXWriteOMRCommand</span><span class="p">(</span><span class="n">slot</span><span class="p">,</span> <span class="n">OMRCode</span><span class="p">)</span>
+
+        <span class="c1"># Set ADC out to temperature if requested</span>
+        <span class="k">if</span> <span class="n">logTemp</span><span class="p">:</span>
+            <span class="n">tempDict</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;temp&#39;</span><span class="p">:</span> <span class="p">[],</span> <span class="s1">&#39;time&#39;</span><span class="p">:</span> <span class="p">[]}</span>
+
+            <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">OMR</span><span class="p">)</span> <span class="ow">is</span> <span class="nb">list</span><span class="p">:</span>
+                <span class="n">OMRCode_</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">OMRListToHex</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">OMR</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">OMRCode_</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">OMR</span>
+            <span class="n">OMRCode_</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">OMRCode_</span><span class="p">,</span> <span class="mi">16</span><span class="p">)</span>
+
+            <span class="n">OMRCode_</span> <span class="o">&amp;=</span> <span class="o">~</span><span class="p">(</span><span class="mb">0b11111</span> <span class="o">&lt;&lt;</span> <span class="mi">12</span><span class="p">)</span>
+            <span class="n">OMRCode_</span> <span class="o">|=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">ds</span><span class="o">.</span><span class="n">_OMRAnalogOutSel</span><span class="p">,</span> <span class="s1">&#39;Temperature&#39;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">DPXWriteOMRCommand</span><span class="p">(</span><span class="n">slot</span><span class="p">,</span> <span class="nb">hex</span><span class="p">(</span><span class="n">OMRCode_</span><span class="p">)</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;0x&#39;</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+
+        <span class="c1"># GUI</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        if self.USE_GUI:</span>
+<span class="sd">            bins = np.arange(0, 400, 1)</span>
+<span class="sd">            histData = np.zeros(len(bins)-1)</span>
+<span class="sd">            yield bins, histData</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+
+        <span class="c1"># Init plot</span>
+        <span class="k">if</span> <span class="n">intPlot</span><span class="p">:</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">ion</span><span class="p">()</span>
+
+            <span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">()</span>
+
+            <span class="c1"># Create empty axis</span>
+            <span class="n">line</span><span class="p">,</span> <span class="o">=</span> <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s1">&#39;k&#39;</span><span class="p">)</span> <span class="c1"># , where=&#39;post&#39;)</span>
+            <span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s1">&#39;ToT&#39;</span><span class="p">)</span>
+            <span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s1">&#39;Counts&#39;</span><span class="p">)</span>
+            <span class="c1"># ax.set_yscale(&quot;log&quot;, nonposy=&#39;clip&#39;)</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">grid</span><span class="p">()</span>
+
+            <span class="c1"># Init bins and histogram data</span>
+            <span class="k">if</span> <span class="n">paramsDict</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">bins</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">20</span><span class="p">,</span> <span class="mi">100</span><span class="p">,</span> <span class="mi">300</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">bins</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1000</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+            <span class="n">histData</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">bins</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+
+            <span class="n">ax</span><span class="o">.</span><span class="n">set_xlim</span><span class="p">(</span><span class="nb">min</span><span class="p">(</span><span class="n">bins</span><span class="p">),</span> <span class="nb">max</span><span class="p">(</span><span class="n">bins</span><span class="p">))</span>
+
+        <span class="c1"># Check if output directory exists</span>
+        <span class="n">outDir</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">makeDirectory</span><span class="p">(</span><span class="n">outDir</span><span class="p">)</span>
+        <span class="n">outFn</span> <span class="o">=</span> <span class="n">outDir</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;/&#39;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="s1">&#39;.p&#39;</span>
+
+        <span class="c1"># Initial reset </span>
+        <span class="k">for</span> <span class="n">slot</span> <span class="ow">in</span> <span class="n">slotList</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">DPXDataResetCommand</span><span class="p">(</span><span class="n">slot</span><span class="p">)</span>
+
+        <span class="c1"># For KeyboardInterrupt exception</span>
+        <span class="nb">print</span> <span class="s1">&#39;Starting ToT Measurement!&#39;</span>
+        <span class="nb">print</span> <span class="s1">&#39;=========================&#39;</span>
+        <span class="n">measStart</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+                <span class="n">ToTDict</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;Slot</span><span class="si">%d</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">slot</span><span class="p">:</span> <span class="p">[]</span> <span class="k">for</span> <span class="n">slot</span> <span class="ow">in</span> <span class="n">slotList</span><span class="p">}</span>
+                <span class="c1"># if paramsDict is not None:</span>
+                <span class="c1">#     energyDict = {&#39;Slot%d&#39; % slot: [] for slot in slotList}</span>
+
+                <span class="n">c</span> <span class="o">=</span> <span class="mi">0</span>
+                <span class="n">startTime</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+                <span class="k">if</span> <span class="n">intPlot</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">USE_GUI</span><span class="p">:</span>
+                    <span class="n">dataPlot</span> <span class="o">=</span> <span class="p">[]</span>
+
+                <span class="k">while</span> <span class="n">c</span> <span class="o">&lt;=</span> <span class="n">cnt</span><span class="p">:</span>
+                    <span class="k">for</span> <span class="n">slot</span> <span class="ow">in</span> <span class="n">slotList</span><span class="p">:</span>
+                        <span class="c1"># Read data</span>
+                        <span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">DPXReadToTDataDosiModeCommand</span><span class="p">(</span><span class="n">slot</span><span class="p">)</span>
+
+                        <span class="c1"># Reset data registers</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">DPXDataResetCommand</span><span class="p">(</span><span class="n">slot</span><span class="p">)</span>
+
+                        <span class="c1"># print np.median( data )</span>
+                        <span class="c1"># data = self.DPXReadToTDataDosiModeMultiCommand(slot)</span>
+                        <span class="c1"># print data[256:]</span>
+                        <span class="c1"># print data[:256]</span>
+                        <span class="c1"># print</span>
+                        <span class="c1"># data = data[256:]</span>
+
+                        <span class="n">data</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">flatten</span><span class="p">()</span>
+                        <span class="c1"># Discard empty frame?</span>
+                        <span class="k">if</span> <span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">data</span><span class="p">)</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">storeEmpty</span><span class="p">:</span>
+                            <span class="k">continue</span>
+
+                        <span class="k">if</span> <span class="n">paramsDict</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                            <span class="n">energyData</span> <span class="o">=</span> <span class="p">[]</span>
+                            <span class="n">p</span> <span class="o">=</span> <span class="n">paramsDict</span><span class="p">[</span><span class="s1">&#39;Slot</span><span class="si">%d</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">slot</span><span class="p">]</span>
+                            <span class="k">for</span> <span class="n">pixel</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">256</span><span class="p">):</span>
+                                <span class="k">if</span> <span class="n">pixel</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">p</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+                                    <span class="n">energyData</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">)</span>
+                                    <span class="k">continue</span>
+
+                                <span class="n">pPixel</span> <span class="o">=</span> <span class="n">p</span><span class="p">[</span><span class="n">pixel</span><span class="p">]</span>
+                                <span class="k">if</span> <span class="nb">len</span><span class="p">(</span> <span class="n">pPixel</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span> <span class="p">)</span> <span class="o">==</span> <span class="mi">6</span><span class="p">:</span>
+                                    <span class="n">energyData</span><span class="o">.</span><span class="n">append</span><span class="p">(</span> <span class="bp">self</span><span class="o">.</span><span class="n">ToTtoEnergySimple</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="n">pixel</span><span class="p">],</span> 
+                                        <span class="n">pPixel</span><span class="p">[</span><span class="s1">&#39;a&#39;</span><span class="p">],</span> <span class="n">pPixel</span><span class="p">[</span><span class="s1">&#39;b&#39;</span><span class="p">],</span> <span class="n">pPixel</span><span class="p">[</span><span class="s1">&#39;c&#39;</span><span class="p">],</span>
+                                        <span class="n">pPixel</span><span class="p">[</span><span class="s1">&#39;t&#39;</span><span class="p">],</span> <span class="n">pPixel</span><span class="p">[</span><span class="s1">&#39;h&#39;</span><span class="p">],</span> <span class="n">pPixel</span><span class="p">[</span><span class="s1">&#39;k&#39;</span><span class="p">])</span> <span class="p">)</span>
+                                <span class="k">else</span><span class="p">:</span>
+                                    <span class="n">energyData</span><span class="o">.</span><span class="n">append</span><span class="p">(</span> <span class="bp">self</span><span class="o">.</span><span class="n">ToTtoEnergySimple</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="n">pixel</span><span class="p">],</span> 
+                                        <span class="n">pPixel</span><span class="p">[</span><span class="s1">&#39;a&#39;</span><span class="p">],</span> <span class="n">pPixel</span><span class="p">[</span><span class="s1">&#39;b&#39;</span><span class="p">],</span> <span class="n">pPixel</span><span class="p">[</span><span class="s1">&#39;c&#39;</span><span class="p">],</span>
+                                        <span class="n">pPixel</span><span class="p">[</span><span class="s1">&#39;t&#39;</span><span class="p">])</span> <span class="p">)</span>
+                            <span class="n">data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">energyData</span><span class="p">)</span>
+                            <span class="nb">print</span> <span class="n">data</span>
+
+                        <span class="c1"># Remove overflow</span>
+                        <span class="c1"># data[data &gt;= 4096] -= 4096</span>
+
+                        <span class="k">if</span> <span class="n">intPlot</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">USE_GUI</span><span class="p">:</span>
+                            <span class="n">data_</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">data</span><span class="p">[[</span><span class="bp">self</span><span class="o">.</span><span class="n">isLarge</span><span class="p">(</span><span class="n">pixel</span><span class="p">)</span> <span class="k">for</span> <span class="n">pixel</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">256</span><span class="p">)]])</span>
+                            <span class="n">data_</span> <span class="o">=</span> <span class="n">data_</span><span class="p">[</span><span class="o">~</span><span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">data_</span><span class="p">)]</span>
+                            <span class="n">dataPlot</span> <span class="o">+=</span> <span class="n">data_</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
+
+                        <span class="n">ToTDict</span><span class="p">[</span><span class="s1">&#39;Slot</span><span class="si">%d</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">slot</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span> <span class="n">np</span><span class="o">.</span><span class="n">nan_to_num</span><span class="p">(</span><span class="n">data</span><span class="p">)</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span> <span class="p">)</span>
+
+                    <span class="c1"># Measure temperature?</span>
+                    <span class="k">if</span> <span class="n">logTemp</span><span class="p">:</span>
+                        <span class="n">temp</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">MCGetADCvalue</span><span class="p">(),</span> <span class="mi">16</span><span class="p">))</span>
+                        <span class="n">tempDict</span><span class="p">[</span><span class="s1">&#39;temp&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span> <span class="n">temp</span> <span class="p">)</span>
+                        <span class="n">tempDict</span><span class="p">[</span><span class="s1">&#39;time&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">measStart</span> <span class="p">)</span>
+
+                    <span class="k">if</span> <span class="n">c</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">c</span> <span class="o">%</span> <span class="mi">100</span><span class="p">:</span>
+                        <span class="nb">print</span> <span class="s1">&#39;</span><span class="si">%.2f</span><span class="s1"> Hz&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="mf">100.</span><span class="o">/</span><span class="p">(</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">startTime</span><span class="p">))</span>
+                        <span class="n">startTime</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+
+                    <span class="c1"># Increment loop counter</span>
+                    <span class="n">c</span> <span class="o">+=</span> <span class="mi">1</span>
+
+                    <span class="c1"># Update plot every 100 iterations</span>
+                    <span class="k">if</span> <span class="n">intPlot</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">USE_GUI</span><span class="p">:</span>
+                        <span class="k">if</span> <span class="ow">not</span> <span class="n">c</span> <span class="o">%</span> <span class="mi">10</span><span class="p">:</span>
+                            <span class="n">dataPlot</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">dataPlot</span><span class="p">)</span>
+                            <span class="c1"># Remove empty entries</span>
+                            <span class="n">dataPlot</span> <span class="o">=</span> <span class="n">dataPlot</span><span class="p">[</span><span class="n">dataPlot</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">]</span>
+
+                            <span class="n">hist</span><span class="p">,</span> <span class="n">bins_</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">histogram</span><span class="p">(</span><span class="n">dataPlot</span><span class="p">,</span> <span class="n">bins</span><span class="o">=</span><span class="n">bins</span><span class="p">)</span>
+                            <span class="n">histData</span> <span class="o">+=</span> <span class="n">hist</span>
+                            <span class="n">dataPlot</span> <span class="o">=</span> <span class="p">[]</span>
+
+                            <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">                            if self.USE_GUI:</span>
+<span class="sd">                                yield bins_, histData</span>
+<span class="sd">                            &#39;&#39;&#39;</span>
+
+                            <span class="k">if</span> <span class="n">intPlot</span><span class="p">:</span>
+                                <span class="n">line</span><span class="o">.</span><span class="n">set_xdata</span><span class="p">(</span><span class="n">bins_</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+                                <span class="n">line</span><span class="o">.</span><span class="n">set_ydata</span><span class="p">(</span><span class="n">histData</span><span class="p">)</span>
+
+                                <span class="c1"># Update plot scale</span>
+                                <span class="n">ax</span><span class="o">.</span><span class="n">set_ylim</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mf">1.1</span> <span class="o">*</span> <span class="nb">max</span><span class="p">(</span><span class="n">histData</span><span class="p">))</span>
+                                <span class="n">fig</span><span class="o">.</span><span class="n">canvas</span><span class="o">.</span><span class="n">draw</span><span class="p">()</span>
+
+                <span class="c1"># Loop finished</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">pickleDump</span><span class="p">(</span><span class="n">ToTDict</span><span class="p">,</span> <span class="s1">&#39;</span><span class="si">%s</span><span class="s1">/</span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">outDir</span><span class="p">,</span> <span class="n">outFn</span><span class="p">))</span>
+                <span class="k">if</span> <span class="n">logTemp</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">pickleDump</span><span class="p">(</span><span class="n">tempDict</span><span class="p">,</span> <span class="s1">&#39;</span><span class="si">%s</span><span class="s1">/</span><span class="si">%s</span><span class="s1">_temp&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">outDir</span><span class="p">,</span> <span class="n">outFn</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;.p&#39;</span><span class="p">)[</span><span class="mi">0</span><span class="p">])</span> <span class="o">+</span> <span class="s1">&#39;.p&#39;</span><span class="p">)</span>
+                <span class="nb">print</span> <span class="s1">&#39;Measurement time: </span><span class="si">%.2f</span><span class="s1"> min&#39;</span> <span class="o">%</span> <span class="p">((</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">measStart</span><span class="p">)</span> <span class="o">/</span> <span class="mf">60.</span><span class="p">)</span>
+                <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">ToTDict</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+                    <span class="nb">print</span> <span class="s1">&#39;Slot</span><span class="si">%d</span><span class="s1">: </span><span class="si">%d</span><span class="s1"> events&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">slot</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">ToTDict</span><span class="p">[</span><span class="n">key</span><span class="p">])</span><span class="o">.</span><span class="n">flatten</span><span class="p">())</span> <span class="o">/</span> <span class="mf">256.</span><span class="p">)</span>
+
+        <span class="k">except</span> <span class="p">(</span><span class="ne">KeyboardInterrupt</span><span class="p">,</span> <span class="ne">SystemExit</span><span class="p">):</span>
+            <span class="c1"># Store data and plot in files</span>
+            <span class="nb">print</span> <span class="s1">&#39;KeyboardInterrupt-Exception: Storing data!&#39;</span>
+            <span class="nb">print</span> <span class="s1">&#39;Measurement time: </span><span class="si">%.2f</span><span class="s1"> min&#39;</span> <span class="o">%</span> <span class="p">((</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">measStart</span><span class="p">)</span> <span class="o">/</span> <span class="mf">60.</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">ToTDict</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+                <span class="nb">print</span> <span class="s1">&#39;Slot</span><span class="si">%d</span><span class="s1">: </span><span class="si">%d</span><span class="s1"> events&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">slot</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">ToTDict</span><span class="p">[</span><span class="n">key</span><span class="p">])</span><span class="o">.</span><span class="n">flatten</span><span class="p">())</span> <span class="o">/</span> <span class="mf">256.</span><span class="p">)</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">pickleDump</span><span class="p">(</span><span class="n">ToTDict</span><span class="p">,</span> <span class="s1">&#39;</span><span class="si">%s</span><span class="s1">/</span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">outDir</span><span class="p">,</span> <span class="n">outFn</span><span class="p">))</span>
+            <span class="k">if</span> <span class="n">logTemp</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">pickleDump</span><span class="p">(</span><span class="n">tempDict</span><span class="p">,</span> <span class="s1">&#39;</span><span class="si">%s</span><span class="s1">/</span><span class="si">%s</span><span class="s1">_temp&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">outDir</span><span class="p">,</span> <span class="n">outFn</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;.p&#39;</span><span class="p">)[</span><span class="mi">0</span><span class="p">])</span> <span class="o">+</span> <span class="s1">&#39;.p&#39;</span><span class="p">)</span>
+            <span class="k">raise</span>
+
+        <span class="c1"># Reset OMR</span>
+        <span class="k">for</span> <span class="n">slot</span> <span class="ow">in</span> <span class="n">slotList</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">DPXWriteOMRCommand</span><span class="p">(</span><span class="n">slot</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">OMR</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="DPX_functions.measureTHL"><a class="viewcode-back" href="../../dpx_func_python.html#dpx_func_python.dpx_functions.DPX_functions.measureTHL">[docs]</a>    <span class="k">def</span> <span class="nf">measureTHL</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">slot</span><span class="p">,</span> <span class="n">fn</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">plot</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">fn</span><span class="p">:</span>
+            <span class="n">fn</span> <span class="o">=</span> <span class="n">THL_CALIB_FILE</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">measureADC</span><span class="p">(</span><span class="n">slot</span><span class="p">,</span> <span class="n">AnalogOut</span><span class="o">=</span><span class="s1">&#39;V_ThA&#39;</span><span class="p">,</span> <span class="n">perc</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">ADChigh</span><span class="o">=</span><span class="mi">8191</span><span class="p">,</span> <span class="n">ADClow</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">ADCstep</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">N</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">fn</span><span class="o">=</span><span class="n">fn</span><span class="p">,</span> <span class="n">plot</span><span class="o">=</span><span class="n">plot</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="DPX_functions.measureADC"><a class="viewcode-back" href="../../dpx_func_python.html#dpx_func_python.dpx_functions.DPX_functions.measureADC">[docs]</a>    <span class="k">def</span> <span class="nf">measureADC</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">slot</span><span class="p">,</span> <span class="n">AnalogOut</span><span class="o">=</span><span class="s1">&#39;V_ThA&#39;</span><span class="p">,</span> <span class="n">perc</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">ADChigh</span><span class="o">=</span><span class="mi">8191</span><span class="p">,</span> <span class="n">ADClow</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">ADCstep</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">N</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">fn</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">plot</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="c1"># Display execution time at the end</span>
+        <span class="n">startTime</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+
+        <span class="c1"># Select AnalogOut</span>
+        <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">OMR</span><span class="p">)</span> <span class="ow">is</span> <span class="nb">list</span><span class="p">:</span>
+            <span class="n">OMRCode_</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">OMRListToHex</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">OMR</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">OMRCode_</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">OMR</span>
+        <span class="n">OMRCode_</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">OMRCode_</span><span class="p">,</span> <span class="mi">16</span><span class="p">)</span>
+
+        <span class="n">OMRCode_</span> <span class="o">&amp;=</span> <span class="o">~</span><span class="p">(</span><span class="mb">0b11111</span> <span class="o">&lt;&lt;</span> <span class="mi">12</span><span class="p">)</span>
+        <span class="n">OMRCode_</span> <span class="o">|=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">ds</span><span class="o">.</span><span class="n">_OMRAnalogOutSel</span><span class="p">,</span> <span class="n">AnalogOut</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">DPXWriteOMRCommand</span><span class="p">(</span><span class="n">slot</span><span class="p">,</span> <span class="nb">hex</span><span class="p">(</span><span class="n">OMRCode_</span><span class="p">)</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;0x&#39;</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+
+        <span class="c1"># Get peripherys</span>
+        <span class="n">dPeripherys</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">splitPerihperyDACs</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">peripherys</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">THLs</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">perc</span><span class="o">=</span><span class="n">perc</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">AnalogOut</span> <span class="o">==</span> <span class="s1">&#39;V_cascode_bias&#39;</span><span class="p">:</span>
+            <span class="n">AnalogOut</span> <span class="o">=</span> <span class="s1">&#39;V_casc_reset&#39;</span>
+        <span class="k">elif</span> <span class="n">AnalogOut</span> <span class="o">==</span> <span class="s1">&#39;V_per_bias&#39;</span><span class="p">:</span>
+            <span class="n">AnalogOut</span> <span class="o">=</span> <span class="s1">&#39;V_casc_preamp&#39;</span>
+
+        <span class="n">ADCList</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">ADClow</span><span class="p">,</span> <span class="n">ADChigh</span><span class="p">,</span> <span class="n">ADCstep</span><span class="p">)</span>
+        <span class="n">ADCVoltMean</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">ADCVoltErr</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="nb">print</span> <span class="s1">&#39;Measuring ADC!&#39;</span>
+        <span class="k">for</span> <span class="n">cnt</span><span class="p">,</span> <span class="n">ADC</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">ADCList</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">statusBar</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">cnt</span><span class="p">)</span><span class="o">/</span><span class="nb">len</span><span class="p">(</span><span class="n">ADCList</span><span class="p">)</span> <span class="o">*</span> <span class="mi">100</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+            
+            <span class="c1"># Set threshold</span>
+            <span class="c1"># self.DPXWritePeripheryDACCommand(slot, self.peripherys + &#39;%04x&#39; % ADC)</span>
+
+            <span class="c1"># Set value in peripherys</span>
+            <span class="n">dPeripherys</span><span class="p">[</span><span class="n">AnalogOut</span><span class="p">]</span> <span class="o">=</span> <span class="n">ADC</span>
+            <span class="n">code</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">periheryDACsDictToCode</span><span class="p">(</span><span class="n">dPeripherys</span><span class="p">,</span> <span class="n">perc</span><span class="o">=</span><span class="n">perc</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">peripherys</span> <span class="o">=</span> <span class="n">code</span><span class="p">[:</span><span class="o">-</span><span class="mi">4</span><span class="p">]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">DPXWritePeripheryDACCommand</span><span class="p">(</span><span class="n">slot</span><span class="p">,</span> <span class="n">code</span><span class="p">)</span>
+
+            <span class="c1"># Measure multiple times</span>
+            <span class="n">ADCValList</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">N</span><span class="p">):</span>
+                <span class="n">ADCVal</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">MCGetADCvalue</span><span class="p">(),</span> <span class="mi">16</span><span class="p">))</span>
+                <span class="n">ADCValList</span><span class="o">.</span><span class="n">append</span><span class="p">(</span> <span class="n">ADCVal</span> <span class="p">)</span>
+
+            <span class="n">ADCVoltMean</span><span class="o">.</span><span class="n">append</span><span class="p">(</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">ADCValList</span><span class="p">)</span> <span class="p">)</span>
+            <span class="n">ADCVoltErr</span><span class="o">.</span><span class="n">append</span><span class="p">(</span> <span class="n">np</span><span class="o">.</span><span class="n">std</span><span class="p">(</span><span class="n">ADCValList</span><span class="p">)</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">N</span><span class="p">)</span> <span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">plot</span><span class="p">:</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">errorbar</span><span class="p">(</span><span class="n">ADCList</span><span class="p">,</span> <span class="n">ADCVoltMean</span><span class="p">,</span> <span class="n">yerr</span><span class="o">=</span><span class="n">ADCVoltErr</span><span class="p">,</span> <span class="n">marker</span><span class="o">=</span><span class="s1">&#39;x&#39;</span><span class="p">)</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+
+        <span class="c1"># Sort lists</span>
+        <span class="n">ADCVoltMeanSort</span><span class="p">,</span> <span class="n">ADCListSort</span> <span class="o">=</span> <span class="nb">zip</span><span class="p">(</span><span class="o">*</span><span class="nb">sorted</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">ADCVoltMean</span><span class="p">,</span> <span class="n">ADCList</span><span class="p">)))</span>
+        <span class="c1"># print THLListSort</span>
+        <span class="k">if</span> <span class="n">plot</span><span class="p">:</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">ADCVoltMeanSort</span><span class="p">,</span> <span class="n">ADCListSort</span><span class="p">)</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+
+        <span class="n">d</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;Volt&#39;</span><span class="p">:</span> <span class="n">ADCVoltMean</span><span class="p">,</span> <span class="s1">&#39;ADC&#39;</span><span class="p">:</span> <span class="n">ADCList</span><span class="p">}</span>
+        <span class="k">if</span> <span class="n">fn</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">pickleDump</span><span class="p">(</span><span class="n">d</span><span class="p">,</span> <span class="n">fn</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">pickleDump</span><span class="p">(</span><span class="n">d</span><span class="p">,</span> <span class="s1">&#39;ADCCalib.p&#39;</span><span class="p">)</span>
+
+        <span class="nb">print</span> <span class="s1">&#39;Execution time: </span><span class="si">%.2f</span><span class="s1"> min&#39;</span> <span class="o">%</span> <span class="p">((</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">startTime</span><span class="p">)</span><span class="o">/</span><span class="mf">60.</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="DPX_functions.thresholdEqualizationConfig"><a class="viewcode-back" href="../../dpx_func_python.html#dpx_func_python.dpx_functions.DPX_functions.thresholdEqualizationConfig">[docs]</a>    <span class="k">def</span> <span class="nf">thresholdEqualizationConfig</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">configFn</span><span class="p">,</span> <span class="n">reps</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">I_pixeldac</span><span class="o">=</span><span class="mf">0.21</span><span class="p">,</span> <span class="n">intPlot</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">resPlot</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">3</span> <span class="o">+</span> <span class="mi">1</span><span class="p">):</span>
+            <span class="n">pixelDAC</span><span class="p">,</span> <span class="n">THL</span><span class="p">,</span> <span class="n">confMask</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">thresholdEqualization</span><span class="p">(</span><span class="n">slot</span><span class="o">=</span><span class="n">i</span><span class="p">,</span> <span class="n">reps</span><span class="o">=</span><span class="n">reps</span><span class="p">,</span> <span class="n">I_pixeldac</span><span class="o">=</span><span class="n">I_pixeldac</span><span class="p">,</span> <span class="n">intPlot</span><span class="o">=</span><span class="n">intPlot</span><span class="p">,</span> <span class="n">resPlot</span><span class="o">=</span><span class="n">resPlot</span><span class="p">)</span>
+
+            <span class="c1"># Set values</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">pixelDAC</span><span class="p">[</span><span class="n">i</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">pixelDAC</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">THLs</span><span class="p">[</span><span class="n">i</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">THL</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">confBits</span><span class="p">[</span><span class="n">i</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">confMask</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">writeConfig</span><span class="p">(</span><span class="n">configFn</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="DPX_functions.thresholdEqualization"><a class="viewcode-back" href="../../src/dpx_functions.html#dpx_func_python.dpx_functions.DPX_functions.thresholdEqualization">[docs]</a>    <span class="k">def</span> <span class="nf">thresholdEqualization</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">slot</span><span class="p">,</span> <span class="n">reps</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">THL_offset</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span> <span class="n">I_pixeldac</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">intPlot</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">resPlot</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Perform threshold equalization of all pixels</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">	----------</span>
+<span class="sd">	slot : int or list</span>
+<span class="sd">	    Use the specified slots on the read-out board. Can be either a </span>
+<span class="sd">	    single detector or multiple ones. If using the latter, specify </span>
+<span class="sd">	    the slots via a list.</span>
+<span class="sd">	reps : int</span>
+<span class="sd">	    Number of repetitions to find the noise level for each pixel.</span>
+<span class="sd">	THL_offset : int</span>
+<span class="sd">	    Offset in THL which is subtracted from yielded THL value of </span>
+<span class="sd">	    equalization in order to gain robustness.</span>
+<span class="sd">	I_pixeldac : float</span>
+<span class="sd">	    Current of pixel DACs. If greater than 0.2, pixel DAC to THL</span>
+<span class="sd">	    relation isn&#39;t linear anymore.</span>
+<span class="sd">	intPlot : bool</span>
+<span class="sd">	    Show pixel DAC to THL relation after equalization.</span>
+<span class="sd">	resPlot : bool</span>
+<span class="sd">	    Show distribution of noise level for all pixels before </span>
+<span class="sd">	    and after equalization.</span>
+
+<span class="sd">	Returns</span>
+<span class="sd">	-------</span>
+<span class="sd">	pixelDAC : str</span>
+<span class="sd">	    String specifying the pixel DAC values</span>
+<span class="sd">	confMask : str</span>
+<span class="sd">	    String specifying the conf-bits for each pixel</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="c1"># THLlow, THLhigh = 5120, 5630</span>
+        <span class="n">THLlow</span><span class="p">,</span> <span class="n">THLhigh</span> <span class="o">=</span> <span class="mi">4000</span><span class="p">,</span> <span class="mi">6000</span>
+        <span class="c1"># THLRange = np.arange(THLlow, THLhigh, 1) </span>
+
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">THLEdges</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">THLEdges</span><span class="p">[</span><span class="n">slot</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">THLRange</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">THLlow</span><span class="p">,</span> <span class="n">THLhigh</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">THLRange</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">THLEdges</span><span class="p">[</span><span class="n">slot</span> <span class="o">-</span> <span class="mi">1</span><span class="p">])</span>
+            <span class="n">THLRange</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">around</span><span class="p">(</span><span class="n">THLRange</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">logical_and</span><span class="p">(</span><span class="n">THLRange</span> <span class="o">&gt;=</span> <span class="n">THLlow</span><span class="p">,</span> <span class="n">THLRange</span> <span class="o">&lt;=</span> <span class="n">THLhigh</span><span class="p">)])</span>
+
+        <span class="n">THLstep</span> <span class="o">=</span> <span class="mi">1</span>
+        <span class="n">noiseLimit</span> <span class="o">=</span> <span class="mi">3</span>
+        <span class="n">spacing</span> <span class="o">=</span> <span class="mi">2</span>
+        <span class="n">existAdjust</span> <span class="o">=</span> <span class="kc">True</span>
+
+        <span class="nb">print</span> <span class="s1">&#39;== Threshold equalization of detector </span><span class="si">%d</span><span class="s1"> ==&#39;</span> <span class="o">%</span> <span class="n">slot</span>
+
+        <span class="c1"># Set PC Mode in OMR in order to read kVp values</span>
+        <span class="c1"># If OMR code is list</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">OMR</span><span class="p">,</span> <span class="p">(</span><span class="nb">list</span><span class="p">,)):</span>
+            <span class="n">OMRCode</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">OMR</span>
+            <span class="n">OMRCode</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;PCMode&#39;</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">DPXWriteOMRCommand</span><span class="p">(</span><span class="n">slot</span><span class="p">,</span> <span class="n">OMRCode</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">DPXWriteOMRCommand</span><span class="p">(</span><span class="n">slot</span><span class="p">,</span> <span class="s1">&#39;</span><span class="si">%04x</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="p">((</span><span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">OMR</span><span class="p">,</span> <span class="mi">16</span><span class="p">)</span> <span class="o">&amp;</span> <span class="o">~</span><span class="p">((</span><span class="mb">0b11</span><span class="p">)</span> <span class="o">&lt;&lt;</span> <span class="mi">22</span><span class="p">))</span> <span class="o">|</span> <span class="p">(</span><span class="mb">0b10</span> <span class="o">&lt;&lt;</span> <span class="mi">22</span><span class="p">)))</span>
+
+        <span class="c1"># Linear dependence:</span>
+        <span class="c1"># Start and end points are sufficient</span>
+        <span class="n">pixelDACs</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;00&#39;</span><span class="p">,</span> <span class="s1">&#39;3f&#39;</span><span class="p">]</span>
+
+        <span class="c1"># Set I_pixeldac</span>
+        <span class="k">if</span> <span class="n">I_pixeldac</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">d</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">splitPerihperyDACs</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">peripherys</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">THLs</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">perc</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+            <span class="n">d</span><span class="p">[</span><span class="s1">&#39;I_pixeldac&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">I_pixeldac</span>
+            <span class="n">code</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">periheryDACsDictToCode</span><span class="p">(</span><span class="n">d</span><span class="p">,</span> <span class="n">perc</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">peripherys</span> <span class="o">=</span> <span class="n">code</span><span class="p">[:</span><span class="o">-</span><span class="mi">4</span><span class="p">]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">DPXWritePeripheryDACCommand</span><span class="p">(</span><span class="n">slot</span><span class="p">,</span> <span class="n">code</span><span class="p">)</span>
+
+            <span class="c1"># Perform equalization</span>
+            <span class="k">if</span> <span class="n">I_pixeldac</span> <span class="o">&gt;</span> <span class="mf">0.2</span><span class="p">:</span>
+                <span class="c1"># Nonlinear dependence</span>
+                <span class="n">pixelDACs</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;</span><span class="si">%02x</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="nb">int</span><span class="p">(</span><span class="n">num</span><span class="p">)</span> <span class="k">for</span> <span class="n">num</span> <span class="ow">in</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">63</span><span class="p">,</span> <span class="mi">9</span><span class="p">)]</span>
+
+        <span class="n">countsDict</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">getTHLLevel</span><span class="p">(</span><span class="n">slot</span><span class="p">,</span> <span class="n">THLRange</span><span class="p">,</span> <span class="n">pixelDACs</span><span class="p">,</span> <span class="n">reps</span><span class="p">,</span> <span class="n">intPlot</span><span class="p">)</span>
+        <span class="nb">print</span> <span class="n">countsDict</span><span class="p">[</span><span class="s1">&#39;00&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">keys</span><span class="p">(),</span> <span class="n">THLRange</span>
+        <span class="n">gaussDict</span><span class="p">,</span> <span class="n">noiseTHL</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">getNoiseLevel</span><span class="p">(</span><span class="n">countsDict</span><span class="p">,</span> <span class="n">THLRange</span><span class="p">,</span> <span class="n">pixelDACs</span><span class="p">,</span> <span class="n">noiseLimit</span><span class="p">)</span>
+        <span class="c1"># print &#39;noiseTHL1:&#39;, noiseTHL</span>
+
+        <span class="c1"># Transform values to indices and get meanDict</span>
+        <span class="n">meanDict</span><span class="p">,</span> <span class="n">noiseTHL</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">valToIdx</span><span class="p">(</span><span class="n">slot</span><span class="p">,</span> <span class="n">pixelDACs</span><span class="p">,</span> <span class="n">THLRange</span><span class="p">,</span> <span class="n">gaussDict</span><span class="p">,</span> <span class="n">noiseTHL</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">pixelDACs</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="k">def</span> <span class="nf">slopeFit</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">m</span><span class="p">,</span> <span class="n">t</span><span class="p">):</span>
+                <span class="k">return</span> <span class="n">m</span><span class="o">*</span><span class="n">x</span> <span class="o">+</span> <span class="n">t</span>
+            <span class="n">slope</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="mi">16</span><span class="p">,</span> <span class="mi">16</span><span class="p">))</span>
+            <span class="n">offset</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="mi">16</span><span class="p">,</span> <span class="mi">16</span><span class="p">))</span>
+
+        <span class="k">else</span><span class="p">:</span> 
+            <span class="n">slope</span> <span class="o">=</span> <span class="p">(</span><span class="n">noiseTHL</span><span class="p">[</span><span class="s1">&#39;00&#39;</span><span class="p">]</span> <span class="o">-</span> <span class="n">noiseTHL</span><span class="p">[</span><span class="s1">&#39;3f&#39;</span><span class="p">])</span> <span class="o">/</span> <span class="mf">63.</span>
+            <span class="n">offset</span> <span class="o">=</span> <span class="n">noiseTHL</span><span class="p">[</span><span class="s1">&#39;00&#39;</span><span class="p">]</span>
+
+        <span class="n">x</span> <span class="o">=</span> <span class="p">[</span><span class="nb">int</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="mi">16</span><span class="p">)</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">pixelDACs</span><span class="p">]</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">pixelDACs</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="c1"># Store fit functions in list</span>
+            <span class="n">polyCoeffList</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="k">for</span> <span class="n">pixelX</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">16</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">pixelY</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">16</span><span class="p">):</span>
+                <span class="n">y</span> <span class="o">=</span> <span class="p">[]</span>
+                <span class="k">for</span> <span class="n">pixelDAC</span> <span class="ow">in</span> <span class="n">pixelDACs</span><span class="p">:</span>
+                    <span class="n">y</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">noiseTHL</span><span class="p">[</span><span class="n">pixelDAC</span><span class="p">][</span><span class="n">pixelX</span><span class="p">,</span> <span class="n">pixelY</span><span class="p">])</span>
+
+                <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">pixelDACs</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">2</span><span class="p">:</span>
+                    <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">x</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">y</span><span class="p">)</span>
+                    <span class="c1"># Remove nan values</span>
+                    <span class="n">notNanIdx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="o">&amp;</span> <span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">y</span><span class="p">)</span>
+
+                    <span class="c1"># Perform polyfit</span>
+                    <span class="n">polyCoeff</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">polynomial</span><span class="o">.</span><span class="n">polynomial</span><span class="o">.</span><span class="n">polyfit</span><span class="p">(</span><span class="n">x</span><span class="p">[</span><span class="n">notNanIdx</span><span class="p">],</span> <span class="n">y</span><span class="p">[</span><span class="n">notNanIdx</span><span class="p">],</span> <span class="mi">3</span><span class="p">)</span>
+                    <span class="n">polyCoeffList</span><span class="o">.</span><span class="n">append</span><span class="p">(</span> <span class="n">polyCoeff</span> <span class="p">)</span>
+
+                    <span class="n">polyFit</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">polynomial</span><span class="o">.</span><span class="n">polynomial</span><span class="o">.</span><span class="n">Polynomial</span><span class="p">(</span><span class="n">polyCoeff</span><span class="p">)</span>
+
+                <span class="c1"># plt.plot(adjust[pixelX, pixelY], mean, marker=&#39;x&#39;)</span>
+                <span class="k">if</span> <span class="n">resPlot</span><span class="p">:</span>
+                    <span class="c1"># Add offset to getColor to get rid of bright colors</span>
+                    <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=.</span><span class="mi">5</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">getColor</span><span class="p">(</span><span class="s1">&#39;Blues&#39;</span><span class="p">,</span> <span class="mi">5</span> <span class="o">+</span> <span class="mi">256</span><span class="p">,</span> <span class="n">pixelX</span> <span class="o">*</span> <span class="mi">16</span> <span class="o">+</span> <span class="n">pixelY</span> <span class="o">+</span> <span class="mi">5</span><span class="p">))</span>
+
+                    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">pixelDACs</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">2</span><span class="p">:</span>
+                        <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=.</span><span class="mi">5</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">getColor</span><span class="p">(</span><span class="s1">&#39;Blues&#39;</span><span class="p">,</span> <span class="mi">5</span> <span class="o">+</span> <span class="mi">256</span><span class="p">,</span> <span class="n">pixelX</span> <span class="o">*</span> <span class="mi">16</span> <span class="o">+</span> <span class="n">pixelY</span> <span class="o">+</span> <span class="mi">5</span><span class="p">),</span> <span class="n">ls</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="n">marker</span><span class="o">=</span><span class="s1">&#39;x&#39;</span><span class="p">)</span>
+
+                        <span class="n">xFit</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="nb">min</span><span class="p">(</span><span class="n">x</span><span class="p">),</span> <span class="nb">max</span><span class="p">(</span><span class="n">x</span><span class="p">),</span> <span class="mi">1000</span><span class="p">)</span>
+                        <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">xFit</span><span class="p">,</span> <span class="n">polyFit</span><span class="p">(</span><span class="n">xFit</span><span class="p">),</span> <span class="n">ls</span><span class="o">=</span><span class="s1">&#39;-&#39;</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">getColor</span><span class="p">(</span><span class="s1">&#39;Blues&#39;</span><span class="p">,</span> <span class="mi">5</span> <span class="o">+</span> <span class="mi">256</span><span class="p">,</span> <span class="n">pixelX</span> <span class="o">*</span> <span class="mi">16</span> <span class="o">+</span> <span class="n">pixelY</span> <span class="o">+</span> <span class="mi">5</span><span class="p">))</span>
+
+        <span class="n">mean</span> <span class="o">=</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="p">(</span><span class="n">meanDict</span><span class="p">[</span><span class="s1">&#39;00&#39;</span><span class="p">]</span> <span class="o">+</span> <span class="n">meanDict</span><span class="p">[</span><span class="s1">&#39;3f&#39;</span><span class="p">])</span>
+        <span class="c1"># print meanDict[&#39;00&#39;], meanDict[&#39;3f&#39;], mean</span>
+
+        <span class="k">if</span> <span class="n">resPlot</span><span class="p">:</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s1">&#39;DAC&#39;</span><span class="p">)</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s1">&#39;THL&#39;</span><span class="p">)</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">axhline</span><span class="p">(</span><span class="n">y</span><span class="o">=</span><span class="n">mean</span><span class="p">,</span> <span class="n">ls</span><span class="o">=</span><span class="s1">&#39;--&#39;</span><span class="p">)</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">grid</span><span class="p">()</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">pixelDACs</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="c1"># Get adjustment value for each pixel</span>
+            <span class="n">adjust</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span> <span class="p">(</span><span class="n">offset</span> <span class="o">-</span> <span class="n">mean</span><span class="p">)</span> <span class="o">/</span> <span class="n">slope</span> <span class="o">+</span> <span class="mf">0.5</span> <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># Get intersection of fit function and mean value</span>
+            <span class="c1"># Describe mean in terms of a polynomial of 3rd grade</span>
+            <span class="n">polyMean</span> <span class="o">=</span> <span class="p">[</span><span class="n">mean</span><span class="p">,</span> <span class="mf">0.</span><span class="p">,</span> <span class="mf">0.</span><span class="p">,</span> <span class="mf">0.</span><span class="p">]</span>
+            <span class="n">adjust</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="mi">256</span><span class="p">)</span>
+
+            <span class="k">for</span> <span class="n">pixel</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">256</span><span class="p">):</span>
+                <span class="n">polyCoeff</span> <span class="o">=</span> <span class="n">polyCoeffList</span><span class="p">[</span><span class="n">pixel</span><span class="p">]</span>
+
+                <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">polyCoeff</span><span class="p">)):</span>
+                    <span class="n">adjust</span><span class="p">[</span><span class="n">pixel</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">roots</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span> <span class="n">np</span><span class="o">.</span><span class="n">polynomial</span><span class="o">.</span><span class="n">polynomial</span><span class="o">.</span><span class="n">polyroots</span><span class="p">(</span><span class="n">polyCoeff</span> <span class="o">-</span> <span class="n">polyMean</span><span class="p">)</span> <span class="p">)</span>
+                    <span class="n">roots</span> <span class="o">=</span> <span class="n">roots</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">logical_and</span><span class="p">(</span><span class="n">roots</span> <span class="o">&lt;=</span> <span class="mi">63</span><span class="p">,</span> <span class="n">roots</span> <span class="o">&gt;=</span> <span class="mi">0</span><span class="p">)]</span>
+                    <span class="k">if</span> <span class="nb">list</span><span class="p">(</span><span class="n">roots</span><span class="p">):</span>
+                        <span class="n">adjust</span><span class="p">[</span><span class="n">pixel</span><span class="p">]</span> <span class="o">=</span> <span class="n">roots</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">adjust</span><span class="p">[</span><span class="n">pixel</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+
+                    <span class="nb">print</span> <span class="n">adjust</span><span class="p">[</span><span class="n">pixel</span><span class="p">]</span>
+                
+            <span class="n">adjust</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">adjust</span><span class="p">,</span> <span class="p">(</span><span class="mi">16</span><span class="p">,</span> <span class="mi">16</span><span class="p">))</span>
+
+        <span class="c1"># Consider extreme values</span>
+        <span class="n">adjust</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">adjust</span><span class="p">)]</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">adjust</span><span class="p">[</span><span class="n">adjust</span> <span class="o">&gt;</span> <span class="mi">63</span><span class="p">]</span> <span class="o">=</span> <span class="mi">63</span>
+        <span class="n">adjust</span><span class="p">[</span><span class="n">adjust</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+
+        <span class="c1"># Convert to integer</span>
+        <span class="n">adjust</span> <span class="o">=</span> <span class="n">adjust</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">dtype</span><span class="o">=</span><span class="nb">int</span><span class="p">)</span>
+
+        <span class="c1"># Set new pixelDAC values</span>
+        <span class="n">pixelDACNew</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="s1">&#39;</span><span class="si">%02x</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">entry</span> <span class="k">for</span> <span class="n">entry</span> <span class="ow">in</span> <span class="n">adjust</span><span class="o">.</span><span class="n">flatten</span><span class="p">()])</span>
+
+        <span class="c1"># Repeat procedure to get noise levels</span>
+        <span class="n">countsDictNew</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">getTHLLevel</span><span class="p">(</span><span class="n">slot</span><span class="p">,</span> <span class="n">THLRange</span><span class="p">,</span> <span class="n">pixelDACNew</span><span class="p">,</span> <span class="n">reps</span><span class="p">,</span> <span class="n">intPlot</span><span class="p">)</span>
+
+        <span class="n">gaussDictNew</span><span class="p">,</span> <span class="n">noiseTHLNew</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">getNoiseLevel</span><span class="p">(</span><span class="n">countsDictNew</span><span class="p">,</span> <span class="n">THLRange</span><span class="p">,</span> <span class="n">pixelDACNew</span><span class="p">,</span> <span class="n">noiseLimit</span><span class="p">)</span>
+
+        <span class="c1"># Transform values to indices</span>
+        <span class="n">meanDictNew</span><span class="p">,</span> <span class="n">noiseTHLNew</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">valToIdx</span><span class="p">(</span><span class="n">slot</span><span class="p">,</span> <span class="p">[</span><span class="n">pixelDACNew</span><span class="p">],</span> <span class="n">THLRange</span><span class="p">,</span> <span class="n">gaussDictNew</span><span class="p">,</span> <span class="n">noiseTHLNew</span><span class="p">)</span>
+
+        <span class="c1"># Plot the results of the equalization</span>
+        <span class="k">if</span> <span class="n">resPlot</span><span class="p">:</span>
+            <span class="n">bins</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="nb">min</span><span class="p">(</span><span class="n">gaussDict</span><span class="p">[</span><span class="s1">&#39;3f&#39;</span><span class="p">]),</span> <span class="nb">max</span><span class="p">(</span><span class="n">gaussDict</span><span class="p">[</span><span class="s1">&#39;00&#39;</span><span class="p">]),</span> <span class="mi">100</span><span class="p">)</span>
+
+            <span class="k">for</span> <span class="n">pixelDAC</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;00&#39;</span><span class="p">,</span> <span class="s1">&#39;3f&#39;</span><span class="p">]:</span>
+                <span class="n">plt</span><span class="o">.</span><span class="n">hist</span><span class="p">(</span><span class="n">gaussDict</span><span class="p">[</span><span class="n">pixelDAC</span><span class="p">],</span> <span class="n">bins</span><span class="o">=</span><span class="n">bins</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s1">&#39;</span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">pixelDAC</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.5</span><span class="p">)</span>
+
+            <span class="n">plt</span><span class="o">.</span><span class="n">hist</span><span class="p">(</span><span class="n">gaussDictNew</span><span class="p">[</span><span class="n">pixelDACNew</span><span class="p">],</span> <span class="n">bins</span><span class="o">=</span><span class="n">bins</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s1">&#39;After equalization&#39;</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.5</span><span class="p">)</span>
+
+            <span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
+
+            <span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s1">&#39;THL&#39;</span><span class="p">)</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s1">&#39;Counts&#39;</span><span class="p">)</span>
+
+            <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+
+        <span class="c1"># Create confBits</span>
+        <span class="n">confMask</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="mi">16</span><span class="p">,</span> <span class="mi">16</span><span class="p">))</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">str</span><span class="p">)</span>
+        <span class="n">confMask</span><span class="o">.</span><span class="n">fill</span><span class="p">(</span><span class="s1">&#39;00&#39;</span><span class="p">)</span>
+        <span class="n">confMask</span><span class="p">[</span><span class="nb">abs</span><span class="p">(</span><span class="n">noiseTHLNew</span><span class="p">[</span><span class="n">pixelDACNew</span><span class="p">]</span> <span class="o">-</span> <span class="n">mean</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">10</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;</span><span class="si">%02x</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="mb">0b1</span> <span class="o">&lt;&lt;</span> <span class="mi">2</span><span class="p">)</span>
+        <span class="n">confMask</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">confMask</span><span class="o">.</span><span class="n">flatten</span><span class="p">())</span>
+
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        # Find center point of next sawtooth in THL curve</span>
+<span class="sd">        # in negative direction of THL</span>
+<span class="sd">        THLNew = THLRange[int(mean)]</span>
+
+<span class="sd">        # Calculate centers of edge intervals</span>
+<span class="sd">        edgesCenter = np.asarray([ 0.5 * (self.THLEdgesHigh[k] + self.THLEdgesLow[k]) for k in range(len(self.THLEdgesLow)) ])</span>
+
+<span class="sd">        # Eliminate values larger than THLNew</span>
+<span class="sd">        edgesCenter = edgesCenter[edgesCenter &lt;= THLNew]</span>
+
+<span class="sd">        # Get closest center value to THLNew</span>
+<span class="sd">        THLNew = min(edgesCenter, key=lambda x:abs(x-THLNew))</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="c1"># THLNew = self.THLEdges[list(THLRange).index(int(self.getTHLfromVolt(mean))) - 20]</span>
+        <span class="n">THLNew</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">gaussDictNew</span><span class="p">[</span><span class="n">pixelDACNew</span><span class="p">])</span> <span class="o">-</span> <span class="n">THL_offset</span><span class="p">)</span>
+
+        <span class="nb">print</span>
+        <span class="nb">print</span> <span class="s1">&#39;Summary:&#39;</span>
+        <span class="nb">print</span> <span class="s1">&#39;pixelDACs:&#39;</span><span class="p">,</span> <span class="n">pixelDACNew</span>
+        <span class="nb">print</span> <span class="s1">&#39;confMask:&#39;</span><span class="p">,</span> <span class="n">confMask</span>
+        <span class="nb">print</span> <span class="s1">&#39;Bad pixels:&#39;</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">argwhere</span><span class="p">((</span><span class="nb">abs</span><span class="p">(</span><span class="n">noiseTHLNew</span><span class="p">[</span><span class="n">pixelDACNew</span><span class="p">]</span> <span class="o">-</span> <span class="n">mean</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">10</span><span class="p">)</span> <span class="o">==</span> <span class="kc">True</span><span class="p">)</span>
+        <span class="nb">print</span> <span class="s1">&#39;THL:&#39;</span><span class="p">,</span> <span class="s1">&#39;</span><span class="si">%04x</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">THLNew</span>
+
+        <span class="c1"># Restore OMR values</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">DPXWriteOMRCommand</span><span class="p">(</span><span class="n">slot</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">OMR</span><span class="p">)</span>
+
+        <span class="c1"># Subtract value from THLMin to guarantee robustness</span>
+        <span class="k">return</span> <span class="n">pixelDACNew</span><span class="p">,</span> <span class="s1">&#39;</span><span class="si">%04x</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">THLNew</span><span class="p">,</span> <span class="n">confMask</span></div></div>
+
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2019, Sebastian Schmidt
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

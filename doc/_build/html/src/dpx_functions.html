@@ -1,0 +1,520 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>DPX_functions &mdash; dpx_func_python 0.1 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../_static/jquery.js"></script>
+        <script type="text/javascript" src="../_static/underscore.js"></script>
+        <script type="text/javascript" src="../_static/doctools.js"></script>
+        <script type="text/javascript" src="../_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="prev" title="Welcome to dpx_func_python’s documentation!" href="../index.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> dpx_func_python
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Submodules:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">DPX_functions</a><ul class="simple">
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="config.html">Config</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">dpx_func_python</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html">Docs</a> &raquo;</li>
+        
+      <li>DPX_functions</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../_sources/src/dpx_functions.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="dpx-functions">
+<h1>DPX_functions<a class="headerlink" href="#dpx-functions" title="Permalink to this headline">¶</a></h1>
+<dl class="class">
+<dt id="dpx_func_python.dpx_functions.DPX_functions">
+<em class="property">class </em><code class="descclassname">dpx_func_python.dpx_functions.</code><code class="descname">DPX_functions</code><a class="reference internal" href="../_modules/dpx_func_python/dpx_functions.html#DPX_functions"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dpx_func_python.dpx_functions.DPX_functions" title="Permalink to this definition">¶</a></dt>
+<dd><p class="rubric">Methods</p>
+<table border="1" class="longtable docutils">
+<colgroup>
+<col width="10%" />
+<col width="90%" />
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td><a class="reference internal" href="#dpx_func_python.dpx_functions.DPX_functions.measureDose" title="dpx_func_python.dpx_functions.DPX_functions.measureDose"><code class="xref py py-obj docutils literal notranslate"><span class="pre">measureDose</span></code></a>(self[,&nbsp;slot,&nbsp;measurement_time,&nbsp;…])</td>
+<td>Perform measurement in DosiMode.</td>
+</tr>
+<tr class="row-even"><td><a class="reference internal" href="#dpx_func_python.dpx_functions.DPX_functions.measureIntegration" title="dpx_func_python.dpx_functions.DPX_functions.measureIntegration"><code class="xref py py-obj docutils literal notranslate"><span class="pre">measureIntegration</span></code></a>(self[,&nbsp;slot,&nbsp;…])</td>
+<td>Perform measurement in Integration Mode.</td>
+</tr>
+<tr class="row-odd"><td><a class="reference internal" href="#dpx_func_python.dpx_functions.DPX_functions.measurePC" title="dpx_func_python.dpx_functions.DPX_functions.measurePC"><code class="xref py py-obj docutils literal notranslate"><span class="pre">measurePC</span></code></a>(self[,&nbsp;slot,&nbsp;measurement_time,&nbsp;…])</td>
+<td>Perform measurement in Integration Mode.</td>
+</tr>
+<tr class="row-even"><td><a class="reference internal" href="#dpx_func_python.dpx_functions.DPX_functions.measureToT" title="dpx_func_python.dpx_functions.DPX_functions.measureToT"><code class="xref py py-obj docutils literal notranslate"><span class="pre">measureToT</span></code></a>(self[,&nbsp;slot,&nbsp;cnt,&nbsp;outDir,&nbsp;…])</td>
+<td>Perform measurement in ToTMode.</td>
+</tr>
+<tr class="row-odd"><td><a class="reference internal" href="#dpx_func_python.dpx_functions.DPX_functions.thresholdEqualization" title="dpx_func_python.dpx_functions.DPX_functions.thresholdEqualization"><code class="xref py py-obj docutils literal notranslate"><span class="pre">thresholdEqualization</span></code></a>(self,&nbsp;slot[,&nbsp;reps,&nbsp;…])</td>
+<td>Perform threshold equalization of all pixels</td>
+</tr>
+</tbody>
+</table>
+<table border="1" class="docutils">
+<colgroup>
+<col width="76%" />
+<col width="24%" />
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td><strong>measureADC</strong></td>
+<td>&#160;</td>
+</tr>
+<tr class="row-even"><td><strong>measureTHL</strong></td>
+<td>&#160;</td>
+</tr>
+<tr class="row-odd"><td><strong>thresholdEqualizationConfig</strong></td>
+<td>&#160;</td>
+</tr>
+</tbody>
+</table>
+<dl class="method">
+<dt id="dpx_func_python.dpx_functions.DPX_functions.measureDose">
+<code class="descname">measureDose</code><span class="sig-paren">(</span><em>self</em>, <em>slot=1</em>, <em>measurement_time=120</em>, <em>frames=10</em>, <em>freq=False</em>, <em>outFn='doseMeasurement.p'</em>, <em>logTemp=False</em>, <em>intPlot=False</em>, <em>conversion_factors=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/dpx_func_python/dpx_functions.html#DPX_functions.measureDose"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dpx_func_python.dpx_functions.DPX_functions.measureDose" title="Permalink to this definition">¶</a></dt>
+<dd><p>Perform measurement in DosiMode.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><dl class="first docutils">
+<dt><strong>slot</strong> <span class="classifier-delimiter">:</span> <span class="classifier">int or list</span></dt>
+<dd><p class="first last">Use the specified slots on the read-out board. Can be either a 
+single detector or multiple ones. If using the latter, specify 
+the slots via a list.</p>
+</dd>
+<dt><strong>measurement_time</strong> <span class="classifier-delimiter">:</span> <span class="classifier">float</span></dt>
+<dd><p class="first last">Measurement time between read-outs. The counts are integrated 
+over the specified time and a frame is read out over 16 columns
+via rolling shutter.</p>
+</dd>
+<dt><strong>frames</strong> <span class="classifier-delimiter">:</span> <span class="classifier">int</span></dt>
+<dd><p class="first last">Number of frames to record.</p>
+</dd>
+<dt><strong>freq</strong> <span class="classifier-delimiter">:</span> <span class="classifier">bool</span></dt>
+<dd><p class="first last">Store the count frequency by normalization via the measurement
+time for each frame.</p>
+</dd>
+<dt><strong>outFn</strong> <span class="classifier-delimiter">:</span> <span class="classifier">str or None</span></dt>
+<dd><p class="first last">Output file in which the measurement data is stored. If <cite>None</cite>,
+no data is written to files. Otherwise the extension of the file
+must be ‘.p’ or ‘.hck’ in order to use either ‘cPickle’ or 
+‘hickle’ for storage. If file already exists, a number is 
+appended to the file and incremented if necessary.</p>
+</dd>
+<dt><strong>logTemp</strong> <span class="classifier-delimiter">:</span> <span class="classifier">bool</span></dt>
+<dd><p class="first last">Log the temperature and time for each frame. If <cite>outFn</cite> is set, 
+the data is stored to a file which is named according to <cite>outFn</cite>
+with the suffix ‘_temp’ attached.</p>
+</dd>
+<dt><strong>intPlot</strong> <span class="classifier-delimiter">:</span> <span class="classifier">bool</span></dt>
+<dd><p class="first last">Use interactive plotting. The total number of counts per pixel
+is shown for each frame.</p>
+</dd>
+<dt><strong>conversion_factors</strong> <span class="classifier-delimiter">:</span> <span class="classifier">(str, str), optional</span></dt>
+<dd><p class="first last">A tuple of two csv-files. The first file for the conversion factors
+of the large pixels, the second one for the ones of the small pixels.
+These conversion factors are applied to the correspodning counts matrices
+and the dose is calculated for each frame. If <cite>outFn</cite> 
+is set, the data is stored to a file which is named according
+to ‘outFn’ with the suffix ‘_dose’ attached.</p>
+</dd>
+</dl>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><dl class="first last docutils">
+<dt><strong>out</strong> <span class="classifier-delimiter">:</span> <span class="classifier">dict</span></dt>
+<dd><p class="first">Measurement data. Keys <cite>temp</cite> or <cite>dose</cite> are only available if
+<cite>logTemp</cite> or <cite>conversion_factors</cite> are set during function call.</p>
+<dl class="last docutils">
+<dt>data :</dt>
+<dd><p class="first last">Number of counts per frame stored in nested list of shape
+<cite>(number of frames, number of columns, number of pixels per column,
+number of bins per pixel)</cite>, i.e. <cite>(frames, 16, 16, 16)</cite>.</p>
+</dd>
+<dt>temp <span class="classifier-delimiter">:</span> <span class="classifier">(Only if <cite>logTemp</cite> was set)</span></dt>
+<dd><p class="first last">Logged temperature in DAC values for each frame.</p>
+</dd>
+<dt>dose <span class="classifier-delimiter">:</span> <span class="classifier">(Only if <cite>conversion_factors</cite> was set)</span></dt>
+<dd><p class="first last">Measured dose for each frame. Separated for small and large pixels.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="dpx_func_python.dpx_functions.DPX_functions.measureIntegration">
+<code class="descname">measureIntegration</code><span class="sig-paren">(</span><em>self</em>, <em>slot=1</em>, <em>measurement_time=10</em>, <em>frames=10</em>, <em>outFn='integrationMeasurement.p'</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/dpx_func_python/dpx_functions.html#DPX_functions.measureIntegration"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dpx_func_python.dpx_functions.DPX_functions.measureIntegration" title="Permalink to this definition">¶</a></dt>
+<dd><p>Perform measurement in Integration Mode.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><dl class="first docutils">
+<dt><strong>slot</strong> <span class="classifier-delimiter">:</span> <span class="classifier">int or list</span></dt>
+<dd><p class="first last">Use the specified slots on the read-out board. Can be either a 
+single detector or multiple ones. If using the latter, specify 
+the slots via a list.</p>
+</dd>
+<dt><strong>measurement_time</strong> <span class="classifier-delimiter">:</span> <span class="classifier">float</span></dt>
+<dd><p class="first last">Duration for wich the measured ToT values are integrated per frame.</p>
+</dd>
+<dt><strong>frames</strong> <span class="classifier-delimiter">:</span> <span class="classifier">int</span></dt>
+<dd><p class="first last">Number of frames to measure.</p>
+</dd>
+<dt><strong>outFn</strong> <span class="classifier-delimiter">:</span> <span class="classifier">str or None</span></dt>
+<dd><p class="first last">Output file in which the measurement data is stored. If <cite>None</cite>,
+no data is written to files. Otherwise the extension of the file
+must be ‘.p’ or ‘.hck’ in order to use either ‘cPickle’ or 
+‘hickle’ for storage. If file already exists, a number is 
+appended to the file and incremented if necessary.</p>
+</dd>
+</dl>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><dl class="first last docutils">
+<dt><strong>out</strong> <span class="classifier-delimiter">:</span> <span class="classifier">None</span></dt>
+<dd></dd>
+</dl>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="dpx_func_python.dpx_functions.DPX_functions.measurePC">
+<code class="descname">measurePC</code><span class="sig-paren">(</span><em>self</em>, <em>slot=1</em>, <em>measurement_time=10</em>, <em>frames=None</em>, <em>outFn='pcMeasurement.p'</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/dpx_func_python/dpx_functions.html#DPX_functions.measurePC"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dpx_func_python.dpx_functions.DPX_functions.measurePC" title="Permalink to this definition">¶</a></dt>
+<dd><p>Perform measurement in Integration Mode.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><dl class="first docutils">
+<dt><strong>slot</strong> <span class="classifier-delimiter">:</span> <span class="classifier">int or list</span></dt>
+<dd><p class="first last">Use the specified slots on the read-out board. Can be either a 
+single detector or multiple ones. If using the latter, specify 
+the slots via a list.</p>
+</dd>
+<dt><strong>measurement_time</strong> <span class="classifier-delimiter">:</span> <span class="classifier">float</span></dt>
+<dd><p class="first last">Duration for wich the measured ToT values are integrated per frame.</p>
+</dd>
+<dt><strong>frames</strong> <span class="classifier-delimiter">:</span> <span class="classifier">int or None</span></dt>
+<dd><p class="first last">Number of frames to measure. If set to None, an infinite loop
+is used.</p>
+</dd>
+<dt><strong>outFn</strong> <span class="classifier-delimiter">:</span> <span class="classifier">str or None</span></dt>
+<dd><p class="first last">Output file in which the measurement data is stored. If <cite>None</cite>,
+no data is written to files. Otherwise the extension of the file
+must be ‘.p’ or ‘.hck’ in order to use either ‘cPickle’ or 
+‘hickle’ for storage. If file already exists, a number is 
+appended to the file and incremented if necessary.</p>
+</dd>
+</dl>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><dl class="first last docutils">
+<dt><strong>out</strong> <span class="classifier-delimiter">:</span> <span class="classifier">None</span></dt>
+<dd></dd>
+</dl>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="dpx_func_python.dpx_functions.DPX_functions.measureToT">
+<code class="descname">measureToT</code><span class="sig-paren">(</span><em>self</em>, <em>slot=1</em>, <em>cnt=10000</em>, <em>outDir='ToTMeasurement/'</em>, <em>storeEmpty=False</em>, <em>logTemp=False</em>, <em>paramsDict=None</em>, <em>intPlot=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/dpx_func_python/dpx_functions.html#DPX_functions.measureToT"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dpx_func_python.dpx_functions.DPX_functions.measureToT" title="Permalink to this definition">¶</a></dt>
+<dd><p>Perform measurement in ToTMode.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><dl class="first docutils">
+<dt><strong>slot</strong> <span class="classifier-delimiter">:</span> <span class="classifier">int or list</span></dt>
+<dd><p class="first last">Use the specified slots on the read-out board. Can be either a 
+single detector or multiple ones. If using the latter, specify 
+the slots via a list.</p>
+</dd>
+<dt><strong>cnt</strong> <span class="classifier-delimiter">:</span> <span class="classifier">Number of frames</span></dt>
+<dd><p class="first last">ToT is measured in an endless loop. The data is written to file 
+after ‘cnt’ frames were processed. Additionally, Keyboard 
+Interrupts are caught in order to store data afterwards.</p>
+</dd>
+<dt><strong>outDir</strong> <span class="classifier-delimiter">:</span> <span class="classifier">str or None</span></dt>
+<dd><p class="first last">Output directory in which the measurement files are stored. 
+A file is written after <cite>cnt</cite> frames. If file already exists, 
+a number is appended to the file and incremented.</p>
+</dd>
+<dt><strong>storeEmpty</strong> <span class="classifier-delimiter">:</span> <span class="classifier">bool</span></dt>
+<dd><p class="first last">If set, empty frames are stored, otherwise discarded.</p>
+</dd>
+<dt><strong>logTemp</strong> <span class="classifier-delimiter">:</span> <span class="classifier">bool</span></dt>
+<dd><p class="first last">Log the temperature and time for each frame. If <cite>outFn</cite> is set, 
+the data is stored to a file which is named according to <cite>outFn</cite>
+with the suffix ‘_temp’ attached.</p>
+</dd>
+<dt><strong>intPlot</strong> <span class="classifier-delimiter">:</span> <span class="classifier">bool</span></dt>
+<dd><p class="first last">Use interactive plotting. The total number of counts per pixel
+is shown for each frame.</p>
+</dd>
+<dt><strong>paramsDict</strong> <span class="classifier-delimiter">:</span> <span class="classifier">dict, optional</span></dt>
+<dd><p class="first last">If specified, measured ToT values are directly converted to their
+corresponding energies. <cite>paramsDict</cite> contains the pixel indices as
+keys where each value is a dictionary itself. These contain either
+the keys <cite>a, b, c, t</cite> for standard calibration factors or <cite>a, b, c, t, h, k</cite>
+if a test pulse calibration was performed.</p>
+</dd>
+</dl>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><dl class="first last docutils">
+<dt><strong>out</strong> <span class="classifier-delimiter">:</span> <span class="classifier">None</span></dt>
+<dd></dd>
+</dl>
+</td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Notes</p>
+<p>The function is optimized for long term ToT measurements. It runs in 
+an endless loop and waits for a keyboard interrupt. After <cite>cnt</cite> frames
+where processed, data is written to a file in the directory specified
+via <cite>outDir</cite>. Using these single files allows for a memory sufficient
+method to store the data in histograms without loosing information and
+without the necessecity to load the whole dataset at once.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="dpx_func_python.dpx_functions.DPX_functions.thresholdEqualization">
+<code class="descname">thresholdEqualization</code><span class="sig-paren">(</span><em>self</em>, <em>slot</em>, <em>reps=1</em>, <em>THL_offset=20</em>, <em>I_pixeldac=0.5</em>, <em>intPlot=False</em>, <em>resPlot=True</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/dpx_func_python/dpx_functions.html#DPX_functions.thresholdEqualization"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dpx_func_python.dpx_functions.DPX_functions.thresholdEqualization" title="Permalink to this definition">¶</a></dt>
+<dd><p>Perform threshold equalization of all pixels</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><dl class="first docutils">
+<dt><strong>slot</strong> <span class="classifier-delimiter">:</span> <span class="classifier">int or list</span></dt>
+<dd><p class="first last">Use the specified slots on the read-out board. Can be either a 
+single detector or multiple ones. If using the latter, specify 
+the slots via a list.</p>
+</dd>
+<dt><strong>reps</strong> <span class="classifier-delimiter">:</span> <span class="classifier">int</span></dt>
+<dd><p class="first last">Number of repetitions to find the noise level for each pixel.</p>
+</dd>
+<dt><strong>THL_offset</strong> <span class="classifier-delimiter">:</span> <span class="classifier">int</span></dt>
+<dd><p class="first last">Offset in THL which is subtracted from yielded THL value of 
+equalization in order to gain robustness.</p>
+</dd>
+<dt><strong>I_pixeldac</strong> <span class="classifier-delimiter">:</span> <span class="classifier">float</span></dt>
+<dd><p class="first last">Current of pixel DACs. If greater than 0.2, pixel DAC to THL
+relation isn’t linear anymore.</p>
+</dd>
+<dt><strong>intPlot</strong> <span class="classifier-delimiter">:</span> <span class="classifier">bool</span></dt>
+<dd><p class="first last">Show pixel DAC to THL relation after equalization.</p>
+</dd>
+<dt><strong>resPlot</strong> <span class="classifier-delimiter">:</span> <span class="classifier">bool</span></dt>
+<dd><p class="first last">Show distribution of noise level for all pixels before 
+and after equalization.</p>
+</dd>
+</dl>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><dl class="first last docutils">
+<dt><strong>pixelDAC</strong> <span class="classifier-delimiter">:</span> <span class="classifier">str</span></dt>
+<dd><p class="first last">String specifying the pixel DAC values</p>
+</dd>
+<dt><strong>confMask</strong> <span class="classifier-delimiter">:</span> <span class="classifier">str</span></dt>
+<dd><p class="first last">String specifying the conf-bits for each pixel</p>
+</dd>
+</dl>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+      
+        <a href="../index.html" class="btn btn-neutral float-left" title="Welcome to dpx_func_python’s documentation!" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2019, Sebastian Schmidt
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

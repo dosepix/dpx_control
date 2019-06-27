@@ -1,0 +1,441 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>dpx_func_python.dpx_support &mdash; dpx_func_python 0.1 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="../../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../../_static/jquery.js"></script>
+        <script type="text/javascript" src="../../_static/underscore.js"></script>
+        <script type="text/javascript" src="../../_static/doctools.js"></script>
+        <script type="text/javascript" src="../../_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="../../_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../index.html" class="icon icon-home"> dpx_func_python
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Submodules:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../src/dpx_functions.html">DPX_functions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../src/config.html">Config</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">dpx_func_python</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../index.html">Module code</a> &raquo;</li>
+        
+          <li><a href="../dpx_func_python.html">dpx_func_python</a> &raquo;</li>
+        
+      <li>dpx_func_python.dpx_support</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for dpx_func_python.dpx_support</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">scipy.constants</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">time</span>
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+<span class="kn">import</span> <span class="nn">scipy.optimize</span>
+
+<div class="viewcode-block" id="DPX_support"><a class="viewcode-back" href="../../dpx_func_python.html#dpx_func_python.dpx_support.DPX_support">[docs]</a><span class="k">class</span> <span class="nc">DPX_support</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+<div class="viewcode-block" id="DPX_support.fillParamDict"><a class="viewcode-back" href="../../dpx_func_python.html#dpx_func_python.dpx_support.DPX_support.fillParamDict">[docs]</a>    <span class="k">def</span> <span class="nf">fillParamDict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">paramDict</span><span class="p">):</span>
+        <span class="c1"># Get mean factors</span>
+        <span class="n">meanDict</span> <span class="o">=</span> <span class="p">{}</span>
+
+        <span class="k">if</span> <span class="s1">&#39;h&#39;</span> <span class="ow">in</span> <span class="n">paramDict</span><span class="p">[</span><span class="n">paramDict</span><span class="o">.</span><span class="n">keys</span><span class="p">()[</span><span class="mi">0</span><span class="p">]]</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+            <span class="n">keyList</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;a&#39;</span><span class="p">,</span> <span class="s1">&#39;c&#39;</span><span class="p">,</span> <span class="s1">&#39;b&#39;</span><span class="p">,</span> <span class="s1">&#39;h&#39;</span><span class="p">,</span> <span class="s1">&#39;k&#39;</span><span class="p">,</span> <span class="s1">&#39;t&#39;</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">keyList</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;a&#39;</span><span class="p">,</span> <span class="s1">&#39;c&#39;</span><span class="p">,</span> <span class="s1">&#39;b&#39;</span><span class="p">,</span> <span class="s1">&#39;t&#39;</span><span class="p">]</span>
+
+        <span class="k">for</span> <span class="n">val</span> <span class="ow">in</span> <span class="n">keyList</span><span class="p">:</span>
+            <span class="n">valList</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">idx</span> <span class="ow">in</span> <span class="n">paramDict</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+                <span class="n">valList</span><span class="o">.</span><span class="n">append</span><span class="p">(</span> <span class="n">paramDict</span><span class="p">[</span><span class="n">idx</span><span class="p">][</span><span class="n">val</span><span class="p">]</span> <span class="p">)</span>
+            <span class="n">valList</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">valList</span><span class="p">)</span>
+            <span class="n">valList</span><span class="p">[</span><span class="nb">abs</span><span class="p">(</span><span class="n">valList</span><span class="p">)</span> <span class="o">==</span> <span class="n">np</span><span class="o">.</span><span class="n">inf</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
+            <span class="n">meanDict</span><span class="p">[</span><span class="n">val</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nanmean</span><span class="p">(</span><span class="n">valList</span><span class="p">)</span>
+
+        <span class="c1"># Find non existent entries and loop</span>
+        <span class="k">for</span> <span class="n">pixel</span> <span class="ow">in</span> <span class="nb">set</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">256</span><span class="p">))</span> <span class="o">-</span> <span class="nb">set</span><span class="p">(</span><span class="n">paramDict</span><span class="o">.</span><span class="n">keys</span><span class="p">()):</span>
+            <span class="n">paramDict</span><span class="p">[</span><span class="n">pixel</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="n">val</span><span class="p">:</span> <span class="n">meanDict</span><span class="p">[</span><span class="n">val</span><span class="p">]</span> <span class="k">for</span> <span class="n">val</span> <span class="ow">in</span> <span class="n">keyList</span><span class="p">}</span>
+
+        <span class="k">return</span> <span class="n">paramDict</span></div>
+
+<div class="viewcode-block" id="DPX_support.getTHLfromVolt"><a class="viewcode-back" href="../../dpx_func_python.html#dpx_func_python.dpx_support.DPX_support.getTHLfromVolt">[docs]</a>    <span class="k">def</span> <span class="nf">getTHLfromVolt</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">V</span><span class="p">,</span> <span class="n">slot</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">THLCalib</span><span class="p">[</span><span class="n">slot</span> <span class="o">-</span> <span class="mi">1</span><span class="p">][</span><span class="nb">abs</span><span class="p">(</span><span class="n">V</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">voltCalib</span><span class="p">)</span><span class="o">.</span><span class="n">argmin</span><span class="p">()]</span></div>
+
+<div class="viewcode-block" id="DPX_support.getVoltFromTHL"><a class="viewcode-back" href="../../dpx_func_python.html#dpx_func_python.dpx_support.DPX_support.getVoltFromTHL">[docs]</a>    <span class="k">def</span> <span class="nf">getVoltFromTHL</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">THL</span><span class="p">,</span> <span class="n">slot</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">voltCalib</span><span class="p">[</span><span class="n">slot</span> <span class="o">-</span> <span class="mi">1</span><span class="p">][</span><span class="n">np</span><span class="o">.</span><span class="n">argwhere</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">THLCalib</span> <span class="o">==</span> <span class="n">THL</span><span class="p">)]</span></div>
+
+<div class="viewcode-block" id="DPX_support.getVoltFromTHLFit"><a class="viewcode-back" href="../../dpx_func_python.html#dpx_func_python.dpx_support.DPX_support.getVoltFromTHLFit">[docs]</a>    <span class="k">def</span> <span class="nf">getVoltFromTHLFit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">THL</span><span class="p">,</span> <span class="n">slot</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">THLEdgesLow</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">THLEdgesLow</span><span class="p">[</span><span class="n">slot</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">THL</span>
+
+        <span class="n">edges</span> <span class="o">=</span> <span class="nb">zip</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">THLEdgesLow</span><span class="p">[</span><span class="n">slot</span> <span class="o">-</span> <span class="mi">1</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">THLEdgesHigh</span><span class="p">[</span><span class="n">slot</span> <span class="o">-</span> <span class="mi">1</span><span class="p">])</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">edge</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">edges</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">THL</span> <span class="o">&gt;=</span> <span class="n">edge</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="ow">and</span> <span class="n">THL</span> <span class="o">&lt;=</span> <span class="n">edge</span><span class="p">[</span><span class="mi">1</span><span class="p">]:</span>
+                <span class="k">break</span>
+        <span class="c1"># else:</span>
+        <span class="c1">#     return None</span>
+
+        <span class="n">params</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">THLFitParams</span><span class="p">[</span><span class="n">slot</span> <span class="o">-</span> <span class="mi">1</span><span class="p">][</span><span class="n">i</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">i</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">erfStdFit</span><span class="p">(</span><span class="n">THL</span><span class="p">,</span> <span class="o">*</span><span class="n">params</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">linearFit</span><span class="p">(</span><span class="n">THL</span><span class="p">,</span> <span class="o">*</span><span class="n">params</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="DPX_support.ToTtoEnergySimple"><a class="viewcode-back" href="../../dpx_func_python.html#dpx_func_python.dpx_support.DPX_support.ToTtoEnergySimple">[docs]</a>    <span class="k">def</span> <span class="nf">ToTtoEnergySimple</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">c</span><span class="p">,</span> <span class="n">t</span><span class="p">,</span> <span class="n">h</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">k</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">h</span> <span class="o">*</span> <span class="p">(</span><span class="n">b</span> <span class="o">+</span> <span class="mf">1.</span><span class="o">/</span><span class="p">(</span><span class="mi">4</span> <span class="o">*</span> <span class="n">a</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="mi">2</span><span class="o">*</span><span class="n">x</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="o">*</span><span class="n">c</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mi">16</span> <span class="o">*</span> <span class="n">a</span> <span class="o">*</span> <span class="n">c</span> <span class="o">*</span> <span class="n">t</span> <span class="o">+</span> <span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="n">x</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">*</span> <span class="n">c</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span><span class="p">)))</span> <span class="o">+</span> <span class="n">k</span></div>
+
+<div class="viewcode-block" id="DPX_support.EnergyToToTSimple"><a class="viewcode-back" href="../../dpx_func_python.html#dpx_func_python.dpx_support.DPX_support.EnergyToToTSimple">[docs]</a>    <span class="k">def</span> <span class="nf">EnergyToToTSimple</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">c</span><span class="p">,</span> <span class="n">t</span><span class="p">,</span> <span class="n">h</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">k</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+        <span class="n">res</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">x</span> <span class="o">&lt;</span> <span class="n">b</span><span class="p">,</span> <span class="n">a</span><span class="o">*</span><span class="p">((</span><span class="n">x</span> <span class="o">-</span> <span class="n">k</span><span class="p">)</span><span class="o">/</span><span class="n">h</span> <span class="o">-</span> <span class="n">b</span><span class="p">)</span> <span class="o">-</span> <span class="n">c</span> <span class="o">*</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">/</span> <span class="mi">2</span> <span class="o">+</span> <span class="n">t</span> <span class="o">/</span> <span class="p">((</span><span class="n">x</span> <span class="o">-</span> <span class="n">k</span><span class="p">)</span><span class="o">/</span><span class="n">h</span> <span class="o">-</span> <span class="n">b</span><span class="p">)),</span> <span class="mi">0</span><span class="p">)</span>
+        <span class="n">res</span><span class="p">[</span><span class="n">res</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">return</span> <span class="n">res</span>
+        
+        <span class="c1"># Old?</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        res = np.where(x &lt; b*h + k, a*((x - k)/h - b) - c * (np.pi / 2 + t / ((x - k)/h - b)), 0)</span>
+<span class="sd">        res[res &lt; 0] = 0</span>
+<span class="sd">        return res</span>
+<span class="sd">        &#39;&#39;&#39;</span></div>
+
+<div class="viewcode-block" id="DPX_support.energyToToTFitAtan"><a class="viewcode-back" href="../../dpx_func_python.html#dpx_func_python.dpx_support.DPX_support.energyToToTFitAtan">[docs]</a>    <span class="k">def</span> <span class="nf">energyToToTFitAtan</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">c</span><span class="p">,</span> <span class="n">d</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">x</span> <span class="o">&gt;</span> <span class="n">b</span><span class="p">,</span> <span class="n">a</span><span class="o">*</span><span class="p">(</span><span class="n">x</span> <span class="o">-</span> <span class="n">b</span><span class="p">)</span> <span class="o">+</span> <span class="n">c</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">arctan</span><span class="p">((</span><span class="n">x</span> <span class="o">-</span> <span class="n">b</span><span class="p">)</span><span class="o">/</span><span class="n">d</span><span class="p">),</span> <span class="mi">0</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="DPX_support.energyToToTFitHyp"><a class="viewcode-back" href="../../dpx_func_python.html#dpx_func_python.dpx_support.DPX_support.energyToToTFitHyp">[docs]</a>    <span class="k">def</span> <span class="nf">energyToToTFitHyp</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">c</span><span class="p">,</span> <span class="n">d</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">x</span> <span class="o">&gt;</span> <span class="n">d</span><span class="p">,</span> <span class="n">a</span><span class="o">*</span><span class="n">x</span> <span class="o">+</span> <span class="n">b</span> <span class="o">+</span> <span class="nb">float</span><span class="p">(</span><span class="n">c</span><span class="p">)</span><span class="o">/</span><span class="p">(</span><span class="n">x</span> <span class="o">-</span> <span class="n">d</span><span class="p">),</span> <span class="mi">0</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="DPX_support.THLCalibToEdges"><a class="viewcode-back" href="../../dpx_func_python.html#dpx_func_python.dpx_support.DPX_support.THLCalibToEdges">[docs]</a>    <span class="k">def</span> <span class="nf">THLCalibToEdges</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">THLDict</span><span class="p">):</span>
+        <span class="n">volt</span><span class="p">,</span> <span class="n">thl</span> <span class="o">=</span> <span class="n">THLDict</span><span class="p">[</span><span class="s1">&#39;Volt&#39;</span><span class="p">],</span> <span class="n">THLDict</span><span class="p">[</span><span class="s1">&#39;ADC&#39;</span><span class="p">]</span>
+
+        <span class="c1"># Sort by THL</span>
+        <span class="n">thl</span><span class="p">,</span> <span class="n">volt</span> <span class="o">=</span> <span class="nb">zip</span><span class="p">(</span><span class="o">*</span><span class="nb">sorted</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">thl</span><span class="p">,</span> <span class="n">volt</span><span class="p">)))</span>
+        <span class="n">diff</span> <span class="o">=</span> <span class="nb">abs</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">volt</span><span class="p">))</span>
+        <span class="n">edges</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argwhere</span><span class="p">(</span><span class="n">diff</span> <span class="o">&gt;</span> <span class="mi">200</span><span class="p">)</span><span class="o">.</span><span class="n">flatten</span><span class="p">()</span> <span class="o">+</span> <span class="mi">1</span>
+
+        <span class="c1"># Store fit results in dict</span>
+        <span class="n">d</span> <span class="o">=</span> <span class="p">{}</span>
+
+        <span class="n">edges</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">edges</span><span class="p">)</span>
+        <span class="n">edges</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+        <span class="n">edges</span><span class="o">.</span><span class="n">append</span><span class="p">(</span> <span class="mi">8190</span> <span class="p">)</span>
+
+        <span class="n">THLEdgesLow</span><span class="p">,</span> <span class="n">THLEdgesHigh</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="p">[]</span>
+
+        <span class="n">x1</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span> <span class="n">thl</span><span class="p">[</span><span class="n">edges</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span><span class="n">edges</span><span class="p">[</span><span class="mi">1</span><span class="p">]]</span> <span class="p">)</span>
+        <span class="n">y1</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span> <span class="n">volt</span><span class="p">[</span><span class="n">edges</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span><span class="n">edges</span><span class="p">[</span><span class="mi">1</span><span class="p">]]</span> <span class="p">)</span>
+        <span class="n">popt1</span><span class="p">,</span> <span class="n">pcov1</span> <span class="o">=</span> <span class="n">scipy</span><span class="o">.</span><span class="n">optimize</span><span class="o">.</span><span class="n">curve_fit</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">erfStdFit</span><span class="p">,</span> <span class="n">x1</span><span class="p">,</span> <span class="n">y1</span><span class="p">)</span>
+        <span class="n">d</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">popt1</span>
+
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">edges</span><span class="p">)</span> <span class="o">-</span> <span class="mi">2</span><span class="p">):</span>
+            <span class="c1"># Succeeding section</span>
+            <span class="n">x2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span> <span class="n">thl</span><span class="p">[</span><span class="n">edges</span><span class="p">[</span><span class="n">i</span><span class="p">]:</span><span class="n">edges</span><span class="p">[</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">]]</span> <span class="p">)</span>
+            <span class="n">y2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span> <span class="n">volt</span><span class="p">[</span><span class="n">edges</span><span class="p">[</span><span class="n">i</span><span class="p">]:</span><span class="n">edges</span><span class="p">[</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">]]</span> <span class="p">)</span>
+
+            <span class="n">popt2</span><span class="p">,</span> <span class="n">pcov2</span> <span class="o">=</span> <span class="n">scipy</span><span class="o">.</span><span class="n">optimize</span><span class="o">.</span><span class="n">curve_fit</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">linearFit</span><span class="p">,</span> <span class="n">x2</span><span class="p">,</span> <span class="n">y2</span><span class="p">)</span>
+            <span class="n">m1</span><span class="p">,</span> <span class="n">m2</span><span class="p">,</span> <span class="n">t1</span><span class="p">,</span> <span class="n">t2</span> <span class="o">=</span> <span class="n">popt1</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">popt2</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">popt1</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">popt2</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+            <span class="n">d</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">popt2</span>
+
+            <span class="c1"># Get central position</span>
+            <span class="c1"># Calculate intersection to get edges</span>
+            <span class="k">if</span> <span class="n">i</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+                    <span class="n">Vcenter</span> <span class="o">=</span> <span class="mf">0.5</span><span class="o">*</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">erfStdFit</span><span class="p">(</span><span class="n">edges</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="o">*</span><span class="n">popt1</span><span class="p">)</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">linearFit</span><span class="p">(</span><span class="n">edges</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">m2</span><span class="p">,</span> <span class="n">t2</span><span class="p">))</span>
+                    <span class="n">THLEdgesHigh</span><span class="o">.</span><span class="n">append</span><span class="p">(</span> <span class="n">scipy</span><span class="o">.</span><span class="n">optimize</span><span class="o">.</span><span class="n">fsolve</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">erfStdFit</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="o">*</span><span class="n">popt1</span><span class="p">)</span> <span class="o">-</span> <span class="n">Vcenter</span><span class="p">,</span> <span class="mi">100</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span> <span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                    <span class="n">Vcenter</span> <span class="o">=</span> <span class="mf">1.</span><span class="o">/</span><span class="p">(</span><span class="n">m1</span> <span class="o">+</span> <span class="n">m2</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="mi">2</span><span class="o">*</span><span class="n">edges</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">*</span><span class="n">m1</span><span class="o">*</span><span class="n">m2</span> <span class="o">+</span> <span class="n">t1</span><span class="o">*</span><span class="n">m1</span> <span class="o">+</span> <span class="n">t2</span><span class="o">*</span><span class="n">m2</span><span class="p">)</span>
+                    <span class="n">THLEdgesHigh</span><span class="o">.</span><span class="n">append</span><span class="p">(</span> <span class="p">(</span><span class="n">Vcenter</span> <span class="o">-</span> <span class="n">t1</span><span class="p">)</span><span class="o">/</span><span class="n">m1</span> <span class="p">)</span>
+
+            <span class="n">THLEdgesLow</span><span class="o">.</span><span class="n">append</span><span class="p">(</span> <span class="p">(</span><span class="n">Vcenter</span> <span class="o">-</span> <span class="n">t2</span><span class="p">)</span><span class="o">/</span><span class="n">m2</span> <span class="p">)</span>
+            <span class="n">popt1</span><span class="p">,</span> <span class="n">pcov1</span> <span class="o">=</span> <span class="n">popt2</span><span class="p">,</span> <span class="n">pcov2</span>
+
+        <span class="n">THLEdgesHigh</span><span class="o">.</span><span class="n">append</span><span class="p">(</span> <span class="mi">8190</span> <span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">THLEdgesLow</span><span class="p">,</span> <span class="n">THLEdgesHigh</span><span class="p">,</span> <span class="n">d</span></div>
+
+<div class="viewcode-block" id="DPX_support.valToIdx"><a class="viewcode-back" href="../../dpx_func_python.html#dpx_func_python.dpx_support.DPX_support.valToIdx">[docs]</a>    <span class="k">def</span> <span class="nf">valToIdx</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">slot</span><span class="p">,</span> <span class="n">pixelDACs</span><span class="p">,</span> <span class="n">THLRange</span><span class="p">,</span> <span class="n">gaussDict</span><span class="p">,</span> <span class="n">noiseTHL</span><span class="p">):</span>
+        <span class="c1"># Transform values to indices</span>
+        <span class="n">meanDict</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">pixelDAC</span> <span class="ow">in</span> <span class="n">pixelDACs</span><span class="p">:</span>
+            <span class="n">d</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">getVoltFromTHLFit</span><span class="p">(</span><span class="n">elm</span><span class="p">,</span> <span class="n">slot</span><span class="p">)</span> <span class="k">if</span> <span class="n">elm</span> <span class="k">else</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span> <span class="k">for</span> <span class="n">elm</span> <span class="ow">in</span> <span class="n">gaussDict</span><span class="p">[</span><span class="n">pixelDAC</span><span class="p">]</span> <span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float</span><span class="p">)</span>
+            <span class="n">meanDict</span><span class="p">[</span><span class="n">pixelDAC</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nanmean</span><span class="p">(</span><span class="n">d</span><span class="p">)</span>
+
+            <span class="k">for</span> <span class="n">pixelX</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">16</span><span class="p">):</span>
+                <span class="k">for</span> <span class="n">pixelY</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">16</span><span class="p">):</span>
+                    <span class="n">elm</span> <span class="o">=</span> <span class="n">noiseTHL</span><span class="p">[</span><span class="n">pixelDAC</span><span class="p">][</span><span class="n">pixelX</span><span class="p">,</span> <span class="n">pixelY</span><span class="p">]</span>
+                    <span class="k">if</span> <span class="n">elm</span><span class="p">:</span>
+                        <span class="n">noiseTHL</span><span class="p">[</span><span class="n">pixelDAC</span><span class="p">][</span><span class="n">pixelX</span><span class="p">,</span> <span class="n">pixelY</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">getVoltFromTHLFit</span><span class="p">(</span><span class="n">elm</span><span class="p">,</span> <span class="n">slot</span><span class="p">)</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">noiseTHL</span><span class="p">[</span><span class="n">pixelDAC</span><span class="p">][</span><span class="n">pixelX</span><span class="p">,</span> <span class="n">pixelY</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
+
+        <span class="k">return</span> <span class="n">meanDict</span><span class="p">,</span> <span class="n">noiseTHL</span></div>
+
+<div class="viewcode-block" id="DPX_support.getTHLLevel"><a class="viewcode-back" href="../../dpx_func_python.html#dpx_func_python.dpx_support.DPX_support.getTHLLevel">[docs]</a>    <span class="k">def</span> <span class="nf">getTHLLevel</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">slot</span><span class="p">,</span> <span class="n">THLRange</span><span class="p">,</span> <span class="n">pixelDACs</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;00&#39;</span><span class="p">,</span> <span class="s1">&#39;3f&#39;</span><span class="p">],</span> <span class="n">reps</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">intPlot</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="n">countsDict</span> <span class="o">=</span> <span class="p">{}</span>
+
+        <span class="c1"># Interactive plot showing pixel noise</span>
+        <span class="k">if</span> <span class="n">intPlot</span><span class="p">:</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">ion</span><span class="p">()</span>
+            <span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">()</span>
+
+            <span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s1">&#39;x (pixel)&#39;</span><span class="p">)</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s1">&#39;y (pixel)&#39;</span><span class="p">)</span>
+            <span class="n">im</span> <span class="o">=</span> <span class="n">ax</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="mi">16</span><span class="p">,</span> <span class="mi">16</span><span class="p">)),</span> <span class="n">vmin</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">vmax</span><span class="o">=</span><span class="mi">255</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">pixelDACs</span><span class="p">,</span> <span class="n">basestring</span><span class="p">):</span>
+            <span class="n">pixelDACs</span> <span class="o">=</span> <span class="p">[</span><span class="n">pixelDACs</span><span class="p">]</span>
+
+        <span class="c1"># Loop over pixelDAC values</span>
+        <span class="k">for</span> <span class="n">pixelDAC</span> <span class="ow">in</span> <span class="n">pixelDACs</span><span class="p">:</span>
+            <span class="n">countsDict</span><span class="p">[</span><span class="n">pixelDAC</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+            <span class="nb">print</span> <span class="s1">&#39;Set pixel DACs to </span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">pixelDAC</span>
+            
+            <span class="c1"># Set pixel DAC values</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">pixelDAC</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">2</span><span class="p">:</span>
+                <span class="n">pixelCode</span> <span class="o">=</span> <span class="n">pixelDAC</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">pixelCode</span> <span class="o">=</span> <span class="n">pixelDAC</span><span class="o">*</span><span class="mi">256</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">DPXWritePixelDACCommand</span><span class="p">(</span><span class="n">slot</span><span class="p">,</span> <span class="n">pixelCode</span><span class="p">,</span> <span class="n">file</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+            <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">            resp = &#39;&#39;</span>
+<span class="sd">            while resp != pixelCode:</span>
+<span class="sd">                resp = self.DPXReadPixelDACCommand(slot)</span>
+<span class="sd">            &#39;&#39;&#39;</span> 
+
+            <span class="c1"># Dummy readout</span>
+            <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">3</span><span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">DPXReadToTDatakVpModeCommand</span><span class="p">(</span><span class="n">slot</span><span class="p">)</span>
+                <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mf">0.2</span><span class="p">)</span>
+
+            <span class="c1"># Noise measurement</span>
+            <span class="c1"># Loop over THL values</span>
+            <span class="nb">print</span> <span class="s1">&#39;Loop over THLs&#39;</span>
+
+            <span class="c1"># Fast loop</span>
+            <span class="n">countsList</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="n">THLRangeFast</span> <span class="o">=</span> <span class="n">THLRange</span><span class="p">[::</span><span class="mi">10</span><span class="p">]</span>
+            <span class="k">for</span> <span class="n">cnt</span><span class="p">,</span> <span class="n">THL</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">THLRangeFast</span><span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">DPXWritePeripheryDACCommand</span><span class="p">(</span><span class="n">slot</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">peripherys</span> <span class="o">+</span> <span class="p">(</span><span class="s1">&#39;</span><span class="si">%04x</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">THL</span><span class="p">))</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">DPXDataResetCommand</span><span class="p">(</span><span class="n">slot</span><span class="p">)</span>
+                <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mf">0.001</span><span class="p">)</span>
+
+                <span class="c1"># Read ToT values into matrix</span>
+                <span class="n">countsList</span><span class="o">.</span><span class="n">append</span><span class="p">(</span> <span class="bp">self</span><span class="o">.</span><span class="n">DPXReadToTDatakVpModeCommand</span><span class="p">(</span><span class="n">slot</span><span class="p">)</span><span class="o">.</span><span class="n">flatten</span><span class="p">()</span> <span class="p">)</span>
+
+            <span class="n">countsList</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span> <span class="n">countsList</span> <span class="p">)</span><span class="o">.</span><span class="n">T</span>
+            <span class="n">THLRangeFast</span> <span class="o">=</span> <span class="p">[</span> <span class="n">THLRangeFast</span><span class="p">[</span><span class="n">item</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]]</span> <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">item</span><span class="p">)</span> <span class="k">else</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span> <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">argwhere</span><span class="p">(</span><span class="n">counts</span> <span class="o">&gt;</span> <span class="mi">3</span><span class="p">)</span> <span class="k">for</span> <span class="n">counts</span> <span class="ow">in</span> <span class="n">countsList</span><span class="p">]</span> <span class="p">]</span>
+
+            <span class="c1"># Precise loop</span>
+            <span class="n">THLRangeSlow</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">around</span><span class="p">(</span><span class="n">THLRange</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">logical_and</span><span class="p">(</span><span class="n">THLRange</span> <span class="o">&gt;=</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">nanmin</span><span class="p">(</span><span class="n">THLRangeFast</span><span class="p">)</span> <span class="o">-</span> <span class="mi">10</span><span class="p">),</span> <span class="n">THLRange</span> <span class="o">&lt;=</span> <span class="n">np</span><span class="o">.</span><span class="n">nanmax</span><span class="p">(</span><span class="n">THLRangeFast</span><span class="p">))])</span>
+
+            <span class="n">NTHL</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">THLRangeSlow</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">cnt</span><span class="p">,</span> <span class="n">THL</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span> <span class="n">THLRangeSlow</span> <span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">statusBar</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">cnt</span><span class="p">)</span><span class="o">/</span><span class="n">NTHL</span> <span class="o">*</span> <span class="mi">100</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+
+                <span class="c1"># Repeat multiple times since data is noisy</span>
+                <span class="n">counts</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="mi">16</span><span class="p">,</span> <span class="mi">16</span><span class="p">))</span>
+                <span class="k">for</span> <span class="n">lp</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">reps</span><span class="p">):</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">DPXWritePeripheryDACCommand</span><span class="p">(</span><span class="n">slot</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">peripherys</span> <span class="o">+</span> <span class="p">(</span><span class="s1">&#39;</span><span class="si">%04x</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">THL</span><span class="p">))</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">DPXDataResetCommand</span><span class="p">(</span><span class="n">slot</span><span class="p">)</span>
+                    <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mf">0.001</span><span class="p">)</span>
+
+                    <span class="c1"># Read ToT values into matrix</span>
+                    <span class="n">counts</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">DPXReadToTDatakVpModeCommand</span><span class="p">(</span><span class="n">slot</span><span class="p">)</span>
+
+                    <span class="k">if</span> <span class="n">intPlot</span><span class="p">:</span>
+                        <span class="n">im</span><span class="o">.</span><span class="n">set_data</span><span class="p">(</span><span class="n">counts</span><span class="p">)</span>
+                        <span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">&#39;THL: &#39;</span> <span class="o">+</span> <span class="nb">hex</span><span class="p">(</span><span class="n">THL</span><span class="p">))</span>
+                        <span class="n">fig</span><span class="o">.</span><span class="n">canvas</span><span class="o">.</span><span class="n">draw</span><span class="p">()</span>
+
+                <span class="n">counts</span> <span class="o">/=</span> <span class="nb">float</span><span class="p">(</span><span class="n">reps</span><span class="p">)</span>
+                <span class="n">countsDict</span><span class="p">[</span><span class="n">pixelDAC</span><span class="p">][</span><span class="nb">int</span><span class="p">(</span><span class="n">THL</span><span class="p">)]</span> <span class="o">=</span> <span class="n">counts</span>
+            <span class="nb">print</span> 
+            <span class="nb">print</span>
+        <span class="k">return</span> <span class="n">countsDict</span></div>
+
+<div class="viewcode-block" id="DPX_support.getNoiseLevel"><a class="viewcode-back" href="../../dpx_func_python.html#dpx_func_python.dpx_support.DPX_support.getNoiseLevel">[docs]</a>    <span class="k">def</span> <span class="nf">getNoiseLevel</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">countsDict</span><span class="p">,</span> <span class="n">THLRange</span><span class="p">,</span> <span class="n">pixelDACs</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;00&#39;</span><span class="p">,</span> <span class="s1">&#39;3f&#39;</span><span class="p">],</span> <span class="n">noiseLimit</span><span class="o">=</span><span class="mi">3</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">pixelDACs</span><span class="p">,</span> <span class="n">basestring</span><span class="p">):</span>
+            <span class="n">pixelDACs</span> <span class="o">=</span> <span class="p">[</span><span class="n">pixelDACs</span><span class="p">]</span>
+
+        <span class="c1"># Get noise THL for each pixel</span>
+        <span class="n">noiseTHL</span> <span class="o">=</span> <span class="p">{</span><span class="n">key</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="mi">16</span><span class="p">,</span> <span class="mi">16</span><span class="p">))</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">pixelDACs</span><span class="p">}</span>
+
+        <span class="n">gaussDict</span><span class="p">,</span> <span class="n">gaussSmallDict</span><span class="p">,</span> <span class="n">gaussLargeDict</span> <span class="o">=</span> <span class="p">{</span><span class="n">key</span><span class="p">:</span> <span class="p">[]</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">pixelDACs</span><span class="p">},</span> <span class="p">{</span><span class="n">key</span><span class="p">:</span> <span class="p">[]</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">pixelDACs</span><span class="p">},</span> <span class="p">{</span><span class="n">key</span><span class="p">:</span> <span class="p">[]</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">pixelDACs</span><span class="p">}</span>
+
+        <span class="c1"># Loop over each pixel in countsDict</span>
+        <span class="k">for</span> <span class="n">pixelDAC</span> <span class="ow">in</span> <span class="n">pixelDACs</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">pixelX</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">16</span><span class="p">):</span>
+                <span class="k">for</span> <span class="n">pixelY</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">16</span><span class="p">):</span>
+                    <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="n">THL</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">THLRange</span><span class="p">):</span>
+                        <span class="k">if</span> <span class="ow">not</span> <span class="n">THL</span> <span class="ow">in</span> <span class="n">countsDict</span><span class="p">[</span><span class="n">pixelDAC</span><span class="p">]</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+                            <span class="k">continue</span>
+
+                        <span class="k">if</span> <span class="n">countsDict</span><span class="p">[</span><span class="n">pixelDAC</span><span class="p">][</span><span class="n">THL</span><span class="p">][</span><span class="n">pixelX</span><span class="p">,</span> <span class="n">pixelY</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="n">noiseLimit</span> <span class="ow">and</span> <span class="n">noiseTHL</span><span class="p">[</span><span class="n">pixelDAC</span><span class="p">][</span><span class="n">pixelX</span><span class="p">,</span> <span class="n">pixelY</span><span class="p">]</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                                <span class="n">noiseTHL</span><span class="p">[</span><span class="n">pixelDAC</span><span class="p">][</span><span class="n">pixelX</span><span class="p">,</span> <span class="n">pixelY</span><span class="p">]</span> <span class="o">=</span> <span class="n">THL</span>
+
+                                <span class="n">gaussDict</span><span class="p">[</span><span class="n">pixelDAC</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">THL</span><span class="p">)</span>
+                                <span class="k">if</span> <span class="n">pixelY</span> <span class="ow">in</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">14</span><span class="p">,</span> <span class="mi">15</span><span class="p">]:</span>
+                                    <span class="n">gaussSmallDict</span><span class="p">[</span><span class="n">pixelDAC</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">THL</span><span class="p">)</span>
+                                <span class="k">else</span><span class="p">:</span>
+                                    <span class="n">gaussLargeDict</span><span class="p">[</span><span class="n">pixelDAC</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">THL</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">gaussDict</span><span class="p">,</span> <span class="n">noiseTHL</span></div></div>
+
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2019, Sebastian Schmidt
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

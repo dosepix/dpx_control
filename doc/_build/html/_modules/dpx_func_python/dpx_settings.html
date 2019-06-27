@@ -1,0 +1,357 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>dpx_func_python.dpx_settings &mdash; dpx_func_python 0.1 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="../../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../../_static/jquery.js"></script>
+        <script type="text/javascript" src="../../_static/underscore.js"></script>
+        <script type="text/javascript" src="../../_static/doctools.js"></script>
+        <script type="text/javascript" src="../../_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="../../_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../index.html" class="icon icon-home"> dpx_func_python
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Submodules:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../src/dpx_functions.html">DPX_functions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../src/config.html">Config</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">dpx_func_python</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../index.html">Module code</a> &raquo;</li>
+        
+          <li><a href="../dpx_func_python.html">dpx_func_python</a> &raquo;</li>
+        
+      <li>dpx_func_python.dpx_settings</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for dpx_func_python.dpx_settings</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span> <span class="nn">collections</span> <span class="k">import</span> <span class="n">namedtuple</span>
+<span class="c1"># === CONSTANTS ===</span>
+<span class="n">_startOfTransmission</span>   <span class="o">=</span> <span class="n">unichr</span><span class="p">(</span><span class="mh">0x02</span><span class="p">)</span>
+<span class="n">_endOfTransmission</span>     <span class="o">=</span> <span class="n">unichr</span><span class="p">(</span><span class="mh">0x03</span><span class="p">)</span> 
+
+<span class="c1"># = Receiver =</span>
+<span class="n">_receiverDPX1</span> <span class="o">=</span> <span class="s1">&#39;01&#39;</span>   <span class="c1"># Dosepix</span>
+<span class="n">_receiverDPX2</span> <span class="o">=</span> <span class="s1">&#39;02&#39;</span>
+<span class="n">_receiverDPX3</span> <span class="o">=</span> <span class="s1">&#39;03&#39;</span>
+<span class="n">_receiverMC</span> <span class="o">=</span> <span class="s1">&#39;04&#39;</span>     <span class="c1"># Microcontroller</span>
+<span class="n">_receiverVC</span> <span class="o">=</span> <span class="s1">&#39;09&#39;</span>     <span class="c1"># Voltage Controller</span>
+<span class="n">_receiverHV</span> <span class="o">=</span> <span class="s1">&#39;11&#39;</span>     <span class="c1"># High Voltage</span>
+
+<span class="c1"># = Subreceiber =</span>
+<span class="n">_subReceiverNone</span> <span class="o">=</span> <span class="s1">&#39;000&#39;</span>
+
+<span class="c1"># = Sender =</span>
+<span class="n">_senderPC</span> <span class="o">=</span> <span class="s1">&#39;10&#39;</span>
+
+<span class="c1"># = Commands =</span>
+<span class="n">_commandNone</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span>
+<span class="n">_commandNoneLength</span> <span class="o">=</span> <span class="s1">&#39;0&#39;</span> <span class="o">*</span> <span class="mi">6</span>
+
+<span class="c1"># = HV Commands =</span>
+<span class="n">_HVenable</span> <span class="o">=</span> <span class="s1">&#39;000&#39;</span>
+<span class="n">_HVdisable</span> <span class="o">=</span> <span class="s1">&#39;001&#39;</span>
+<span class="n">_HVisEnabled</span> <span class="o">=</span> <span class="s1">&#39;002&#39;</span>
+<span class="n">_HVsetDAC</span> <span class="o">=</span> <span class="s1">&#39;003&#39;</span>
+<span class="n">_HVgetDAC</span> <span class="o">=</span> <span class="s1">&#39;004&#39;</span>
+
+<span class="c1"># = VC Commands =</span>
+<span class="n">_VCset3V3</span> <span class="o">=</span> <span class="s1">&#39;000&#39;</span>
+<span class="n">_VCset1V8</span> <span class="o">=</span> <span class="s1">&#39;001&#39;</span>
+<span class="n">_VCgetVoltage</span> <span class="o">=</span> <span class="s1">&#39;002&#39;</span>
+
+<span class="c1"># = MC Commands =</span>
+<span class="n">_MCgetVersion</span> <span class="o">=</span> <span class="s1">&#39;000&#39;</span>
+<span class="n">_MCLEDenable</span> <span class="o">=</span> <span class="s1">&#39;001&#39;</span>
+<span class="n">_MCLEDdisable</span> <span class="o">=</span> <span class="s1">&#39;002&#39;</span>
+<span class="n">_MCgetADCvalue</span> <span class="o">=</span> <span class="s1">&#39;003&#39;</span>
+<span class="n">_MCsetSPIclock1</span> <span class="o">=</span> <span class="s1">&#39;004&#39;</span>
+<span class="n">_MCsetSPIclock2</span> <span class="o">=</span> <span class="s1">&#39;005&#39;</span>
+<span class="n">_MCsetSPIclock3</span> <span class="o">=</span> <span class="s1">&#39;006&#39;</span>
+
+<span class="c1"># = DPX Commands =</span>
+<span class="n">_DPXwriteOMRCommand</span> <span class="o">=</span> <span class="s1">&#39;001&#39;</span> 
+<span class="n">_DPXwriteConfigurationCommand</span> <span class="o">=</span> <span class="s1">&#39;002&#39;</span>
+<span class="n">_DPXwriteSingleThresholdCommand</span> <span class="o">=</span> <span class="s1">&#39;003&#39;</span>
+<span class="n">_DPXwritePixelDACCommand</span> <span class="o">=</span> <span class="s1">&#39;004&#39;</span>
+<span class="n">_DPXwritePeripheryDACCommand</span> <span class="o">=</span> <span class="s1">&#39;005&#39;</span>
+<span class="n">_DPXwriteColSelCommand</span> <span class="o">=</span> <span class="s1">&#39;006&#39;</span>
+<span class="n">_DPXburnSingleFuseCommand</span> <span class="o">=</span> <span class="s1">&#39;007&#39;</span>
+<span class="n">_DPXreadOMRCommand</span> <span class="o">=</span> <span class="s1">&#39;008&#39;</span>
+<span class="n">_DPXreadConfigurationCommand</span> <span class="o">=</span> <span class="s1">&#39;009&#39;</span>
+<span class="n">_DPXreadDigitalThresholdsCommand</span> <span class="o">=</span> <span class="s1">&#39;010&#39;</span>
+<span class="n">_DPXreadPixelDACCommand</span> <span class="o">=</span> <span class="s1">&#39;011&#39;</span>
+<span class="n">_DPXreadPeripheryDACCommand</span> <span class="o">=</span> <span class="s1">&#39;012&#39;</span>
+<span class="n">_DPXreadColumnTestPulseCommand</span> <span class="o">=</span> <span class="s1">&#39;013&#39;</span>
+<span class="n">_DPXreadColSelCommand</span> <span class="o">=</span> <span class="s1">&#39;014&#39;</span>
+<span class="n">_DPXreadChipIdCommand</span> <span class="o">=</span> <span class="s1">&#39;015&#39;</span>
+
+<span class="n">_DPXglobalResetCommand</span> <span class="o">=</span> <span class="s1">&#39;020&#39;</span>
+<span class="n">_DPXdataResetCommand</span> <span class="o">=</span> <span class="s1">&#39;021&#39;</span>
+
+<span class="n">_DPXreadToTDataDosiModeCommand</span> <span class="o">=</span> <span class="s1">&#39;050&#39;</span>
+<span class="n">_DPXreadBinDataDosiModeCommand</span> <span class="o">=</span> <span class="s1">&#39;051&#39;</span>
+<span class="n">_DPXreadToTDatakVpModeCommand</span> <span class="o">=</span> <span class="s1">&#39;053&#39;</span>
+<span class="n">_DPXreadToTDataIntegrationModeCommand</span> <span class="o">=</span> <span class="s1">&#39;054&#39;</span>
+
+<span class="n">_DPXgeneralTestPulse</span> <span class="o">=</span> <span class="s1">&#39;057&#39;</span>
+<span class="n">_DPXreadToTDataInkVpModeWithFixedFrameSizeCommand</span> <span class="o">=</span> <span class="s1">&#39;066&#39;</span>
+<span class="n">_DPXgeneralMultiTestPulse</span> <span class="o">=</span> <span class="s1">&#39;067&#39;</span>
+
+<span class="n">_DPXstartStreamingReadout</span> <span class="o">=</span> <span class="s1">&#39;068&#39;</span>
+<span class="n">_DPXstopStreamingReadout</span> <span class="o">=</span><span class="s1">&#39;069&#39;</span>
+
+<span class="c1"># = Custom Functions =</span>
+<span class="n">_DPXreadToTDataDosiModeMultiCommand</span> <span class="o">=</span> <span class="s1">&#39;090&#39;</span>
+
+<span class="c1"># = CRC =</span>
+<span class="n">_CRC</span> <span class="o">=</span> <span class="s1">&#39;FFFF&#39;</span>
+
+<span class="c1"># = OMR =</span>
+<span class="n">OMROperationModeType</span> <span class="o">=</span> <span class="n">namedtuple</span><span class="p">(</span><span class="s2">&quot;OMROperationMode&quot;</span><span class="p">,</span> <span class="s2">&quot;DosiMode TestWakeUp PCMode IntegrationMode&quot;</span><span class="p">)</span>
+<span class="n">_OMROperationMode</span> <span class="o">=</span> <span class="n">OMROperationModeType</span><span class="p">(</span>
+    <span class="n">DosiMode</span> <span class="o">=</span> <span class="mb">0b00</span> <span class="o">&lt;&lt;</span> <span class="mi">22</span><span class="p">,</span>
+    <span class="n">TestWakeUp</span> <span class="o">=</span> <span class="mb">0b01</span> <span class="o">&lt;&lt;</span> <span class="mi">22</span><span class="p">,</span>
+    <span class="n">PCMode</span> <span class="o">=</span> <span class="mb">0b10</span> <span class="o">&lt;&lt;</span> <span class="mi">22</span><span class="p">,</span>
+    <span class="n">IntegrationMode</span> <span class="o">=</span> <span class="mb">0b11</span> <span class="o">&lt;&lt;</span> <span class="mi">22</span><span class="p">)</span>
+
+<span class="n">OMRGlobalShutterType</span> <span class="o">=</span> <span class="n">namedtuple</span><span class="p">(</span><span class="s2">&quot;OMRGlobalShutter&quot;</span><span class="p">,</span> <span class="s2">&quot;ClosedShutter OpenShutter&quot;</span><span class="p">)</span>
+<span class="n">_OMRGlobalShutter</span> <span class="o">=</span> <span class="n">OMRGlobalShutterType</span><span class="p">(</span>
+    <span class="n">ClosedShutter</span> <span class="o">=</span> <span class="mb">0b0</span> <span class="o">&lt;&lt;</span> <span class="mi">21</span><span class="p">,</span>
+    <span class="n">OpenShutter</span> <span class="o">=</span> <span class="mb">0b1</span> <span class="o">&lt;&lt;</span> <span class="mi">21</span><span class="p">)</span>
+
+<span class="c1"># Do not use 200 MHz!</span>
+<span class="n">OMRPLLType</span> <span class="o">=</span> <span class="n">namedtuple</span><span class="p">(</span><span class="s2">&quot;OMRPLL&quot;</span><span class="p">,</span> <span class="s2">&quot;Direct f16_6MHz f20MHz f25MHz f33_2MHz f50MHz f100MHz&quot;</span><span class="p">)</span>
+<span class="n">_OMRPLL</span> <span class="o">=</span> <span class="n">OMRPLLType</span><span class="p">(</span><span class="n">Direct</span> <span class="o">=</span> <span class="mb">0b000</span> <span class="o">&lt;&lt;</span> <span class="mi">18</span><span class="p">,</span>
+    <span class="n">f16_6MHz</span> <span class="o">=</span> <span class="mb">0b001</span> <span class="o">&lt;&lt;</span> <span class="mi">18</span><span class="p">,</span>
+    <span class="n">f20MHz</span> <span class="o">=</span> <span class="mb">0b010</span> <span class="o">&lt;&lt;</span> <span class="mi">18</span><span class="p">,</span>
+    <span class="n">f25MHz</span> <span class="o">=</span> <span class="mb">0b011</span> <span class="o">&lt;&lt;</span> <span class="mi">18</span><span class="p">,</span>
+    <span class="n">f33_2MHz</span> <span class="o">=</span> <span class="mb">0b100</span> <span class="o">&lt;&lt;</span> <span class="mi">18</span><span class="p">,</span>
+    <span class="n">f50MHz</span> <span class="o">=</span> <span class="mb">0b101</span> <span class="o">&lt;&lt;</span> <span class="mi">18</span><span class="p">,</span>
+    <span class="n">f100MHz</span> <span class="o">=</span> <span class="mb">0b110</span> <span class="o">&lt;&lt;</span> <span class="mi">18</span><span class="p">)</span>
+
+<span class="n">OMRPolarityType</span> <span class="o">=</span> <span class="n">namedtuple</span><span class="p">(</span><span class="s2">&quot;OMRPolarity&quot;</span><span class="p">,</span> <span class="s2">&quot;electron hole&quot;</span><span class="p">)</span>
+<span class="n">_OMRPolarity</span> <span class="o">=</span> <span class="n">OMRPolarityType</span><span class="p">(</span>
+    <span class="n">hole</span> <span class="o">=</span> <span class="mb">0b0</span> <span class="o">&lt;&lt;</span> <span class="mi">17</span><span class="p">,</span>
+    <span class="n">electron</span> <span class="o">=</span> <span class="mb">0b1</span> <span class="o">&lt;&lt;</span> <span class="mi">17</span><span class="p">)</span>
+
+<span class="n">OMRAnalogOutSelType</span> <span class="o">=</span> <span class="n">namedtuple</span><span class="p">(</span><span class="s2">&quot;OMRAnalogOutSel&quot;</span><span class="p">,</span> <span class="s2">&quot;V_ThA V_TPref_fine V_casc_preamp V_fbk V_TPref_coarse V_gnd I_preamp I_disc1 I_disc2 V_TPbufout V_TPbufin I_krum I_dac_pixel V_bandgap V_casc_krum Temperature V_per_bias V_cascode_bias High_Z&quot;</span><span class="p">)</span>
+<span class="n">_OMRAnalogOutSel</span> <span class="o">=</span> <span class="n">OMRAnalogOutSelType</span><span class="p">(</span>
+    <span class="n">V_ThA</span> <span class="o">=</span> <span class="mb">0b00001</span> <span class="o">&lt;&lt;</span> <span class="mi">12</span><span class="p">,</span>
+    <span class="n">V_TPref_fine</span> <span class="o">=</span> <span class="mb">0b00010</span> <span class="o">&lt;&lt;</span> <span class="mi">12</span><span class="p">,</span> 
+    <span class="n">V_casc_preamp</span> <span class="o">=</span> <span class="mb">0b00011</span> <span class="o">&lt;&lt;</span> <span class="mi">12</span><span class="p">,</span>
+    <span class="n">V_fbk</span> <span class="o">=</span> <span class="mb">0b00100</span> <span class="o">&lt;&lt;</span> <span class="mi">12</span><span class="p">,</span>
+    <span class="n">V_TPref_coarse</span> <span class="o">=</span> <span class="mb">0b00101</span> <span class="o">&lt;&lt;</span> <span class="mi">12</span><span class="p">,</span>
+    <span class="n">V_gnd</span> <span class="o">=</span> <span class="mb">0b00110</span> <span class="o">&lt;&lt;</span> <span class="mi">12</span><span class="p">,</span>
+    <span class="n">I_preamp</span> <span class="o">=</span> <span class="mb">0b00111</span> <span class="o">&lt;&lt;</span> <span class="mi">12</span><span class="p">,</span>
+    <span class="n">I_disc1</span> <span class="o">=</span> <span class="mb">0b01000</span> <span class="o">&lt;&lt;</span> <span class="mi">12</span><span class="p">,</span>
+    <span class="n">I_disc2</span> <span class="o">=</span> <span class="mb">0b01001</span> <span class="o">&lt;&lt;</span> <span class="mi">12</span><span class="p">,</span>
+    <span class="n">V_TPbufout</span> <span class="o">=</span> <span class="mb">0b01010</span> <span class="o">&lt;&lt;</span> <span class="mi">12</span><span class="p">,</span>
+    <span class="n">V_TPbufin</span> <span class="o">=</span> <span class="mb">0b01011</span> <span class="o">&lt;&lt;</span> <span class="mi">12</span><span class="p">,</span>
+    <span class="n">I_krum</span> <span class="o">=</span> <span class="mb">0b01100</span> <span class="o">&lt;&lt;</span> <span class="mi">12</span><span class="p">,</span>
+    <span class="n">I_dac_pixel</span> <span class="o">=</span> <span class="mb">0b01101</span> <span class="o">&lt;&lt;</span> <span class="mi">12</span><span class="p">,</span>
+    <span class="n">V_bandgap</span> <span class="o">=</span> <span class="mb">0b01110</span> <span class="o">&lt;&lt;</span> <span class="mi">12</span><span class="p">,</span>
+    <span class="n">V_casc_krum</span> <span class="o">=</span> <span class="mb">0b01111</span> <span class="o">&lt;&lt;</span> <span class="mi">12</span><span class="p">,</span>
+    <span class="n">Temperature</span> <span class="o">=</span> <span class="mb">0b11011</span> <span class="o">&lt;&lt;</span> <span class="mi">12</span><span class="p">,</span>
+    <span class="n">V_per_bias</span> <span class="o">=</span> <span class="mb">0b11100</span> <span class="o">&lt;&lt;</span> <span class="mi">12</span><span class="p">,</span>
+    <span class="n">V_cascode_bias</span> <span class="o">=</span> <span class="mb">0b11101</span> <span class="o">&lt;&lt;</span> <span class="mi">12</span><span class="p">,</span>
+    <span class="n">High_Z</span> <span class="o">=</span> <span class="mb">0b11111</span> <span class="o">&lt;&lt;</span> <span class="mi">12</span><span class="p">)</span>
+
+<span class="n">OMRAnalogInSelType</span> <span class="o">=</span> <span class="n">namedtuple</span><span class="p">(</span><span class="s2">&quot;OMRAnalogInSel&quot;</span><span class="p">,</span> <span class="s2">&quot;V_ThA V_TPref_fine V_casc_preamp V_fbk V_TPref_coarse V_gnd I_preamp I_disc1 I_disc2 V_TPbufout V_TPbufin I_krum I_dac_pixel V_bandgap V_casc_krum Temperature V_per_bias V_cascode_bias V_no&quot;</span><span class="p">)</span>
+<span class="n">_OMRAnalogInSel</span> <span class="o">=</span> <span class="n">OMRAnalogInSelType</span><span class="p">(</span>
+    <span class="n">V_ThA</span> <span class="o">=</span> <span class="mb">0b00001</span> <span class="o">&lt;&lt;</span> <span class="mi">7</span><span class="p">,</span>
+    <span class="n">V_TPref_fine</span> <span class="o">=</span> <span class="mb">0b00010</span> <span class="o">&lt;&lt;</span> <span class="mi">7</span><span class="p">,</span> 
+    <span class="n">V_casc_preamp</span> <span class="o">=</span> <span class="mb">0b00011</span> <span class="o">&lt;&lt;</span> <span class="mi">7</span><span class="p">,</span>
+    <span class="n">V_fbk</span> <span class="o">=</span> <span class="mb">0b00100</span> <span class="o">&lt;&lt;</span> <span class="mi">7</span><span class="p">,</span>
+    <span class="n">V_TPref_coarse</span> <span class="o">=</span> <span class="mb">0b00101</span> <span class="o">&lt;&lt;</span> <span class="mi">7</span><span class="p">,</span>
+    <span class="n">V_gnd</span> <span class="o">=</span> <span class="mb">0b00110</span> <span class="o">&lt;&lt;</span> <span class="mi">7</span><span class="p">,</span>
+    <span class="n">I_preamp</span> <span class="o">=</span> <span class="mb">0b00111</span> <span class="o">&lt;&lt;</span> <span class="mi">7</span><span class="p">,</span>
+    <span class="n">I_disc1</span> <span class="o">=</span> <span class="mb">0b01000</span> <span class="o">&lt;&lt;</span> <span class="mi">7</span><span class="p">,</span>
+    <span class="n">I_disc2</span> <span class="o">=</span> <span class="mb">0b01001</span> <span class="o">&lt;&lt;</span> <span class="mi">7</span><span class="p">,</span>
+    <span class="n">V_TPbufout</span> <span class="o">=</span> <span class="mb">0b01010</span> <span class="o">&lt;&lt;</span> <span class="mi">7</span><span class="p">,</span>
+    <span class="n">V_TPbufin</span> <span class="o">=</span> <span class="mb">0b01011</span> <span class="o">&lt;&lt;</span> <span class="mi">7</span><span class="p">,</span>
+    <span class="n">I_krum</span> <span class="o">=</span> <span class="mb">0b01100</span> <span class="o">&lt;&lt;</span> <span class="mi">7</span><span class="p">,</span>
+    <span class="n">I_dac_pixel</span> <span class="o">=</span> <span class="mb">0b01101</span> <span class="o">&lt;&lt;</span> <span class="mi">7</span><span class="p">,</span>
+    <span class="n">V_bandgap</span> <span class="o">=</span> <span class="mb">0b01110</span> <span class="o">&lt;&lt;</span> <span class="mi">7</span><span class="p">,</span>
+    <span class="n">V_casc_krum</span> <span class="o">=</span> <span class="mb">0b01111</span> <span class="o">&lt;&lt;</span> <span class="mi">7</span><span class="p">,</span>
+    <span class="n">Temperature</span> <span class="o">=</span> <span class="mb">0b11011</span> <span class="o">&lt;&lt;</span> <span class="mi">7</span><span class="p">,</span>
+    <span class="n">V_per_bias</span> <span class="o">=</span> <span class="mb">0b11100</span> <span class="o">&lt;&lt;</span> <span class="mi">7</span><span class="p">,</span>
+    <span class="n">V_cascode_bias</span> <span class="o">=</span> <span class="mb">0b11101</span> <span class="o">&lt;&lt;</span> <span class="mi">7</span><span class="p">,</span>
+    <span class="n">V_no</span> <span class="o">=</span> <span class="mb">0b11111</span> <span class="o">&lt;&lt;</span> <span class="mi">7</span><span class="p">)</span>
+
+<span class="n">OMRDisableColClkGateType</span> <span class="o">=</span> <span class="n">namedtuple</span><span class="p">(</span><span class="s2">&quot;OMRDisableColClkGate&quot;</span><span class="p">,</span> <span class="s2">&quot;Enabled Disabled&quot;</span><span class="p">)</span>
+<span class="n">_OMRDisableColClkGate</span> <span class="o">=</span> <span class="n">OMRDisableColClkGateType</span><span class="p">(</span>
+    <span class="n">Enabled</span> <span class="o">=</span> <span class="mb">0b0</span> <span class="o">&lt;&lt;</span> <span class="mi">6</span><span class="p">,</span>
+    <span class="n">Disabled</span> <span class="o">=</span> <span class="mb">0b1</span> <span class="o">&lt;&lt;</span> <span class="mi">6</span><span class="p">)</span>
+
+<span class="c1"># = ConfBits =</span>
+<span class="n">ConfBitsType</span> <span class="o">=</span> <span class="n">namedtuple</span><span class="p">(</span><span class="s2">&quot;ConfBits&quot;</span><span class="p">,</span> <span class="s2">&quot;MaskBit TestBit_Analog TestBit_Digital&quot;</span><span class="p">)</span>
+<span class="n">_ConfBits</span> <span class="o">=</span> <span class="n">ConfBitsType</span><span class="p">(</span>
+    <span class="n">MaskBit</span> <span class="o">=</span> <span class="mb">0b1</span> <span class="o">&lt;&lt;</span> <span class="mi">2</span><span class="p">,</span>
+    <span class="n">TestBit_Analog</span> <span class="o">=</span> <span class="mb">0b1</span> <span class="o">&lt;&lt;</span> <span class="mi">1</span><span class="p">,</span>
+    <span class="n">TestBit_Digital</span> <span class="o">=</span> <span class="mb">0b1</span> <span class="o">&lt;&lt;</span> <span class="mi">0</span><span class="p">)</span>
+
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2019, Sebastian Schmidt
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

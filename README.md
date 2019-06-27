@@ -1,0 +1,80 @@
+# Dosepix Control Software for python2.7
+Module name: dpx\_func\_python
+Author: Sebastian Schmidt (ECAP)
+E-Mail: sebastian.seb.schmidt@fau.de
+
+## Installation
+### via pip
+```bash
+sudo python -m pip install /path/to/package
+```
+If you want to modify the code later on, use 
+```bash
+sudo python -m pip install -e /path/to/package
+```
+instead.
+
+### via `setup.py`
+Execute in the module's main directory:
+```bash
+sudo python setup.py install
+```
+If you want to modify the code later on, use 
+```bash
+sudo python setup.py develop
+```
+instead.
+
+## Documentation
+Documentation can be found [here](doc/_build/html/index.html)
+
+## Examples
+### Dosepix initialization
+First, import the module.
+```python
+import dpx_func_python
+```
+
+The connection to the Dosepix test board is established via:
+```python
+dpx = dpx_func_python.Dosepix(portName, baudRate=2e6, configFN=None, thl_calib_files=None, params_file=None, bin_edges_file=None)
+```
+
+This creates an object `dpx` of the class `Dosepix`.  
+Important parameters are:
+| Parameter | Function |                                                                      |
+| `portName`          | Name of the used com-port of the PC. For Linux, it usually is `/dev/ttyUSB0`. For Windows, the port name has the form of 'COMX'. |
+| `baudRate`          | Used baud rate of the connection between DPX test board and PC. This is set to 2e6 in the board's current firmware and shouldn't be modified here. |
+| `configFn`          | Configuration file containing important parameters of the used Dosepix detectors. |
+| `thl\_calib\_files` | The DAC value and corresponding voltage of the threshold (THL) show a dependency of a sloped sawtooth. By measuring this dependency, a corrected threshold value can be used. Only important for certain tasks like threshold equalization or threshold scan measurements. |
+| `params\_file`      | File containing the calibration curve parameters (a, b, c, t) for each detector and pixel. Only needed for dose measurements as it is used to specify the bin edges in DosiMode. |
+| `bin\_edges\_file`  | File containing the bin edges used in DosiMode. If `params\_file` is set, the file should contain the bin edges in energy. Else, it should contain the bin edges in ToT. |
+
+A measurement can be started by using the `dpx` object. For example a ToT-measurement:
+```python
+dpx.measureToT(slot=[1, 2, 3], intPlot=True, cnt=10000, storeEmpty=True, logTemp=True)
+```
+See documentation for more info.
+
+### Equalization
+See the [equalization-script](examples/equalization.py).
+
+First, important parameters are defined:
+```python
+PORT = '/dev/ttyUSB0'
+CONFIG_FN = 'DPXConfig.conf'
+CONFIG_DIR = 'config/'
+CHIP_NUMS = [22, 6, 109]
+CALIB_THL = False
+```
+`CONFIG_FN` specifies the file in which the configuration of the current setup is stored. This file will be created in the directory specified in `CONFIG_DIR`.  If the configuration directory does not exist, the program will create the folder by itself.  
+`CHIP_NUMS` are the identification numbers of the used detectors, usually written on the backside of the COB.  
+This equalization procedure includes THL measurementes which are optional. They are performed if the flag `CALIB_THL` is set to `True`. Afterwards, a THL-calibration file is created for each detector. This improves the equalization procedure but is not a necessity. At the current revision of the DPX test board, the measurement of the relation between THL DAC and THL voltage is only possible at Slot 1. Therefore, only one detector can be measured at a time.  
+**IMPORTANT:** the board has to be disconnected from power when switching detectors!  
+
+Afterwards, the command 
+```python
+dpx.thresholdEqualizationConfig(CONFIG_DIR + '/' + CONFIG_FN, I_pixeldac=None, reps=1, intPlot=False, resPlot=True)
+```
+performs the threshold equalization and stores the results in the specified configuration file. If `intPlot` is set to `True`, equalization results are shown for each detector once the equalization is done.
+
