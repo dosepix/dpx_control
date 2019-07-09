@@ -2,7 +2,7 @@
 import dpx_func_python
 import os
 
-PORT = '/dev/ttyUSB0'
+PORT = '/dev/tty.usbserial-A907PD5A'
 CONFIG_FN = 'DPXConfig.conf'
 CONFIG_DIR = 'config/'
 CHIP_NUMS = [22, 6, 109]
