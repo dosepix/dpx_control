@@ -94,10 +94,12 @@ class DPX_functions():
             OMRCode_ |= getattr(ds._OMRAnalogOutSel, 'Temperature')
             self.DPXWriteOMRCommand(1, hex(OMRCode_).split('0x')[-1])
 
-        # Initial reset 
+        # Set OMR
         for sl in slot:
             self.DPXWriteOMRCommand(sl, OMRCode)
             self.DPXDataResetCommand(sl)
+
+        # Initial reset 
         self.clearBins(slot)
 
         # Load conversion factors if requested
@@ -174,7 +176,6 @@ class DPX_functions():
                         
                         # plt.imshow(out.T[2:-2].T)
                         # plt.show()
-                        # print out
 
                         outList.append( out )
                         showList.append( np.nansum(out, axis=1)[2:-2] )
@@ -258,7 +259,7 @@ class DPX_functions():
     # If binEdgesDict is provided, perform shifting of energy regions between
     # frames. I.e. the measured region is shifted in order to increase the
     # total energy region.
-    def measureDoseEnergyShift(self, slot=1, measurement_time=120, frames=10, freq=False, outFn='doseMeasurement.p', logTemp=False, intPlot=False, binEdgesDict=None, paramsDict=None):
+    def measureDoseEnergyShift(self, slot=1, measurement_time=120, frames=10, freq=False, outFn='doseMeasurementShift.p', logTemp=False, intPlot=False):
         # Set Dosi Mode in OMR
         # If OMR code is list
         OMRCode = self.OMR
@@ -285,6 +286,7 @@ class DPX_functions():
             OMRCode_ |= getattr(ds._OMRAnalogOutSel, 'Temperature')
             self.DPXWriteOMRCommand(1, hex(OMRCode_).split('0x')[-1])
 
+        # Set OMR
         for sl in slot:
             self.DPXWriteOMRCommand(sl, OMRCode)
             self.DPXDataResetCommand(sl)
@@ -294,14 +296,19 @@ class DPX_functions():
 
         # Data storage
         outDict = {'Slot%d' % sl: {'Region%d' % reg: [] for reg in range(4)} for sl in slot}
+        timeDict = {'Slot%d' % sl: {'Region%d' % reg: [] for reg in range(4)} for sl in slot}
 
         # = START MEASUREMENT =
         try:
             print 'Starting Dose Measurement!'
             print '========================='
             region_stack = {sl: [0] for sl in slot}
-            region_idx = 0
+            # region_stack = {sl: [0] * 5 + [1] * 5 + [2] * 5 + [3] * 5 for sl in slot}
+            region_idx = [0, 0, 0]
+            last_region_idx = [None] * 3
             measStart = time.time()
+            STACK_APPEND = [True] * 3
+            stack_size = 10
             for c in range(frames):
                 # Measure temperature?
                 if logTemp:
@@ -309,9 +316,11 @@ class DPX_functions():
                     tempDict['temp'].append( temp )
                     tempDict['time'].append( time.time() - measStart )
 
+                # Wait
                 time.sleep(measurement_time)
 
                 for sl in slot:
+                    startTime = time.time()
                     outList = []
                     # Loop over columns
                     for col in range(16):
@@ -321,23 +330,29 @@ class DPX_functions():
                         outList.append( out )
                     print
 
+                    # Stop time
+                    timeDict['Slot%d' % sl]['Region%d' % region_idx[sl-1]].append( time.time() - startTime)
+
                     # Append to outDict
                     data = np.asarray(outList)
-                    outDict['Slot%d' % sl]['Region%d' % region_idx].append( data )
+                    outDict['Slot%d' % sl]['Region%d' % region_idx[sl-1]].append( data )
 
                     # = Measurement time handler =
+                    # If stack is empty, start from beginning
                     if len(region_stack[sl]) == 0:
-                        region_idx = 0
+                        region_idx[sl-1] = 0
                     else:
                         # Get current energy region
-                        region_idx = region_stack[sl].pop(0)
+                        last_region_idx[sl-1] = region_idx[sl-1]
+                        region_idx[sl-1] = region_stack[sl].pop(0)
 
-                    if region_idx == 3:
-                        continue
+                    if len(region_stack[sl]) == 1 or (region_idx[sl-1] != last_region_idx[sl-1] and region_idx[sl-1] != region_stack[sl][-1]):
+                        STACK_APPEND[sl - 1] = True
 
                     # Get number of counts in frame and overflow bins
-                    N_frame = np.sum(data[1:])
-                    N_ovfw = np.sum(data[0])
+                    sum_frame = np.sum(np.reshape(data, (256, -1)), axis=0)
+                    N_frame = np.sum(sum_frame[1:])
+                    N_ovfw = sum_frame[0] 
 
                     if N_ovfw == 0 or N_frame == 0:
                         # region_stack[sl].append( region_idx )
@@ -347,31 +362,42 @@ class DPX_functions():
                     p_next = N_ovfw / N_frame
                     print 'p_next =', p_next
 
-                    if p_next <= 0.01:
-                        print 'Continue'
-                        continue
+                    if p_next <= 0.1 and STACK_APPEND[sl - 1]:
+                        # print 'Continue'
+                        # Start from the beginning
+                        region_stack[sl] += [0]
+                        stack_size = 10
+                        STACK_APPEND[sl - 1] = False
+                        # continue
 
-                    # Select next frames
-                    if p_next < 1:
-                        if int(1. / p_next) == 0:
-                            region_stack[sl].append( region_idx )
-                        region_stack[sl] += [region_idx + 1] * int(np.around(1. / p_next))
-                    else:
-                        continue
-                        # region_stack[sl] += [region_idx] * int(np.around(p_next))
+                    # Select next region
+                    if STACK_APPEND[sl - 1]:
+                        if region_idx[sl-1] == 0 or region_idx[sl-1] + 1 > 3:
+                            stack_size = 10. / p_next
 
-                    print region_stack[sl]
-                    print region_stack[sl][0], region_idx
-                    if region_stack[sl][0] != region_idx:
-                        self.setBinEdges(sl, paramsDict['Slot%d' % sl], binEdgesDict['Slot%d' % sl][region_stack[sl][-1]])
+                        if region_idx[sl-1] + 1 > 3:
+                            region_stack[sl] += 0
+                        else:
+                            next_region = region_idx[sl-1] + 1
+                            region_stack[sl] += [region_idx[sl-1]] * (int(stack_size / (1. / p_next)) - 1)
+                            region_stack[sl] += [next_region] * int(p_next * stack_size)
+
+                        STACK_APPEND[sl - 1] = False
+
+                    if sl == 1:
+                        print region_stack[sl]
+                        print region_stack[sl][0], region_idx[sl-1]
+                    if region_stack[sl][0] != region_idx[sl-1]:
+                        self.setBinEdgesToT(sl, self.binEdges['Slot%d' % sl][region_stack[sl][0]])
                         self.clearBins(slot)
 
             # Loop finished
             if logTemp:
                 self.pickleDump(tempDict, '%s_temp' % outFn.split('.p')[0] + '.p')
 
+            self.pickleDump(timeDict, '%s_time' % outFn.split('.p')[0] + '.p')
             self.pickleDump(outDict, outFn)
-            self.pickleDump(self.binEdges, '%s_binEdges' % outFn.split('.hck')[0] + '.hck')
+            # self.pickleDump(self.binEdges, '%s_binEdges' % outFn.split('.hck')[0] + '.hck')
 
         except (KeyboardInterrupt, SystemExit):
             # Store data and plot in files
@@ -381,7 +407,8 @@ class DPX_functions():
                 self.pickleDump(tempDict, '%s_temp' % outFn.split('.p')[0] + '.p')
 
             self.pickleDump(outDict, outFn)
-            self.pickleDump(self.binEdges, '%s_binEdges' % outFn.split('.p')[0] + '.p')
+            self.pickleDump(timeDict, '%s_time' % outFn.split('.p')[0] + '.p')
+            # self.pickleDump(self.binEdges, '%s_binEdges' % outFn.split('.p')[0] + '.p')
             raise
 
         # Reset OMR
@@ -455,7 +482,7 @@ class DPX_functions():
         if outFn:
             self.pickleDump(outDict, outFn)
 
-    def measurePC(self, slot=1, measurement_time=10, frames=None, outFn='pcMeasurement.p'):
+    def measurePC(self, slot=1, measurement_time=10, frames=None, outFn='pcMeasurement.p', intPlot=False):
         """Perform measurement in Integration Mode.
 
         Parameters
@@ -505,10 +532,30 @@ class DPX_functions():
 	else:
             frameRange = self.infinite_for()
 
+        # Interactive plot
+        if intPlot:
+            print 'Warning: plotting takes time, therefore data should be stored as frequency instead of counts!'
+            fig, ax = plt.subplots(1, len(slot), figsize=(5*len(slot), 5))
+            plt.ion()
+            imList = {}
+
+            if len(slot) == 1:
+                ax = [ax]
+
+            for idx, a in enumerate(ax):
+                imList[slot[idx]] = a.imshow(np.zeros((16, 16)), vmin=0, vmax=256) # np.zeros((16, 16)))
+                a.set_title('Slot%d' % slot[idx])
+                a.set_xlabel('x (px)')
+                a.set_ylabel('y (px)')
+            fig.canvas.draw()
+            # plt.show(block=False)
+
         try:
             # = START MEASUREMENT =
             print 'Starting Photon Counting Measurement!'
             print '====================================='
+            print 'Press enter to start'
+            raw_input('')
             measStart = time.time()
             startTime = measStart
             for c in frameRange:
@@ -527,8 +574,16 @@ class DPX_functions():
                     outDict['Slot%d' % sl].append( data.flatten() )
                     self.DPXWriteOMRCommand(sl, OMRCode)
 
-                if c > 0 and not c % 100:
-                    print '%.2f Hz' % ((time.time() - startTime) / 100)
+                    if intPlot:
+                        imList[sl].set_data( np.asarray(data).reshape(16, 16) )
+                        print np.asarray(data).reshape(16, 16)
+
+                if intPlot:
+                    fig.canvas.draw()
+                    plt.show()
+
+                if c > 0 and not c % 10:
+                    print '%.2f Hz' % (10. / (time.time() - startTime))
                     startTime = time.time()
 
         except (KeyboardInterrupt, SystemExit):
