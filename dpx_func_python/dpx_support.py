@@ -55,7 +55,7 @@ class DPX_support(object):
         return h * (b + 1./(4 * a) * (2*x + np.pi*c + np.sqrt(16 * a * c * t + (2 * x + np.pi * c)**2))) + k
 
     def EnergyToToTSimple(self, x, a, b, c, t, h=1, k=0):
-        res = np.where(x < b, a*((x - k)/h - b) - c * (np.pi / 2 + t / ((x - k)/h - b)), 0)
+        res = np.where(x >= b, a*((x - k)/h - b) - c * (np.pi / 2 + t / ((x - k)/h - b)), 0)
         res[res <= 0] = 0
         return res
         

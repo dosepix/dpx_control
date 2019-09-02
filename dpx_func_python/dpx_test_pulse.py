@@ -1,4 +1,6 @@
 import numpy as np
+import matplotlib.pyplot as plt
+import scipy.optimize
 
 import dpx_settings as ds
 
@@ -100,14 +102,15 @@ class DPX_test_pulse(object):
         if not isinstance(OMRCode, basestring):
             OMRCode[4] = 'V_ThA'
         else:
-            OMRCode &= ~(0b11111 << 12)
+            OMRCode = int(OMRCode, 16) & ~(0b11111 << 12)
             OMRCode |= getattr(ds._OMRAnalogOutSel, 'V_ThA')
+            OMRCode = '%06x' % OMRCode
         self.DPXWriteOMRCommand(slot, OMRCode)
 
-        valueRange = np.linspace(valueLow, valueHigh, valueStep)
+        valueRange = np.arange(valueLow, valueHigh, valueStep)
 
         # Number of test pulses for ToT measurement
-        NToT = 100
+        NToT = 30
 
         # Store results per column in dict
         resDict = {}
@@ -116,7 +119,7 @@ class DPX_test_pulse(object):
         columnRange = self.testPulseInit(slot, column=column)
 
         for column in columnRange:
-            THLstart = THLhigh - 400
+            THLstart = THLhigh - 1200
             THLstop = THLhigh
 
             # Select column
@@ -139,13 +142,11 @@ class DPX_test_pulse(object):
                 columnRange = self.testPulseInit(slot, column=column)
 
                 # Activate DosiMode
-                '''
                 if not isinstance(OMRCode, basestring):
                     OMRCode[0] = 'DosiMode'
                 else:
-                    OMRCode = (int(OMRCode, 16) & ((0b11) << 22))
+                    OMRCode = '%06x' % (int(OMRCode, 16) & ~((0b11) << 22))
                 self.DPXWriteOMRCommand(slot, OMRCode)
-                '''
                 
                 # Set test pulse energy
                 DACval = self.getTestPulseVoltageDAC(slot, val, energy)
@@ -174,8 +175,9 @@ class DPX_test_pulse(object):
                 if not isinstance(OMRCode, basestring):
                     OMRCode[0] = 'PCMode'
                 else:
-                    OMRCode = '%04x' % ((int(OMRCode, 16) | ((0b11) << 22)))
+                    OMRCode = '%06x' % ((int(OMRCode, 16) & ~((0b11) << 22)) | (0b10 << 22))
                 self.DPXWriteOMRCommand(slot, OMRCode)
+                print OMRCode
 
                 # Loop over THLs
                 # Init result lists
@@ -188,7 +190,10 @@ class DPX_test_pulse(object):
                 # self.MCGetADCvalue()
                 # THLRange = np.arange(THLlow, THLhigh, THLstep)
                 # THLRange = self.THLCalib[np.logical_and(self.THLCalib > THLlow, self.THLCalib < THLhigh)]
-                THLRange = np.asarray(self.THLEdges[slot - 1])
+                if len(self.THLEdges) == 0 or self.THLEdges[slot - 1] is None:
+                    THLRange = np.arange(THLlow, THLhigh)
+                else:
+                    THLRange = np.asarray(self.THLEdges[slot - 1])
                 THLstop_ = THLhigh if THLstop > THLhigh else THLstop
                 THLRange = THLRange[np.logical_and(THLRange >= THLstart, THLRange <= THLstop_)]
 
@@ -223,7 +228,7 @@ class DPX_test_pulse(object):
                 # Check if array is empty
                 if not np.count_nonzero(dataFastList):
                     # If so, energy is set too low
-                    valueCount -= 1
+                    # valueCount -= 1
                     ToTListTotal.pop()
                     ToTErrListTotal.pop()
                     continue
@@ -287,7 +292,8 @@ class DPX_test_pulse(object):
                     THLListFit = np.linspace(min(THLListCorr), max(THLListCorr), 1000)
 
                     # Perform erf-Fit
-                    p0 = [THLListCorr[int(len(THLListCorr) / 2.)], 3.]
+                    # p0 = [THLListCorr[int(len(THLListCorr) / 2.)], 3.]
+                    p0 = [np.mean(THLListCorr), 3.]
                     try:
                         popt, pcov = scipy.optimize.curve_fit(lambda x, b, c: self.erfFit(x, NPulses, b, c), THLListCorr, data, p0=p0)
                         perr = np.sqrt(np.diag(pcov))
@@ -379,6 +385,43 @@ class DPX_test_pulse(object):
 
         return resDict
 
+    def ToTtoTHL_pixelDAC(self, slot=1, THLstep=1, I_pixeldac=0.1, valueLow=0, valueHigh=460, valueCount=460, energy=False, plot=False):
+        pixelDACs = ['00', '3f']
+
+        # Set I_pixeldac
+        if I_pixeldac:
+            dPeripherys = self.splitPerihperyDACs(self.peripherys + self.THLs[0], perc=True)
+            dPeripherys['I_pixeldac'] = I_pixeldac
+            code = self.periheryDACsDictToCode(dPeripherys, perc=True)
+            self.peripherys = code[:-4]
+            self.DPXWritePeripheryDACCommand(slot, code)
+
+        dMeas = {}
+        slopeDict = {'slope': []}
+
+        for column in range(16):
+            for pixelDAC in pixelDACs:
+                # Set pixel DAC values
+                self.DPXWritePixelDACCommand(slot, pixelDAC*256, file=False)
+
+                d = self.ToTtoTHL(slot=slot, column=column, THLstep=THLstep, valueLow=valueLow, valueHigh=valueHigh, valueCount=valueCount, energy=energy, plot=plot)
+
+                # Get THL positions
+                dMeas[pixelDAC] = d['THL']
+
+            # Get slope
+            slope = (dMeas['00'] - dMeas['3f']) / 63.
+
+            print 'Pixel slope for column %d:' % column
+            print slope
+            print 'Mean slope: %.2f +/- %.2f' % (np.mean(slope), np.std(slope))
+
+            slopeDict['slope'].append( slope )
+
+        self.pickleDump(slopeDict, 'pixelSlopes.p')
+
+        return slope
+
     def TPtoToT(self, slot=1, column=0, outFn='TPtoToT.p'):
         # Description: Generate test pulses and measure ToT afterwards
         #              to match test pulse voltage and ToT value.
@@ -404,7 +447,8 @@ class DPX_test_pulse(object):
 
         # Test pulse voltage range
         # TPvoltageRange = list(reversed(np.arange(300, 490, 1))) # list(reversed(np.arange(490, 512, 1)))
-        TPvoltageRange = list(reversed(np.arange(440, 512, 1))) + list(reversed(np.arange(250, 440, 5)))
+        # TPvoltageRange = list(reversed(np.arange(440, 512, 1))) + list(reversed(np.arange(250, 440, 5)))
+        TPvoltageRange = list(reversed(np.arange(0, 512, 5))) 
 
         # Store results per column in dict
         resDict = {}

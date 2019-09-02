@@ -2,10 +2,10 @@
 import dpx_func_python
 import os
 
-PORT = '/dev/tty.usbserial-A907PD5F'
-CONFIG_FN = 'DPXConfig.conf'
+PORT = '/dev/ttyUSB0'
+CONFIG_FN = 'DPXConfig_Robot.conf'
 CONFIG_DIR = 'config/'
-CHIP_NUMS = [22, 6, 109]
+CHIP_NUMS = [999] # [22, 6, 109]
 
 def main():
     # Create config dir if not already existing
@@ -15,7 +15,7 @@ def main():
     # THL measurements
     print('Ensure that detector %d is inserted at slot 1' % CHIP_NUMS[0]) 
     raw_input('Press any key to proceed')
-    for chip_idx in enumerate(CHIP_NUMS):
+    for chip_idx in range(len(CHIP_NUMS)):
         print 'Measuring THL of chip %d' % CHIP_NUMS[chip_idx]
         dpx = dpx_func_python.Dosepix(PORT, 2e6)
         dpx.measureTHL(1, fn=CONFIG_DIR + 'THLCalib_%d.hck' % CHIP_NUMS[chip_idx], plot=False)

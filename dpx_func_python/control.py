@@ -92,14 +92,19 @@ class Control():
             else:
                 # TODO: Add energy bins to config file
                 if self.params_file.endswith('.p'):
-                    paramsDict = cPickle.load(open(PARAMS_FILE, 'rb'))
+                    self.paramsDict = cPickle.load(open(self.params_file, 'rb'))
                 else:
-                    paramsDict = hickle.load(PARAMS_FILE)
+                    self.paramsDict = hickle.load(self.params_file)
 
-                self.binEdges = {}
+                self.binEdges = {'Slot%d' % slot: [] for slot in range(1, 3 + 1)}
                 for slot in range(1, 3 + 1):
-                    binEdges = BIN_EDGES['Slot%d' % slot] # [0]
-                    self.setBinEdges(slot, paramsDict['Slot%d' % slot], binEdges)
+                    if len(np.asarray(self.bin_edges['Slot%d' % slot]).shape) > 2:
+                        # bin edges are specified for a shifted dose measurement
+                        for idx in reversed(range(len(self.bin_edges['Slot%d' % slot]))):
+                            binEdgesList = self.setBinEdges(slot, self.paramsDict['Slot%d' % slot], self.bin_edges['Slot%d' % slot][idx])
+                            self.binEdges['Slot%d' % slot].insert(0, binEdgesList)
+                    else:
+                        self.setBinEdges(slot, self.paramsDict['Slot%d' % slot], self.bin_edges['Slot%d' % slot])
 
         # = Empty Bins =
         for i in range(1, 3 + 1):
@@ -151,9 +156,6 @@ class Control():
         if len(paramDict) != 256:
             paramDict = self.fillParamDict(paramDict)
 
-        # The indices of the bins are specified via the following gray code
-        gray = [0, 1, 3, 2, 6, 4, 5, 7, 15, 13, 12, 14, 10, 11, 9, 8]
-
         # Check if paramDict was made using THL calibration.
         # If so, additional parameters h and k are present in the dict
         if 'h' in paramDict[paramDict.keys()[0]].keys():
@@ -180,10 +182,10 @@ class Control():
                 beEnergy = binEdgesEnergy
 
             # Convert energy to ToT
-            if h == 1 and k == 0:
-                binEdgesToT = self.energyToToTFitHyp(beEnergy, a, b, c, t)
-            else:
-                binEdgesToT = self.EnergyToToTSimple(beEnergy, a, b, c, t, h, k)
+            # if h == 1 and k == 0:
+            #     binEdgesToT = self.energyToToTFitHyp(beEnergy, a, b, c, t)
+            # else:
+            binEdgesToT = self.EnergyToToTSimple(beEnergy, a, b, c, t, h, k)
 
             # Round the values - do not use floor function as this leads to bias
             binEdgesToT = np.around( binEdgesToT )
@@ -194,18 +196,23 @@ class Control():
 
         # Transpose matrix to get pixel values
         binEdgesList = np.asarray(binEdgesList).T
+        self.setBinEdgesToT(slot, binEdgesList)
+
+        # self.binEdges['Slot%d' % slot] = binEdgesList
+        return binEdgesList
+        # binEdgesTotal.append( binEdgesTotal )
+        # self.binEdges = binEdgesTotal
+
+    def setBinEdgesToT(self, slot, binEdgesList):
+        # The indices of the bins are specified via the following gray code
+        gray = [0, 1, 3, 2, 6, 4, 5, 7, 15, 13, 12, 14, 10, 11, 9, 8]
+
         cmdTotal = ''
         for idx, gc in enumerate(gray):
-            # print binEdgesList[idx]
             # Construct command
             cmd = ''.join( [('%01x' % gc) + ('%03x' % be) for be in binEdgesList[idx]] )
             self.DPXWriteSingleThresholdCommand(slot, cmd)
             cmdTotal += cmd
-        print
-
-        self.binEdges['Slot%d' % slot] = binEdgesList
-        # binEdgesTotal.append( binEdgesTotal )
-        # self.binEdges = binEdgesTotal
 
     def clearBins(self, slot):
         # Clear bins
