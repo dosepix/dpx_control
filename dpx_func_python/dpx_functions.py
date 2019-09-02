@@ -259,7 +259,11 @@ class DPX_functions():
     # If binEdgesDict is provided, perform shifting of energy regions between
     # frames. I.e. the measured region is shifted in order to increase the
     # total energy region.
+<<<<<<< HEAD
     def measureDoseEnergyShift(self, slot=1, measurement_time=120, frames=10, regions=3, freq=False, outFn='doseMeasurementShift.p', logTemp=False, intPlot=False, fast=False):
+=======
+    def measureDoseEnergyShift(self, slot=1, measurement_time=120, frames=10, freq=False, outFn='doseMeasurementShift.p', logTemp=False, intPlot=False):
+>>>>>>> 1cde1ca1a3e695e4b49f151722ef3c332f7ebe6c
         # Set Dosi Mode in OMR
         # If OMR code is list
         OMRCode = self.OMR
@@ -295,13 +299,19 @@ class DPX_functions():
         self.clearBins(slot)
 
         # Data storage
+<<<<<<< HEAD
         outDict = {'Slot%d' % sl: {'Region%d' % reg: [] for reg in range(regions)} for sl in slot}
         timeDict = {'Slot%d' % sl: {'Region%d' % reg: [] for reg in range(regions)} for sl in slot}
+=======
+        outDict = {'Slot%d' % sl: {'Region%d' % reg: [] for reg in range(4)} for sl in slot}
+        timeDict = {'Slot%d' % sl: {'Region%d' % reg: [] for reg in range(4)} for sl in slot}
+>>>>>>> 1cde1ca1a3e695e4b49f151722ef3c332f7ebe6c
 
         # = START MEASUREMENT =
         try:
             print 'Starting Dose Measurement!'
             print '========================='
+<<<<<<< HEAD
             if not fast:
                 region_stack = {sl: [0] for sl in slot}
             else:
@@ -314,6 +324,15 @@ class DPX_functions():
             startTime = {sl: time.time() for sl in slot}
             stack_size = 10
 
+=======
+            region_stack = {sl: [0] for sl in slot}
+            # region_stack = {sl: [0] * 5 + [1] * 5 + [2] * 5 + [3] * 5 for sl in slot}
+            region_idx = [0, 0, 0]
+            last_region_idx = [None] * 3
+            measStart = time.time()
+            STACK_APPEND = [True] * 3
+            stack_size = 10
+>>>>>>> 1cde1ca1a3e695e4b49f151722ef3c332f7ebe6c
             for c in range(frames):
                 # Measure temperature?
                 if logTemp:
@@ -325,6 +344,7 @@ class DPX_functions():
                 time.sleep(measurement_time)
 
                 for sl in slot:
+                    startTime = time.time()
                     outList = []
 
                     '''
@@ -343,6 +363,7 @@ class DPX_functions():
                     print
 
                     # Stop time
+<<<<<<< HEAD
                     # if measurement_time > 0:
                     #    timeDict['Slot%d' % sl]['Region%d' % region_idx[sl]].append( time.time() - t )
                     # else:
@@ -351,10 +372,18 @@ class DPX_functions():
                     # Append to outDict
                     data = np.asarray(outList)
                     outDict['Slot%d' % sl]['Region%d' % region_idx[sl]].append( data )
+=======
+                    timeDict['Slot%d' % sl]['Region%d' % region_idx[sl-1]].append( time.time() - startTime)
+
+                    # Append to outDict
+                    data = np.asarray(outList)
+                    outDict['Slot%d' % sl]['Region%d' % region_idx[sl-1]].append( data )
+>>>>>>> 1cde1ca1a3e695e4b49f151722ef3c332f7ebe6c
 
                     # = Measurement time handler =
                     # If stack is empty, start from beginning
                     if len(region_stack[sl]) == 0:
+<<<<<<< HEAD
                         region_idx[sl] = 0
                     else:
                         # Get current energy region
@@ -363,6 +392,16 @@ class DPX_functions():
 
                     if len(region_stack[sl]) == 1 or (region_idx[sl] != last_region_idx[sl] and region_idx[sl] != region_stack[sl][-1]):
                         STACK_APPEND[sl] = True
+=======
+                        region_idx[sl-1] = 0
+                    else:
+                        # Get current energy region
+                        last_region_idx[sl-1] = region_idx[sl-1]
+                        region_idx[sl-1] = region_stack[sl].pop(0)
+
+                    if len(region_stack[sl]) == 1 or (region_idx[sl-1] != last_region_idx[sl-1] and region_idx[sl-1] != region_stack[sl][-1]):
+                        STACK_APPEND[sl - 1] = True
+>>>>>>> 1cde1ca1a3e695e4b49f151722ef3c332f7ebe6c
 
                     # Get number of counts in frame and overflow bins
                     sum_frame = np.sum(np.reshape(data, (256, -1)), axis=0)
@@ -377,6 +416,7 @@ class DPX_functions():
                     p_next = N_ovfw / N_frame
                     print 'p_next =', p_next
 
+<<<<<<< HEAD
                     if fast:
                         region_stack[sl] += range(regions)
                     else:
@@ -410,6 +450,36 @@ class DPX_functions():
                         self.setBinEdgesToT(sl, self.binEdges['Slot%d' % sl][region_idx[sl]])
                     self.clearBins([sl])
                     startTime[sl] = time.time()
+=======
+                    if p_next <= 0.1 and STACK_APPEND[sl - 1]:
+                        # print 'Continue'
+                        # Start from the beginning
+                        region_stack[sl] += [0]
+                        stack_size = 10
+                        STACK_APPEND[sl - 1] = False
+                        # continue
+
+                    # Select next region
+                    if STACK_APPEND[sl - 1]:
+                        if region_idx[sl-1] == 0 or region_idx[sl-1] + 1 > 3:
+                            stack_size = 10. / p_next
+
+                        if region_idx[sl-1] + 1 > 3:
+                            region_stack[sl] += 0
+                        else:
+                            next_region = region_idx[sl-1] + 1
+                            region_stack[sl] += [region_idx[sl-1]] * (int(stack_size / (1. / p_next)) - 1)
+                            region_stack[sl] += [next_region] * int(p_next * stack_size)
+
+                        STACK_APPEND[sl - 1] = False
+
+                    if sl == 1:
+                        print region_stack[sl]
+                        print region_stack[sl][0], region_idx[sl-1]
+                    if region_stack[sl][0] != region_idx[sl-1]:
+                        self.setBinEdgesToT(sl, self.binEdges['Slot%d' % sl][region_stack[sl][0]])
+                        self.clearBins(slot)
+>>>>>>> 1cde1ca1a3e695e4b49f151722ef3c332f7ebe6c
 
             # Loop finished
             if logTemp:
