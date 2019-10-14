@@ -221,3 +221,24 @@ class Support(object):
 	    yield x
 	    x += 1
 
+    # Megalix control
+    def megalix_connect(self, port):
+        import serial
+        return serial.Serial(port, stopbits=2)
+
+    def megalix_set_kvpmA(self, mlx, voltage, current):
+        import time
+        focus_size = 's'
+        cmd = 'ei %s %s 1 %s\n' % (voltage, current, focus_size)
+        mlx.write(cmd)
+        print 'Sent command %s to megalix' % cmd
+        time.sleep( 1 )
+
+    def megalix_xray_on(self, mlx):
+        mlx.write('PREP 1\n')
+        mlx.write('SWRON\n')
+
+    def megalix_xray_off(self, mlx):
+        mlx.write('SWROFF\n')
+        mlx.write('PREP 0\n')
+

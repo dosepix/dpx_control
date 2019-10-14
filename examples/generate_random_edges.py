@@ -6,9 +6,9 @@ sys.path.insert(0, '../dpx_func_python/')
 import bin_edges_random as ber
 
 CONFIG_DIR = 'config/'
-BIN_EDGES_RANDOM_FN = CONFIG_DIR + 'binEdgesUniform_DPX22_6_109_Ikrum_10_20.hck'
+BIN_EDGES_RANDOM_FN = CONFIG_DIR + 'binEdgesUniform_DPX22_6_109_Ikrum_10_150.hck'
 GEN_BIN_EDGES_RANDOM = False
-ENERGY_START, ENERGY_RANGE = 10, 20
+ENERGY_START, ENERGY_RANGE = 10, 150 # 40
 
 binEdgesDict = {}
 for slot in range(1, 3 + 1):

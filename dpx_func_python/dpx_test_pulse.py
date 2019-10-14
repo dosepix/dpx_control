@@ -110,7 +110,7 @@ class DPX_test_pulse(object):
         valueRange = np.arange(valueLow, valueHigh, valueStep)
 
         # Number of test pulses for ToT measurement
-        NToT = 30
+        NToT = 10
 
         # Store results per column in dict
         resDict = {}
@@ -422,17 +422,18 @@ class DPX_test_pulse(object):
 
         return slope
 
-    def TPtoToT(self, slot=1, column=0, outFn='TPtoToT.p'):
+    def TPtoToT(self, slot=1, column=0, low=400, high=512, step=5, outFn='TPtoToT.p'):
         # Description: Generate test pulses and measure ToT afterwards
         #              to match test pulse voltage and ToT value.
 
-        # Measure temperature
         if type(self.OMR) is list:
             OMRCode_ = self.OMRListToHex(self.OMR)
         else:
             OMRCode_ = self.OMR
         OMRCode_ = int(OMRCode_, 16)
 
+        '''
+        # Measure temperature
         OMRCode_ &= ~(0b11111 << 12)
         OMRCode_ |= getattr(ds._OMRAnalogOutSel, 'Temperature')
         self.DPXWriteOMRCommand(slot, hex(OMRCode_).split('0x')[-1])
@@ -441,13 +442,16 @@ class DPX_test_pulse(object):
         for i in range(100):
             TList.append( float(int(self.MCGetADCvalue(), 16)) )
         T = np.mean(TList)
+        '''
+        T = 0
 
         # Number of test pulses for ToT measurement
         NToT = 10
 
         # Test pulse voltage range
         # TPvoltageRange = list(reversed(np.arange(300, 490, 1))) # list(reversed(np.arange(490, 512, 1)))
-        TPvoltageRange = list(reversed(np.arange(440, 512, 1))) + list(reversed(np.arange(250, 440, 5)))
+        # TPvoltageRange = list(reversed(np.arange(440, 512, 1))) + list(reversed(np.arange(250, 440, 5)))
+        TPvoltageRange = list(reversed(np.arange(low, high, step))) 
 
         # Store results per column in dict
         resDict = {}

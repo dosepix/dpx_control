@@ -22,6 +22,6 @@ setup(name='dpx_func_python',
 		'pyserial',
 		'pyyaml',
 		'configparser',
-		'sphinx',
-		'sphinx_rtd_theme'
+		# 'sphinx',
+		# 'sphinx_rtd_theme'
 	])
