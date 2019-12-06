@@ -162,7 +162,7 @@ class DPX_functions():
                         # self.DPXDataResetCommand(sl)
                         # self.clearBins([sl])
 
-                        self.DPXWriteColSelCommand(sl, 16 - col)
+                        self.DPXWriteColSelCommand(sl, 15 - col)
                         out = np.asarray( self.DPXReadBinDataDosiModeCommand(sl), dtype=float )
                         # out[out >= 2**15] = np.nan
 
@@ -259,7 +259,7 @@ class DPX_functions():
     # If binEdgesDict is provided, perform shifting of energy regions between
     # frames. I.e. the measured region is shifted in order to increase the
     # total energy region.
-    def measureDoseEnergyShift(self, slot=1, measurement_time=120, frames=10, regions=3, freq=False, outFn='doseMeasurementShift.p', logTemp=False, intPlot=False, fast=False):
+    def measureDoseEnergyShift(self, slot=1, measurement_time=120, frames=10, regions=3, freq=False, outFn='doseMeasurementShift.p', logTemp=False, intPlot=False, fast=False, mlx=None):
         # Set Dosi Mode in OMR
         # If OMR code is list
         OMRCode = self.OMR
@@ -322,7 +322,12 @@ class DPX_functions():
                     tempDict['time'].append( time.time() - measStart )
 
                 # Wait
-                time.sleep(measurement_time)
+                if mlx is not None:
+                    self.megalix_xray_on(mlx)
+                    time.sleep(measurement_time)
+                    self.megalix_xray_off(mlx)
+                else:
+                    time.sleep(measurement_time)
 
                 for sl in slot:
                     outList = []
@@ -619,7 +624,7 @@ class DPX_functions():
         if outFn:
             self.pickleDump(outDict, outFn)
 
-    def measureToT(self, slot=1, cnt=10000, outDir='ToTMeasurement/', storeEmpty=False, logTemp=False, paramsDict=None, intPlot=False, meas_time=None):
+    def measureToT(self, slot=1, cnt=10000, outDir='ToTMeasurement/', storeEmpty=False, logTemp=False, paramsDict=None, intPlot=False, meas_time=None, external_THL=False):
         """Perform measurement in ToTMode.
 
         Parameters
@@ -651,6 +656,10 @@ class DPX_functions():
 	    keys where each value is a dictionary itself. These contain either
 	    the keys `a, b, c, t` for standard calibration factors or `a, b, c, t, h, k`
 	    if a test pulse calibration was performed.
+        meas_time : float, optional
+            If set, the measurement finishes after the given time in seconds.
+        external_THL : bool
+            Use external input voltage to set THL.
 
 	Returns
 	-------
@@ -684,19 +693,27 @@ class DPX_functions():
         for slot in slotList:
             self.DPXWriteOMRCommand(slot, OMRCode)
 
+        # Get OMR
+        if type(self.OMR) is list:
+            OMRCode_ = self.OMRListToHex(self.OMR)
+        else:
+            OMRCode_ = self.OMR
+        OMRCode_ = int(OMRCode_, 16)
+
         # Set ADC out to temperature if requested
         if logTemp:
             tempDict = {'temp': [], 'time': []}
-
-            if type(self.OMR) is list:
-                OMRCode_ = self.OMRListToHex(self.OMR)
-            else:
-                OMRCode_ = self.OMR
-            OMRCode_ = int(OMRCode_, 16)
-
             OMRCode_ &= ~(0b11111 << 12)
-            OMRCode_ |= getattr(ds._OMRAnalogOutSel, 'Temperature')
-            self.DPXWriteOMRCommand(slot, hex(OMRCode_).split('0x')[-1])
+            OMRCode_ |= getattr(ds._OMRAnalogOutSel, 'V_ThA') # 'Temperature')
+            for slot in slotList:
+                self.DPXWriteOMRCommand(slot, hex(OMRCode_).split('0x')[-1])
+
+        # Set V_ThA to be controlled from outside
+        if external_THL:
+            OMRCode_ &= ~(0b11111 << 7)
+            OMRCode_ |= getattr(ds._OMRAnalogInSel, 'V_ThA')
+            for slot in slotList:
+                self.DPXWriteOMRCommand(slot, hex(OMRCode_).split('0x')[-1])
 
         # GUI
         '''
@@ -711,13 +728,15 @@ class DPX_functions():
             plt.ion()
 
             fig, ax = plt.subplots(1, len(slotList), figsize=(5*len(slotList), 5))
+            if not type(ax) == np.ndarray:
+                ax = np.asarray([ax])
             ax = {slotList[idx]: ax[idx] for idx in range(len(slotList))}
 
             # Init bins and histogram data
             if paramsDict is not None:
                 bins = np.linspace(12, 60, 100)
             else:
-                bins = np.arange(0, 400, 1)
+                bins = np.arange(0, 800, 1)
             histData = {slot: np.zeros(len(bins)-1) for slot in slotList}
             
             # Create empty axis
@@ -737,6 +756,11 @@ class DPX_functions():
         # Initial reset 
         for slot in slotList:
             self.DPXDataResetCommand(slot)
+
+        for slot in slotList:
+            print 'Slot%d' % slot
+            print 'Peripheries:', self.DPXReadPeripheryDACCommand(slot)
+            print 'OMR:', self.DPXReadOMRCommand(slot)
 
         # For KeyboardInterrupt exception
         print 'Starting ToT Measurement!'
@@ -990,10 +1014,10 @@ class DPX_functions():
         if len(self.THLEdges) == 0 or self.THLEdges[slot - 1] is None:
             print THLlow, THLhigh, THLstep
             THLRange = np.arange(THLlow, THLhigh)
-            print THLRange
         else:
             THLRange = np.asarray(self.THLEdges[slot - 1])
             THLRange = THLRange[np.logical_and(THLRange > THLlow, THLRange < THLhigh)]
+        print THLRange
 
         # Savitzky-Golay filter the data
         # Ensure odd window length
@@ -1011,20 +1035,31 @@ class DPX_functions():
 
         # Create dictionary to store data
         pixelDataList = []
+        deltaTimeList = []
 
         # Catch keyboardInterrupt exception if necessary
         measStart = time.time()
 
+        # Select PC mode
+        OMRCode = self.OMR
+        if not isinstance(OMRCode, basestring):
+            OMRCode[0] = 'PCMode'
+        else:
+            OMRCode = int(OMRCode, 16) & ((0b10) << 22)
+            OMRCode = '%04x' % ((int(self.OMR, 16) & ~((0b11) << 22)) | (0b10 << 22))
+
         try:
             # Measure time
-            startTime = time.time()
-            for THL in THLRange[::THLstep]:
+            for THL in THLRange[::-THLstep]:
+                # Convert THL to corrected THL value
+                # THL = int(self.getVoltFromTHLFit(THL, slot))
+
                 # Set threshold
                 self.DPXWritePeripheryDACCommand(slot, self.peripherys + '%04x' % THL)
+                print self.peripherys + '%04x' % THL
+                self.THLs[slot - 1] = '%04x' % THL
 
-                # Convert THL to corrected THL value
-                THL = self.getVoltFromTHLFit(THL, slot)
-
+                startTime = time.time()
                 for i, pixelDAC in enumerate(pixelDACs):
                     # THL matrix for all pixels
                     THLArray = np.zeros((16, 16))
@@ -1041,12 +1076,20 @@ class DPX_functions():
                     # OMRCode[1] = 'ClosedShutter'
                     # self.DPXWriteOMRCommand(slot, OMRCode)
                     
-                    self.DPXDataResetCommand(slot)
 
                     # Wait to accumulate data
-                    time.sleep(timestep)
-
-                    pixelData = []
+                    pixelData = np.zeros((16, 16))
+                    self.DPXDataResetCommand(slot)
+                    frame_start = time.time()
+                    # while time.time() - frame_start < timestep:
+                    # print self.DPXReadPeripheryDACCommand(slot)
+                    for loop in range(100):
+                        # Read out in PCMode
+                        self.DPXDataResetCommand(slot)
+                        time.sleep(timestep)
+                        pixelData += self.DPXReadToTDatakVpModeCommand(slot)
+                        # pixelData = self.DPXReadToTDataIntegrationModeCommand(slot)
+                    print pixelData
 
                     # Loop over pixel columns
                     '''
@@ -1058,19 +1101,17 @@ class DPX_functions():
                         pixelData.append( data )
                     '''
 
-                    # Read out in PCMode
-                    pixelData = self.DPXReadToTDatakVpModeCommand(sl)
-                    # pixelData = self.DPXReadToTDataIntegrationModeCommand(slot)
-
                     # Scale data with readout time
-                    pixelData = np.asarray(pixelData) / float(time.time() - startTime)
+                    delta_time = float(time.time() - startTime)
+                    pixelData = np.asarray(pixelData) / delta_time
+                    deltaTimeList.append( delta_time )
 
                     if intPlot:
                         # Large pixels only
                         plotData = pixelData[:,range(2, 14)]
 
                     # After readout, new measurement begins
-                    startTime = time.time()
+                    # startTime = time.time()
 
                     # Flatten and sum data to get total number of events
                     data = pixelData.flatten()
@@ -1086,7 +1127,8 @@ class DPX_functions():
                         pixel = -55
                         if intPlot:
                             # Plot only one pixel
-                            dataList.append( plotData.flatten()[pixel] )
+                            # dataList.append( plotData.flatten()[pixel] )
+                            dataList.append( np.median( plotData.flatten() ) )
 
                             if len(THLList[1:]) < windowLength:
                                 continue
@@ -1125,6 +1167,7 @@ class DPX_functions():
 
             # PixelDataList to dictionary
             pixelDict = {i: {'THL': np.asarray(THLList)[:,i][1:], 'data': np.asarray(pixelDataList)[:,i]} for i in range(256)}
+            pixelDict['time'] = deltaTimeList
 
             # Save to file
             self.pickleDump(pixelDict, outFn)
@@ -1195,7 +1238,8 @@ class DPX_functions():
             args = np.argwhere(np.asarray(pixelHitList) > 0).flatten()
             print args
             # THLRange = np.arange(THLlow, THLRange[::THLFastStep][args[-1]])
-            THLRange = np.arange(THLRange[::THLFastStep][args[0] - 1], THLRange[::THLFastStep][args[-1]])
+            # Skip fast scan:
+            # THLRange = np.arange(THLRange[::THLFastStep][args[0] - 1], THLRange[::THLFastStep][args[-1]])
             print THLlow, THLRange[::THLFastStep]
             self.DPXDataResetCommand(slot)
 
@@ -1328,7 +1372,7 @@ class DPX_functions():
 
                     if intplot:
                         # Correlation plot
-                        for i in range(256):
+                        for i in range(len(columnList) * 16):
                             lineCorrList[i].set_xdata(np.asarray(logDict['ToT'])[:,i])
                             lineCorrList[i].set_ydata(logDict['temp'])
 
@@ -1491,6 +1535,8 @@ class DPX_functions():
 
         if AnalogOut == 'V_cascode_bias':
             AnalogOut = 'V_casc_reset'
+        elif AnalogOut == 'V_TPref_fine':
+            AnalogOut = 'V_tpref_fine'
         elif AnalogOut == 'V_per_bias':
             AnalogOut = 'V_casc_preamp'
 

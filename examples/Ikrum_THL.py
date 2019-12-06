@@ -6,7 +6,7 @@ CONFIG_FN = 'DPXConfig_22_6_109.conf'
 CONFIG_DIR = 'config/'
 CHIP_NUMS = [22, 6, 109]
 IKRUM = [10, 30, 50] 
-THL_SHIFT = 880 # 10
+THL_SHIFT = 10
 
 def main():
     # Establish connection
@@ -31,19 +31,23 @@ def main():
     for slot in range(1, 4):
         print dpx.DPXReadPeripheryDACCommand(slot)
 
-    # import hickle as hck
-    # Measure ToT 
-    # for THLshift in range(-1000, -100, 10):
-    #     print THLshift
-    #     for slot in range(3):
-    #         THL = int(dpx.THLs[slot], 16) - THL_SHIFT
-    #         THL_idx = list(dpx.THLEdges[slot]).index(THL)
-    #         THL = '%04x' % (dpx.THLEdges[slot][THL_idx + THLshift])
-    #         dpx.DPXWritePeripheryDACCommand(slot + 1, new_peripherys[slot] + THL)
-    #     dpx.measureToT(slot=[1, 2, 3], intPlot=False, cnt=50000, storeEmpty=False, logTemp=True, meas_time=60, paramsDict=hck.load('config/paramsDict_22_6_109_Ikrum_10_30_50_THLShift_10_slot2_fail.hck'))
-    # dpx.measurePC(slot=2, measurement_time=0, frames=1000, intPlot=True)
+    # THL scan
+    THL = int(dpx.THLs[0], 16)
+    THLlow = THL - 500
+    THLhigh = THL + 500
+    # dpx.energySpectrumTHL(slot=3, THLhigh=THLhigh, THLlow=THLlow, THLstep=1, timestep=0, intPlot=False)
+    dpx.findNoise(slot=1, THLlow=THLlow, THLhigh=THLhigh, THLstep=1, timestep=0)
+    return
 
-    dpx.measureToT(slot=[1], intPlot=True, cnt=10000, storeEmpty=False, logTemp=True, meas_time=None, external_THL=False) # , paramsDict=hck.load('config/paramsDict_22_6_109_Ikrum_10_30_50_THLShift_10_slot2_fail.hck'))
+    # XRT
+    THLlow = 5700 # THL
+    THLhigh = 6500 # 8000 # THLlow + 1000
+    for voltage in [40]:
+        for current in [20, 25, 30, 40, 50]:
+            print 'Processing %d kV at %d mA' % (voltage, current)
+            dpx.findNoise(slot=1, THLlow=THLlow, THLhigh=THLhigh, THLstep=10, timestep=0, outFn='noise_%d_%d.hck' % (voltage, current), megalix_port='/dev/ttyUSB1', megalix_settings=(voltage, current))
+            raw_input('Done! Press any key to continue')
+            print
 
     # Close connection
     dpx.close()

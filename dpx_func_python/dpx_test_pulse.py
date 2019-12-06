@@ -6,12 +6,8 @@ import dpx_settings as ds
 
 class DPX_test_pulse(object):
     def testPulseInit(self, slot, column=0):
-        # Set Polarity to hole and Photon Counting Mode in OMR
+        # Set Polarity to hole and DosiMode in OMR
         OMRCode = self.OMR
-        if not isinstance(self.OMR, basestring):
-            OMRCode[3] = 'hole'
-        else:
-            OMRCode = '%04x' % (int(self.OMR, 16) & ~(1 << 17))
 
         if not isinstance(self.OMR, basestring):
             OMRCode[0] = 'DosiMode'
@@ -43,11 +39,16 @@ class DPX_test_pulse(object):
         confBits = np.zeros((16, 16))
         confBits.fill(getattr(ds._ConfBits, 'MaskBit'))
         confBits[column] = [getattr(ds._ConfBits, 'TestBit_Analog')] * 16
-        # print confBits
 
         # confBits = np.asarray( [int(num, 16) for num in textwrap.wrap(self.confBits[slot-1], 2)] )
         # confBits[confBits != getattr(ds._ConfBits, 'MaskBit')] = getattr(ds._ConfBits, 'TestBit_Analog')
 
+        self.DPXWriteConfigurationCommand(slot, ''.join(['%02x' % conf for conf in confBits.flatten()]))
+
+    def maskBitsPixel(self, slot, pixel=(0, 0)):
+        confBits = np.zeros((16, 16))
+        confBits.fill(getattr(ds._ConfBits, 'MaskBit'))
+        confBits[pixel[0]][pixel[1]] = getattr(ds._ConfBits, 'TestBit_Analog')
         self.DPXWriteConfigurationCommand(slot, ''.join(['%02x' % conf for conf in confBits.flatten()]))
 
     def getTestPulseVoltageDAC(self, slot, DACVal, energy=False):
@@ -77,8 +78,8 @@ class DPX_test_pulse(object):
         # Adjust fine voltage only
         peripheryDACcode |= (DACVal << 16)
         peripheryDACcode |= (0xff << 32)
-        print '%032x' % peripheryDACcode
-        print DACVal
+        # print '%032x' % peripheryDACcode
+        # print DACVal
 
         return '%032x' % peripheryDACcode
 
@@ -110,7 +111,7 @@ class DPX_test_pulse(object):
         valueRange = np.arange(valueLow, valueHigh, valueStep)
 
         # Number of test pulses for ToT measurement
-        NToT = 10
+        NToT = 3
 
         # Store results per column in dict
         resDict = {}
@@ -422,35 +423,16 @@ class DPX_test_pulse(object):
 
         return slope
 
-    def TPtoToT(self, slot=1, column=0, low=400, high=512, step=5, outFn='TPtoToT.p'):
+    def TPtoToTPixel(self, slot=1, column=0, low=400, high=512, step=5, outFn='TPtoToT.p'):
         # Description: Generate test pulses and measure ToT afterwards
         #              to match test pulse voltage and ToT value.
 
-        if type(self.OMR) is list:
-            OMRCode_ = self.OMRListToHex(self.OMR)
-        else:
-            OMRCode_ = self.OMR
-        OMRCode_ = int(OMRCode_, 16)
-
-        '''
-        # Measure temperature
-        OMRCode_ &= ~(0b11111 << 12)
-        OMRCode_ |= getattr(ds._OMRAnalogOutSel, 'Temperature')
-        self.DPXWriteOMRCommand(slot, hex(OMRCode_).split('0x')[-1])
-
-        TList = []
-        for i in range(100):
-            TList.append( float(int(self.MCGetADCvalue(), 16)) )
-        T = np.mean(TList)
-        '''
-        T = 0
-
         # Number of test pulses for ToT measurement
-        NToT = 10
+        NToT = 3
 
         # Test pulse voltage range
         # TPvoltageRange = list(reversed(np.arange(300, 490, 1))) # list(reversed(np.arange(490, 512, 1)))
-        # TPvoltageRange = list(reversed(np.arange(440, 512, 1))) + list(reversed(np.arange(250, 440, 5)))
+        # TPvoltageRange = list(reversed(np.arange(470, 505, 2))) + list(reversed(np.arange(350, 470, 10)))
         TPvoltageRange = list(reversed(np.arange(low, high, step))) 
 
         # Store results per column in dict
@@ -459,47 +441,225 @@ class DPX_test_pulse(object):
         # Activate DosiMode and select columns
         columnRange = self.testPulseInit(slot, column=column)
 
-        # Loop over columns
-        for column in columnRange:
-            # Select column
-            self.maskBitsColumn(slot, column)
+        import time
+        # Deselect all pixels
+        confBits = np.zeros((16, 16))
+        confBits.fill(getattr(ds._ConfBits, 'MaskBit'))
 
-            # Store results in lists
-            ToTListTotal, ToTErrListTotal = [], []
+        ToTListTotal, ToTErrListTotal = [], []
+        for val in TPvoltageRange:
+            start_time = time.time()
 
-            # Loop over test pulse voltages
-            for val in TPvoltageRange:
-                # Set test pulse voltage
-                DACval = self.getTestPulseVoltageDAC(slot, val, energy=False)
-                self.DPXWritePeripheryDACCommand(slot, DACval)
+            # Set test pulse voltage
+            DACval = self.getTestPulseVoltageDAC(slot, val, energy=False)
+            self.DPXWritePeripheryDACCommand(slot, DACval)
 
-                # Generate test pulses
+            dataList = []
+            lastpixelx, lastpixely = 15, 15
+            for i in range(NToT):
+                self.DPXDataResetCommand(slot)
+                for pixelx in range(16):
+                    for pixely in range(16):
+                        confBits[lastpixelx, lastpixely] = getattr(ds._ConfBits, 'MaskBit')
+                        confBits[pixelx, pixely] = getattr(ds._ConfBits, 'TestBit_Analog')
+                        self.DPXWriteConfigurationCommand(slot, ''.join(['%02x' % conf for conf in confBits.flatten()]))
+                        self.DPXGeneralTestPulse(slot, 1000)
+                        lastpixelx, lastpixely = pixelx, pixely
+                data = np.asarray(self.DPXReadToTDataDosiModeCommand(slot), dtype=float)
+                data[data > 1000] = np.nan
+                dataList.append( data )
+
+            ToT, ToTErr = np.nanmedian(dataList, axis=0), np.nanstd(dataList, axis=0) / np.sqrt(NToT)
+            print ToT[0]
+            ToTListTotal.append( ToT ), ToTErrListTotal.append( ToTErr )
+            print 'Time:', (time.time() - start_time)
+        resDict = [{'ToT': np.asarray(ToTListTotal)[:,column,:], 'ToTErr': np.asarray(ToTErrListTotal)[:,column,:], 'volt': TPvoltageRange} for column in range(16)]
+
+        outFn = outFn.split('.')[0] + '.hck' % T
+        self.pickleDump(resDict, outFn)
+
+    def TPTime(self, slot=1, column=0, voltage=100, timeRange=np.logspace(1, 3, 10), outFn='TPTime.hck'):
+        NToT = 10
+        columnRange = self.testPulseInit(slot, column=column)
+        DACval = self.getTestPulseVoltageDAC(slot, voltage, energy=False)
+        self.DPXWritePeripheryDACCommand(slot, DACval)
+
+        resDict = {column: {'ToT': [], 'ToTErr': [], 'time': timeRange} for column in columnRange}
+        confBits = np.zeros((16, 16))
+        for time in timeRange:
+            print time
+            for column in columnRange:
+                confBits.fill(getattr(ds._ConfBits, 'MaskBit'))
+                confBits[column] = [getattr(ds._ConfBits, 'TestBit_Analog')] * 16 + [getattr(ds._ConfBits, 'MaskBit')] * 0
+                self.DPXWriteConfigurationCommand(slot, ''.join(['%02x' % conf for conf in confBits.flatten()]))
+
                 dataList = []
                 for i in range(NToT):
                     self.DPXDataResetCommand(slot)
-                    self.DPXGeneralTestPulse(slot, 1000)
-                    data = self.DPXReadToTDataDosiModeCommand(slot)[column]
-                    dataList.append( data )
+                    self.DPXGeneralTestPulse(slot, time)
+                    data = self.DPXReadToTDataDosiModeCommand(slot)
+                    dataList.append( data[column] )
 
-                # Determine corresponding ToT value
-                testPulseToT = np.mean(dataList , axis=0)
-                testPulseToTErr = np.std(dataList, axis=0) / np.sqrt( NToT )
-                print 'Test Pulse ToT:'
-                print testPulseToT, np.std(dataList, axis=0)
+                ToT, ToTErr = np.median(dataList, axis=0), np.std(dataList, axis=0) / np.sqrt(NToT)
 
-                # Store in lists
-                ToTListTotal.append( testPulseToT )
-                ToTErrListTotal.append( testPulseToTErr )
+            resDict[column]['ToT'].append(ToT)
+            resDict[column]['ToTErr'].append(ToTErr)
 
-            resDict[column] = {'ToT': ToTListTotal, 'ToTErr': ToTErrListTotal, 'volt': TPvoltageRange}
+        self.pickleDump(resDict, outFn)
 
-            '''
-            for i in range(16):
-                plt.errorbar(TPvoltageRange, np.asarray(ToTListTotal).T[i], yerr=np.asarray(ToTErrListTotal).T[i], marker='x')
-            plt.show()
-            '''
+    def TPfindMax(self, slot=1, column=0):
+        voltRange = np.arange(100, 400, 50)
+        NToT = 3
+        columnRange = self.testPulseInit(slot, column=column)
+        confBits = np.zeros((16, 16))
 
-        outFn = outFn.split('.')[0] + '_T%d.hck' % T
+        xMaxList = []
+        for idx, volt in enumerate( voltRange ): 
+            print 'Scanning Test Pulse energy %d...' % volt
+            # Set test pulse voltage
+            DACval = self.getTestPulseVoltageDAC(slot, volt, energy=False)
+            self.DPXWritePeripheryDACCommand(slot, DACval)
+
+            time = 1.
+            x, y = [], []
+            max_val = 0
+            low_cnt = 0
+            step_size = 5
+            start_flag = True
+            scans = 0
+            it, maxIterations = 0, 30
+            while True:
+                columnList = []
+                for column in columnRange:
+                    confBits.fill(getattr(ds._ConfBits, 'MaskBit'))
+                    confBits[column] = [getattr(ds._ConfBits, 'TestBit_Analog')] * 16 + [getattr(ds._ConfBits, 'MaskBit')] * 0
+                    self.DPXWriteConfigurationCommand(slot, ''.join(['%02x' % conf for conf in confBits.flatten()]))
+
+                    dataList = []
+                    for i in range(NToT):
+                        self.DPXDataResetCommand(slot)
+                        self.DPXGeneralTestPulse(slot, time)
+                        data = self.DPXReadToTDataDosiModeCommand(slot)
+                        dataList.append( data[column] )
+
+                    ToT, ToTErr = np.median(dataList, axis=0), np.std(dataList, axis=0) / np.sqrt(NToT)
+                    columnList.append( ToT )
+                
+                x.append( time ), y.append( np.median(columnList) )
+                it += 1
+                if start_flag:
+                    # Found peak
+                    if len(y) > 2 and (y[-3] < y[-2]) and (y[-2] > y[-1]):
+                        start_flag = False
+                        time -= 1.5 * step_size
+                        x = x[-3:]
+                        y = y[-3:]
+                        continue
+                    else:
+                        time += step_size
+                else:
+                    scans += 1
+                    if scans == 2:
+                        scans = 0
+
+                        sort_idx = np.argsort(x)
+                        x, y = list(np.asarray(x)[sort_idx][-5:]), list(np.asarray(y)[sort_idx][-5:])
+                        if np.std(y) < 1.5 or (it > maxIterations):
+                            break
+                
+                        zero = np.where(np.diff(np.sign(np.diff(y))))[0][0]
+
+                        x = x[zero:zero+3]
+                        y = y[zero:zero+3]
+
+                        step_size *= 0.5
+                        time = x[0] + 0.5 * step_size
+
+                    else:
+                        time += step_size
+
+                continue
+
+            # plt.plot(x, y, marker='x', ls='')
+            spl = scipy.interpolate.UnivariateSpline(x, y, s=len(x) * 10, k=4)
+            roots = spl.derivative().roots()
+            x_max = roots[np.argmax(spl(roots))]
+
+            # plt.plot(x, spl(x))
+            # plt.plot(x_max, spl(x_max), marker='x', ls='', markersize=10, label=volt)
+
+            xMaxList.append(x_max)
+            # plt.show()
+
+        print 'Scanned Test Pulse energies:', voltRange
+        print 'Maxima at:', xMaxList
+
+        idx = np.asarray(xMaxList[-2:]) > np.median(xMaxList[:2])
+        idx = np.asarray([True] * (len(xMaxList) - 2) + list(idx))
+
+        popt, pcov = scipy.optimize.curve_fit(self.linearFit, np.asarray(voltRange)[idx], np.asarray(xMaxList)[idx])
+        perr = np.sqrt(np.diag(pcov))
+        print 'Test Pulse energy to Test Pulse duration relation:'
+        print 't = (%.2f +/- %.2f) * E_TP + (%.2f +/- %.2f)' % (popt[0], perr[0], popt[1], perr[1])
+        return popt
+
+    def TPtoToT(self, slot=1, column=0, low=400, high=512, step=5, outFn='TPtoToT.p'):
+        # Description: Generate test pulses and measure ToT afterwards
+        #              to match test pulse voltage and ToT value.
+
+        # Number of test pulses for ToT measurement
+        NToT = 10
+
+        TPvoltageRange = list(reversed(np.arange(low, high, step))) 
+
+        # Activate DosiMode and select columns
+        columnRange = self.testPulseInit(slot, column=column)
+
+        # Store results per column in dict
+        resDict = {column: {'ToT': [], 'ToTErr': [], 'volt': TPvoltageRange} for column in columnRange}
+
+        # Get times for maximum ToT
+        print 'Optimizing test pulse durations...'
+        pTime = self.TPfindMax(slot=slot, column=0)
+
+        print 'Done!'
+        print
+
+        import time
+        it_idx = 0
+        print 'Test Pulse to ToT measurement:'
+        for val in TPvoltageRange:
+            start_time = time.time()
+
+            # Set test pulse voltage
+            DACval = self.getTestPulseVoltageDAC(slot, val, energy=False)
+            self.DPXWritePeripheryDACCommand(slot, DACval)
+
+            # Deselect all pixels
+            confBits = np.zeros((16, 16))
+
+            for column in columnRange:
+                confBits.fill(getattr(ds._ConfBits, 'MaskBit'))
+                confBits[column] = [getattr(ds._ConfBits, 'TestBit_Analog')] * 16 + [getattr(ds._ConfBits, 'MaskBit')] * 0
+                self.DPXWriteConfigurationCommand(slot, ''.join(['%02x' % conf for conf in confBits.flatten()]))
+
+                dataList = []
+                for i in range(NToT):
+                    self.DPXDataResetCommand(slot)
+                    m, t = pTime
+                    self.DPXGeneralTestPulse(slot, m * val + t)
+                    data = self.DPXReadToTDataDosiModeCommand(slot)
+                    dataList.append( data[column] )
+
+                    it_idx += 1
+                    self.statusBar(float(it_idx) / (len(TPvoltageRange) * len(columnRange) * NToT) * 100)
+                # print np.median(dataList, axis=0)
+
+                ToT, ToTErr = np.median(dataList, axis=0), np.std(dataList, axis=0) / np.sqrt(NToT)
+
+                resDict[column]['ToT'].append(ToT)
+                resDict[column]['ToTErr'].append(ToTErr)
+
         self.pickleDump(resDict, outFn)
 
     def testPulseToT(self, slot, length, column='all', paramOutFn='testPulseParams.p', DAC=None, DACRange=None, perc=True):

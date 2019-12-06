@@ -77,6 +77,7 @@ class DPX_support(object):
 
         # Sort by THL
         thl, volt = zip(*sorted(zip(thl, volt)))
+
         diff = abs(np.diff(volt))
         edges = np.argwhere(diff > 200).flatten() + 1
 
