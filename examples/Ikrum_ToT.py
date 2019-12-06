@@ -10,7 +10,7 @@ THL_SHIFT = 880 # 10
 
 def main():
     # Establish connection
-    thl_calib_files = None # [CONFIG_DIR + '/THLCalib_%d.hck' % CHIP for CHIP in CHIP_NUMS] 
+    thl_calib_files = [CONFIG_DIR + '/THLCalib_%d.hck' % CHIP for CHIP in CHIP_NUMS] 
     dpx = dpx_func_python.Dosepix(PORT, 2e6, CONFIG_DIR + '/' + CONFIG_FN, thl_calib_files=thl_calib_files)
 
     # Change Ikrum values
@@ -25,12 +25,11 @@ def main():
         dpx.peripherys = code[:-4]
         new_peripherys.append( code[:-4] )
         dpx.DPXWritePeripheryDACCommand(chip_idx + 1, code)
-        print dpx.DPXReadPeripheryDACCommand(chip_idx + 1)
-        print dpx.DPXReadOMRCommand(chip_idx + 1)
 
     for slot in range(1, 4):
         print dpx.DPXReadPeripheryDACCommand(slot)
 
+<<<<<<< HEAD
     # import hickle as hck
     # Measure ToT 
     # for THLshift in range(-1000, -100, 10):
@@ -44,6 +43,10 @@ def main():
     # dpx.measurePC(slot=2, measurement_time=0, frames=1000, intPlot=True)
 
     dpx.measureToT(slot=[1], intPlot=True, cnt=10000, storeEmpty=False, logTemp=True, meas_time=None, external_THL=False) # , paramsDict=hck.load('config/paramsDict_22_6_109_Ikrum_10_30_50_THLShift_10_slot2_fail.hck'))
+=======
+    # Measure ToT
+    dpx.measureToT(slot=[1, 2, 3], intPlot=True, storeEmpty=True, logTemp=True)
+>>>>>>> 7e2a9b2c979288ec1985b0b193cab92e1810443c
 
     # Close connection
     dpx.close()
