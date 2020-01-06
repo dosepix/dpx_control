@@ -1,3 +1,4 @@
+from __future__ import print_function
 import numpy as np
 import textwrap
 import serial
@@ -6,19 +7,10 @@ import sys
 import matplotlib.pyplot as plt
 import matplotlib as mpl
 import scipy.special
-import cPickle
+# import cPickle
 import hickle
 
 class Support(object):
-    def statusBar(self, perc, width='screen'):
-        if width == 'screen':
-            width = int(os.popen('tput cols', 'r').read()) - 8
-
-        p = int(perc * float(width)/100)
-        sys.stdout.write('\r')
-        sys.stdout.write('[%-*s] %d%%' % (int(width), '='*p, perc))
-        sys.stdout.flush()
-
     def normal(self, x, A, mu, sigma):
         return A * np.exp(-(x - mu)/(2 * sigma**2))
 
@@ -162,7 +154,7 @@ class Support(object):
         else:
             d = hickle.load(fn)
         meanMatrix = d['mean']
-        print meanMatrix
+        print(meanMatrix)
         sigmaMatrix = d['sigma']
 
         figMean, axMean = plt.subplots()
@@ -211,15 +203,15 @@ class Support(object):
 
     def convertToDecimal(self, res, length=4):
         # Convert 4 hexadecimal characters each to int
-        hexNumList = np.asarray( [int(hexNum, 16) for hexNum in textwrap.wrap(res, length)] )
+        hexNumList = np.asarray( [int(hexNum, 16) for hexNum in textwrap.wrap(res.decode("utf-8"), length)] )
         return hexNumList.reshape((16, 16))
 
     # Infinite for loop
     def infinite_for(self):
-	x = 0
-	while True:
-	    yield x
-	    x += 1
+        x = 0
+        while True:
+            yield x
+            x += 1
 
     # Megalix control
     def megalix_connect(self, port):
@@ -231,7 +223,7 @@ class Support(object):
         focus_size = 's'
         cmd = 'ei %s %s 1 %s\n' % (voltage, current, focus_size)
         mlx.write(cmd)
-        print 'Sent command %s to megalix' % cmd
+        print('Sent command %s to megalix' % cmd)
         time.sleep( 1 )
 
     def megalix_xray_on(self, mlx):
@@ -241,4 +233,3 @@ class Support(object):
     def megalix_xray_off(self, mlx):
         mlx.write('SWROFF\n')
         mlx.write('PREP 0\n')
-

@@ -1,7 +1,9 @@
+from __future__ import print_function
+
 from collections import namedtuple
 # === CONSTANTS ===
-_startOfTransmission   = unichr(0x02)
-_endOfTransmission     = unichr(0x03) 
+_startOfTransmission   = b"\x02"
+_endOfTransmission     = b"\x03"
 
 # = Receiver =
 _receiverDPX1 = '01'   # Dosepix
@@ -163,4 +165,3 @@ _ConfBits = ConfBitsType(
     MaskBit = 0b1 << 2,
     TestBit_Analog = 0b1 << 1,
     TestBit_Digital = 0b1 << 0)
-

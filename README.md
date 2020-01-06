@@ -1,27 +1,46 @@
-# Dosepix Control Software for python2.7
+# Dosepix Control Software for python3
 Module name: dpx\_func\_python  
-Author: Sebastian Schmidt (ECAP)  
-E-Mail: sebastian.seb.schmidt@fau.de  
+Author: Sebastian Schmidt
+E-Mail: schm.seb@gmail.com  
 
 ## Installation
-### via pip
+There are multiple ways to install the module. The easiest one is to use a virtual environment. More experiened users might consider to install the module directly. Please refer to the instructions below and ensure that python 3 is used. 
+
+### Virtual Environment Installation
+First,  a directory for the virtual environment has to be created. To provide an example, it is called `dpx_venv` in the following.  Afterwards, the environment is created via
+
 ```bash
-sudo python -m pip install /path/to/package
+python3 -m venv dpx_venv
+```
+Activate the virtual environment by executing
+```bash
+source dpx_virtenv/bin/activate
+```
+
+If everything worked correctly, the name of your virtual environment should appear in parentheses in front of your command prompt. Finally, proceed like described in the "Direct Installation"-section below.
+
+### Direct Installation
+`sudo` might be needed in order to provide installation privileges. This won't be necessary when installing in an virtual environment. 
+
+#### via pip
+If no administrator access is possible, add the parameter `--user` right behind `install`.
+```bash
+python3 -m pip install /path/to/package
 ```
 If you want to modify the code later on, use 
 ```bash
-sudo python -m pip install -e /path/to/package
+python3 -m pip install -e /path/to/package
 ```
 instead.
 
-### via `setup.py`
+##### via `setup.py`
 Execute in the module's main directory:
 ```bash
-sudo python setup.py install
+python3 setup.py install
 ```
 If you want to modify the code later on, use 
 ```bash
-sudo python setup.py develop
+python3 setup.py develop
 ```
 instead.
 
@@ -81,3 +100,4 @@ dpx.thresholdEqualizationConfig(CONFIG_DIR + '/' + CONFIG_FN, I_pixeldac=None, r
 ```
 performs the threshold equalization and stores the results in the specified configuration file. If `intPlot` is set to `True`, equalization results are shown for each detector once the equalization is done.
 
+## Changelog

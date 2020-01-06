@@ -1,13 +1,15 @@
+from __future__ import print_function
+
 GUI = False
 # === Imports ===
-import config
-import control
-import support
-import dpx_functions
-import dpx_support
-import system
-import dpx_settings
-import dpx_test_pulse
+import dpx_func_python.config
+import dpx_func_python.control
+import dpx_func_python.support
+import dpx_func_python.dpx_functions
+import dpx_func_python.dpx_support
+import dpx_func_python.system
+import dpx_func_python.dpx_settings
+import dpx_func_python.dpx_test_pulse
 
 class Dosepix(config.Config, control.Control, support.Support, dpx_functions.DPX_functions, dpx_support.DPX_support, system.System, dpx_test_pulse.DPX_test_pulse):
     # === FLAGS ===
@@ -63,17 +65,17 @@ class Dosepix(config.Config, control.Control, support.Support, dpx_functions.DPX
     def close(self):
         # = Shut down =
         self.HVDeactivate()
-        print 'Check if HV is deactivated...',
+        print('Check if HV is deactivated...'),
         for i in range(5):
             if not self.HVGetState():
-                print 'done!'
+                print('done!')
                 break
             else:
                 self.HVDeactivate()
         else:
             assert 'HV could not be deactivated'
 
-        print 'Measurement finished.'
+        print('Measurement finished.')
 
         self.ser.close()
         

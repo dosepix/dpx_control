@@ -1,35 +1,37 @@
+from __future__ import print_function
+
 import numpy as np
 import time
 from collections import namedtuple
-import cPickle
+# import cPickle
 import hickle
 
 DEBUG = False
-import dpx_settings as ds
+import dpx_func_python.dpx_settings as ds
 
 class Control():
     def initDPX(self):
         # Start HV
         self.HVSetDac('0000')
-        print 'HV DAC set to %s' % self.HVGetDac()
+        print('HV DAC set to %s' % self.HVGetDac())
 
         self.HVActivate()
         # Set voltage to 3.3V
         self.VCVoltageSet3V3()
 
         # Check if HV is enabled
-        print 'Check if HV is activated...',
+        print('Check if HV is activated...', end='')
         # Try five times
         for i in range(5):
             if self.HVGetState():
-                print 'done!'
+                print('done!')
                 break
             else:
                 self.HVActivate()
         else:
             assert 'HV could not be activated!'
 
-        print 'Voltage set to %s' % self.VCGetVoltage()
+        print('Voltage set to %s' % self.VCGetVoltage())
 
         # Disable LED
         self.MCLEDdisable()
@@ -47,15 +49,15 @@ class Control():
         # = Write Settings =
         for i in range(1, 3 + 1):
             self.DPXWriteConfigurationCommand(i, self.confBits[i-1])
-            self.DPXWriteOMRCommand(i, self.OMR)
+            self.DPXWriteOMRCommand(i, self.OMR[i-1])
 
             # Merge peripheryDACcode and THL value
-            self.DPXWritePeripheryDACCommand(i, self.peripherys + self.THLs[i-1])
-            print 'Periphery DAC on Slot %d set to: %s' % (i, self.DPXReadPeripheryDACCommand(i))
+            self.DPXWritePeripheryDACCommand(i, self.peripherys[i-1] + self.THLs[i-1])
+            print('Periphery DAC on Slot %d set to: %s' % (i, self.DPXReadPeripheryDACCommand(i)))
 
             self.DPXWritePixelDACCommand(i, self.pixelDAC[i-1])
-            print 'Pixel DAC on Slot %d set to: %s' % (i, self.DPXReadPixelDACCommand(i))
-        print
+            print('Pixel DAC on Slot %d set to: %s' % (i, self.DPXReadPixelDACCommand(i)))
+        print()
         time.sleep(0.5)
 
         # = Data Reset =
@@ -68,7 +70,7 @@ class Control():
 
         # = Bin Edges =
         if not self.params_file and self.bin_edges_file is not None:
-            print self.bin_edges_file
+            print(self.bin_edges_file)
             if self.bin_edges_file.endswith('.p'):
                 binEdgesDict = cPickle.load(open(self.bin_edges_file, 'rb'))
             else:
@@ -80,7 +82,7 @@ class Control():
 
         else:
             if self.params_file is None:
-                print 'Warning: No parameters for the bin edges specified. Using default values.'
+                print('Warning: No parameters for the bin edges specified. Using default values.')
 
                 gray = [0, 1, 3, 2, 6, 4, 5, 7, 15, 13, 12, 14, 10, 11, 9, 8]
                 for i in range(1, 3 + 1):
@@ -116,11 +118,12 @@ class Control():
 
     def getResponse(self):
         res = self.ser.readline()
+        '''
         while res[0] != '\x02':
             res = self.ser.readline()
-
+        '''
         if DEBUG:
-            print res
+            print(res)
         return res
 
     def getDPXResponse(self):
@@ -129,11 +132,11 @@ class Control():
         res = self.getResponse()
 
         if DEBUG:
-            print 'Length:', res[11:17]
+            print('Length:', res[11:17])
         cmdLength = int( res[11:17] )
 
         if DEBUG:
-            print 'CmdData:', res[17:17+cmdLength]
+            print('CmdData:', res[17:17+cmdLength])
         cmdData = res[17:17+cmdLength]
 
         return cmdData
@@ -461,29 +464,12 @@ class Control():
         # l - command length
         # c - CRC (unused, usually set to FFFF)
 
-        # self.ser.write(ds._startOfTransmission.encode())
-        cmdOut = [ds._startOfTransmission.encode()]
-
-        if DEBUG:
-            print ds._startOfTransmission.encode(),
-        for cmd in cmdList:
-            if not cmd:
-                continue
-            for c in cmd:
-                if DEBUG:
-                    print unichr(ord(c)),
-
-                cmdOut.append( unichr(ord(c)).encode() )
-                # self.ser.write(unichr(ord(c)).encode())
-            if DEBUG:
-                print ' ',
-
-        if DEBUG:
-            print ds._endOfTransmission.encode()
-
-        cmdOut.append( ds._endOfTransmission.encode() )
-        # self.ser.write(ds._endOfTransmission.encode())
+        cmdOut = [str.encode(str(cmd)) for cmd in cmdList]
+        cmdOut.insert(0, ds._startOfTransmission)
+        cmdOut.append( ds._endOfTransmission )
+        cmdOut = b''.join(cmdOut)
         self.ser.write(cmdOut)
+        return
 
     def getBinEdges(self, slot, energyDict, paramDict, transposePixelMatrix=False):
         a, b, c, t = paramDict['a'], paramDict['b'], paramDict['c'], paramDict['t']

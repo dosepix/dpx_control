@@ -1,8 +1,9 @@
+from __future__ import print_function
 import numpy as np
 import matplotlib.pyplot as plt
 import scipy.optimize
 
-import dpx_settings as ds
+import dpx_func_python.dpx_settings as ds
 
 class DPX_test_pulse(object):
     def testPulseInit(self, slot, column=0):
@@ -134,10 +135,10 @@ class DPX_test_pulse(object):
             for val in valueRange:
                 # Set test pulse energy
                 if energy:
-                    print 'Energy: %.2f keV' % (val/1000.)
+                    print('Energy: %.2f keV' % (val/1000.))
                 else:
                     val = int(val)
-                    print 'DAC: %04x' % val
+                    print('DAC: %04x' % val)
 
                 # Activates DosiMode and selects columns
                 columnRange = self.testPulseInit(slot, column=column)
@@ -164,8 +165,8 @@ class DPX_test_pulse(object):
                 # Determine corresponding ToT value
                 testPulseToT = np.mean( dataList , axis=0)
                 testPulseToTErr = np.std(dataList, axis=0) / np.sqrt( NToT )
-                print 'Test Pulse ToT:'
-                print testPulseToT
+                print('Test Pulse ToT:')
+                print(testPulseToT)
 
                 # Store in lists
                 ToTListTotal.append( testPulseToT )
@@ -178,7 +179,7 @@ class DPX_test_pulse(object):
                 else:
                     OMRCode = '%06x' % ((int(OMRCode, 16) & ~((0b11) << 22)) | (0b10 << 22))
                 self.DPXWriteOMRCommand(slot, OMRCode)
-                print OMRCode
+                print(OMRCode)
 
                 # Loop over THLs
                 # Init result lists
@@ -222,9 +223,9 @@ class DPX_test_pulse(object):
                 if not np.any(THLFastList):
                     continue
 
-                print 'THLFastList'
-                print THLFastList
-                print np.asarray(dataFastList).T
+                print('THLFastList')
+                print(THLFastList)
+                print(np.asarray(dataFastList).T)
 
                 # Check if array is empty
                 if not np.count_nonzero(dataFastList):
@@ -238,8 +239,8 @@ class DPX_test_pulse(object):
                 xFastDer = np.asarray(THLFastList[:-1]) + THLFastStep / 2.
                 dataFastDer = [xFastDer[np.argmax(np.diff(data) / float(THLFastStep))] for data in np.asarray(dataFastList).T if np.count_nonzero(data)]
 
-                print 'dataFastDer'
-                print dataFastDer
+                print('dataFastDer')
+                print(dataFastDer)
 
                 # Get mean THL value
                 meanTHL = np.mean( dataFastDer )
@@ -247,13 +248,12 @@ class DPX_test_pulse(object):
                 # Set THL range to new estimated region
                 regSel = np.logical_and(THLRange >= min(dataFastDer) - THLFastStep, THLRange <= max(dataFastDer) + THLFastStep)
                 THLRange = THLRange[regSel]
-                print 'THLRange'
-                print THLRange
+                print('THLRange')
+                print(THLRange)
                 # THLRange = THLRange[abs(THLRange - meanTHL) < 3 * THLFastStep]
 
                 # Do a slow but precise measurement with small THL steps
-                for cnt, THL in enumerate(THLRange[::THLstep]):
-                    self.statusBar(float(cnt)/len(THLRange[::THLstep]) * 100 + 1)
+                for cnt, THL in enumerate(tqdm(THLRange[::THLstep])):
                     # for V in np.linspace(0.34, 0.36, 1000):
                     # THL = self.getTHLfromVolt(V)
                     # THLmeas = np.mean( [float(int(self.MCGetADCvalue(), 16)) for i in range(3) ] )
@@ -278,7 +278,7 @@ class DPX_test_pulse(object):
                     dataList.append( data )
 
                     # lastTHL = THLmeas
-                print
+                print()
 
                 # Calculate derivative of THL spectrum
                 xDer = np.asarray(THLList[:-1]) + 0.5*THLstep
@@ -298,11 +298,11 @@ class DPX_test_pulse(object):
                     try:
                         popt, pcov = scipy.optimize.curve_fit(lambda x, b, c: self.erfFit(x, NPulses, b, c), THLListCorr, data, p0=p0)
                         perr = np.sqrt(np.diag(pcov))
-                        print popt
+                        print(popt)
                     except:
                         popt = p0
                         perr = len(p0) * [0]
-                        print 'Fit failed!'
+                        print('Fit failed!')
                         pass
 
                     # Return fit parameters
@@ -337,19 +337,19 @@ class DPX_test_pulse(object):
                 peakList, peakErrList = np.asarray(peakList), np.asarray(peakErrList)
                 peakList[peakErrList > 50] = np.nan
                 peakErrList[peakErrList > 50] = np.nan
-                print peakList, peakErrList
+                print(peakList, peakErrList)
 
                 # Set start value for next scan
-                print 'Start, Stop'
+                print('Start, Stop')
                 THLstart, THLstop = np.nanmin(THLList) - 400, np.nanmax(THLList) + 400
-                print THLstart, THLstop
+                print(THLstart, THLstop)
 
                 # Convert back to THL
                 # peakList = [THLRange[int(peak + 0.5)] + (peak % 1) for peak in peakList]
 
                 THLListTotal.append( peakList )
                 THLErrListTotal.append( peakErrList )
-                print
+                print()
 
             # Transform to arrays
             THLListTotal = np.asarray(THLListTotal).T
@@ -357,10 +357,10 @@ class DPX_test_pulse(object):
             ToTListTotal = np.asarray(ToTListTotal).T
             ToTErrListTotal = np.asarray(ToTErrListTotal).T
 
-            print THLListTotal
-            print THLErrListTotal
-            print ToTListTotal
-            print ToTErrListTotal
+            print(THLListTotal)
+            print(THLErrListTotal)
+            print(ToTListTotal)
+            print(ToTErrListTotal)
 
             resDict[column] = {'THL': THLListTotal, 'THLErr': THLErrListTotal, 'ToT': ToTListTotal, 'ToTErr': ToTErrListTotal, 'volt': valueRange}
 
@@ -413,9 +413,9 @@ class DPX_test_pulse(object):
             # Get slope
             slope = (dMeas['00'] - dMeas['3f']) / 63.
 
-            print 'Pixel slope for column %d:' % column
-            print slope
-            print 'Mean slope: %.2f +/- %.2f' % (np.mean(slope), np.std(slope))
+            print('Pixel slope for column %d:' % column)
+            print(slope)
+            print('Mean slope: %.2f +/- %.2f' % (np.mean(slope), np.std(slope)))
 
             slopeDict['slope'].append( slope )
 
@@ -470,9 +470,9 @@ class DPX_test_pulse(object):
                 dataList.append( data )
 
             ToT, ToTErr = np.nanmedian(dataList, axis=0), np.nanstd(dataList, axis=0) / np.sqrt(NToT)
-            print ToT[0]
+            print(ToT[0])
             ToTListTotal.append( ToT ), ToTErrListTotal.append( ToTErr )
-            print 'Time:', (time.time() - start_time)
+            print('Time:', (time.time() - start_time))
         resDict = [{'ToT': np.asarray(ToTListTotal)[:,column,:], 'ToTErr': np.asarray(ToTErrListTotal)[:,column,:], 'volt': TPvoltageRange} for column in range(16)]
 
         outFn = outFn.split('.')[0] + '.hck' % T
@@ -487,7 +487,7 @@ class DPX_test_pulse(object):
         resDict = {column: {'ToT': [], 'ToTErr': [], 'time': timeRange} for column in columnRange}
         confBits = np.zeros((16, 16))
         for time in timeRange:
-            print time
+            print(time)
             for column in columnRange:
                 confBits.fill(getattr(ds._ConfBits, 'MaskBit'))
                 confBits[column] = [getattr(ds._ConfBits, 'TestBit_Analog')] * 16 + [getattr(ds._ConfBits, 'MaskBit')] * 0
@@ -515,7 +515,7 @@ class DPX_test_pulse(object):
 
         xMaxList = []
         for idx, volt in enumerate( voltRange ): 
-            print 'Scanning Test Pulse energy %d...' % volt
+            print('Scanning Test Pulse energy %d...' % volt)
             # Set test pulse voltage
             DACval = self.getTestPulseVoltageDAC(slot, volt, energy=False)
             self.DPXWritePeripheryDACCommand(slot, DACval)
@@ -591,16 +591,16 @@ class DPX_test_pulse(object):
             xMaxList.append(x_max)
             # plt.show()
 
-        print 'Scanned Test Pulse energies:', voltRange
-        print 'Maxima at:', xMaxList
+        print('Scanned Test Pulse energies:', voltRange)
+        print('Maxima at:', xMaxList)
 
         idx = np.asarray(xMaxList[-2:]) > np.median(xMaxList[:2])
         idx = np.asarray([True] * (len(xMaxList) - 2) + list(idx))
 
         popt, pcov = scipy.optimize.curve_fit(self.linearFit, np.asarray(voltRange)[idx], np.asarray(xMaxList)[idx])
         perr = np.sqrt(np.diag(pcov))
-        print 'Test Pulse energy to Test Pulse duration relation:'
-        print 't = (%.2f +/- %.2f) * E_TP + (%.2f +/- %.2f)' % (popt[0], perr[0], popt[1], perr[1])
+        print('Test Pulse energy to Test Pulse duration relation:')
+        print('t = (%.2f +/- %.2f) * E_TP + (%.2f +/- %.2f)' % (popt[0], perr[0], popt[1], perr[1]))
         return popt
 
     def TPtoToT(self, slot=1, column=0, low=400, high=512, step=5, outFn='TPtoToT.p'):
@@ -619,15 +619,15 @@ class DPX_test_pulse(object):
         resDict = {column: {'ToT': [], 'ToTErr': [], 'volt': TPvoltageRange} for column in columnRange}
 
         # Get times for maximum ToT
-        print 'Optimizing test pulse durations...'
+        print('Optimizing test pulse durations...')
         pTime = self.TPfindMax(slot=slot, column=0)
 
-        print 'Done!'
-        print
+        print('Done!')
+        print()
 
         import time
         it_idx = 0
-        print 'Test Pulse to ToT measurement:'
+        print('Test Pulse to ToT measurement:')
         for val in TPvoltageRange:
             start_time = time.time()
 
@@ -638,13 +638,13 @@ class DPX_test_pulse(object):
             # Deselect all pixels
             confBits = np.zeros((16, 16))
 
-            for column in columnRange:
+            for column in tqdm(columnRange, desc='Column'):
                 confBits.fill(getattr(ds._ConfBits, 'MaskBit'))
                 confBits[column] = [getattr(ds._ConfBits, 'TestBit_Analog')] * 16 + [getattr(ds._ConfBits, 'MaskBit')] * 0
                 self.DPXWriteConfigurationCommand(slot, ''.join(['%02x' % conf for conf in confBits.flatten()]))
 
                 dataList = []
-                for i in range(NToT):
+                for i in tqdm(range(NToT), leave=False):
                     self.DPXDataResetCommand(slot)
                     m, t = pTime
                     self.DPXGeneralTestPulse(slot, m * val + t)
@@ -652,7 +652,6 @@ class DPX_test_pulse(object):
                     dataList.append( data[column] )
 
                     it_idx += 1
-                    self.statusBar(float(it_idx) / (len(TPvoltageRange) * len(columnRange) * NToT) * 100)
                 # print np.median(dataList, axis=0)
 
                 ToT, ToTErr = np.median(dataList, axis=0), np.std(dataList, axis=0) / np.sqrt(NToT)
@@ -706,9 +705,9 @@ class DPX_test_pulse(object):
                             ToTValues.append( data )
 
                         ToTValues = np.asarray( ToTValues )
-                        print ToTValues
+                        print(ToTValues)
                         dataArray.append( ToTValues.T )
-                        print dataArray
+                        print(dataArray)
 
                         if False:
                             x = energyRange/float(1000)
@@ -733,7 +732,7 @@ class DPX_test_pulse(object):
                                 paramOutDict['c'].append( c )
                                 paramOutDict['t'].append( t )
 
-                                print popt, perr/popt*100
+                                print(popt, perr/popt*100)
 
                                 plt.plot(x, y, marker='x')
                                 plt.plot(energyRangeFit/float(1000), self.energyToToTFitAtan(energyRangeFit/float(1000), *popt))
@@ -765,7 +764,7 @@ class DPX_test_pulse(object):
             while True:
                 self.DPXDataResetCommand(slot)
                 # self.DPXGeneralTestPulse(slot, 1000)
-                print self.DPXReadToTDataDosiModeCommand(slot)[column]
+                print(self.DPXReadToTDataDosiModeCommand(slot)[column])
 
     def measurePulseShape(self, slot, column='all'):
         assert len(self.THLEdges) > 0, 'Need THL calibration first!'
@@ -776,7 +775,7 @@ class DPX_test_pulse(object):
         # Set energy
         energy = 10.e3
         DACVal = self.getTestPulseVoltageDAC(slot, energy, True)
-        print 'Energy DAC:', DACVal
+        print('Energy DAC:', DACVal)
         # self.DPXWritePeripheryDACCommand(slot, DACval)
 
         # Define THLRange
@@ -793,11 +792,10 @@ class DPX_test_pulse(object):
             self.maskBitsColumn(slot, column)
 
             ToTList, voltList = [], []
-            for cnt, THL in enumerate(THLRange[::THLstep]):
+            for cnt, THL in enumerate(tqdm(THLRange[::THLstep])):
 
                 # Set new THL
                 self.DPXWritePeripheryDACCommand(slot, DACVal[:-4] + '%04x' % THL)
-                self.statusBar(float(cnt) / len(THLRange[::THLstep]) * 100 + 1)
 
                 dataList = []
                 for n in range(N):
@@ -807,7 +805,7 @@ class DPX_test_pulse(object):
 
                 mean = np.mean( dataList, axis=0 )
                 if np.any(mean):
-                    print mean
+                    print(mean)
                     ToTList.append( mean )
                     voltList.append( self.getVoltFromTHLFit(THL, slot) )
 
@@ -826,18 +824,17 @@ class DPX_test_pulse(object):
 
         for energy in energyRange:
             DACval = self.getTestPulseVoltageDAC(slot, energy, True)
-            print 'Energy DAC:', DACVal
+            print('Energy DAC:', DACVal)
             self.DPXWritePeripheryDACCommand(slot, DACval)
 
             meanList, sigmaList = [], []
-            print 'E = %.2f keV' % (energy / 1000.)
-            for k, column in enumerate(columnRange):
+            print('E = %.2f keV' % (energy / 1000.))
+            for k, column in enumerate(tqdm(columnRange), desc='Column'):
                 self.maskBitsColumn(slot, column)
 
                 # Record ToT spectrum of pulse
                 dataList = []
-                for n in range(N):
-                    self.statusBar(float(k*N + n)/(len(columnRange) * N) * 100 + 1)
+                for n in range(tqdm(N), leave=False):
                     self.DPXDataResetCommand(slot)
                     self.DPXGeneralTestPulse(slot, 100)
                     dataList.append( self.DPXReadToTDataDosiModeCommand(slot)[column] )
@@ -849,8 +846,8 @@ class DPX_test_pulse(object):
                     sigmaList.append( np.std(dataList[:,pixel]) )
                     # plt.show()
 
-            print
-            print meanList
+            print()
+            print(meanList)
             meanListEnergy.append( meanList )
             sigmaListEnergy.append( sigmaList )
 
@@ -916,13 +913,13 @@ class DPX_test_pulse(object):
                 # Read from column
                 self.DPXWriteColSelCommand(slot, column)
                 out = self.DPXReadBinDataDosiModeCommand(slot)
-                print np.mean(out), np.std(out)
-                print out
+                print(np.mean(out), np.std(out))
+                print(out)
                 outList.append( out )
 
             dataMatrix = np.rec.fromarrays( outList )
             for i in range(len(dataMatrix)):
-                print np.asarray([list(entry) for entry in dataMatrix[i]])
+                print(np.asarray([list(entry) for entry in dataMatrix[i]]))
                 plt.imshow(np.asarray([list(entry) for entry in dataMatrix[i]]))
                 plt.show()
 

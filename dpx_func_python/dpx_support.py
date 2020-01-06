@@ -1,8 +1,15 @@
+from __future__ import print_function
 import scipy.constants
 import numpy as np
 import time
 import matplotlib.pyplot as plt
 import scipy.optimize
+from tqdm import tqdm
+
+try:
+  basestring
+except NameError:
+  basestring = str
 
 class DPX_support(object):
     def fillParamDict(self, paramDict):
@@ -155,7 +162,7 @@ class DPX_support(object):
         # Loop over pixelDAC values
         for pixelDAC in pixelDACs:
             countsDict[pixelDAC] = {}
-            print 'Set pixel DACs to %s' % pixelDAC
+            print('Set pixel DACs to %s' % pixelDAC)
             
             # Set pixel DAC values
             if len(pixelDAC) > 2:
@@ -177,13 +184,13 @@ class DPX_support(object):
 
             # Noise measurement
             # Loop over THL values
-            print 'Loop over THLs'
+            print('Loop over THLs')
 
             # Fast loop
             countsList = []
             THLRangeFast = THLRange[::10]
             for cnt, THL in enumerate(THLRangeFast):
-                self.DPXWritePeripheryDACCommand(slot, self.peripherys + ('%04x' % THL))
+                self.DPXWritePeripheryDACCommand(slot, self.peripherys[slot-1] + ('%04x' % int(THL)))
                 self.DPXDataResetCommand(slot)
                 time.sleep(0.001)
 
@@ -197,13 +204,11 @@ class DPX_support(object):
             THLRangeSlow = np.around(THLRange[np.logical_and(THLRange >= (np.nanmin(THLRangeFast) - 10), THLRange <= np.nanmax(THLRangeFast))])
 
             NTHL = len(THLRangeSlow)
-            for cnt, THL in enumerate( THLRangeSlow ):
-                self.statusBar(float(cnt)/NTHL * 100 + 1)
-
+            for cnt, THL in enumerate( tqdm(THLRangeSlow) ):
                 # Repeat multiple times since data is noisy
                 counts = np.zeros((16, 16))
                 for lp in range(reps):
-                    self.DPXWritePeripheryDACCommand(slot, self.peripherys + ('%04x' % THL))
+                    self.DPXWritePeripheryDACCommand(slot, self.peripherys[slot-1] + ('%04x' % int(THL)))
                     self.DPXDataResetCommand(slot)
                     time.sleep(0.001)
 
@@ -217,8 +222,7 @@ class DPX_support(object):
 
                 counts /= float(reps)
                 countsDict[pixelDAC][int(THL)] = counts
-            print 
-            print
+            print()
         return countsDict
 
     def getNoiseLevel(self, countsDict, THLRange, pixelDACs=['00', '3f'], noiseLimit=3):

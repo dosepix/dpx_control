@@ -1,11 +1,19 @@
+from __future__ import print_function
+
 import serial
 import os
 import os.path
 import yaml
 import numpy as np
 import hickle
-import cPickle
+import json
+# import cPickle
 import configparser
+
+try:
+  basestring
+except NameError:
+  basestring = str
 
 class Config(object):
     def getConfigDPX(self, portName, baudRate, configFn):
@@ -13,45 +21,59 @@ class Config(object):
         assert self.ser.is_open, 'Error: Could not establish serial connection!'
 
         # Read config
-        self.peripherys = ''
-        self.OMR = ''
-        self.THLs = [[]] * 3
-        self.confBits = [[]] * 3
-        self.pixelDAC = [[]] * 3
-        self.binEdges = [[]] * 3
+        self.peripherys = ['dc310bc864508230768080ff0064'] * 3
+        self.OMR = ['39ffc0'] * 3
+        self.THLs = ['153b'] * 3
+        self.confBits = ['0' * 512] * 3
+        self.pixelDAC = ['0' * 512] * 3
+        self.binEdges = ['0' * 1024] * 3
 
-        if self.configFn is None or not os.path.isfile(self.configFn):
-            print 'Config file not found. Please run THL equalization first. Using standard values.'
-            self.peripherys = 'dc310bc864508230768080ff0064'
-            self.OMR = '39ffc0'
-            self.THLs = ['153b'] * 3
-            self.confBits = [['0']*512] * 3
-            self.pixelDAC = [['0']*512] * 3
-            self.binEdges = [['0']*1024] * 3
+        if self.configFn is None:
+            print('Config file not found. Please run THL equalization first. Using standard values.')
         else:
-            self.readConfig(self.configFn)
+            if isinstance(self.configFn, basestring):
+                if not os.path.isfile(conf):
+                    print('Config file not found. Please run THL equalization first. Using standard values.')
+                else:
+                    print('Only one config file specified. Using same file for all slots.')
+                    for slot in range(1, 3 + 1):
+                        self.readConfig(self.configFn, slot=idx+1)
+            else:
+                for idx, conf in enumerate(self.configFn):
+                    if os.path.isfile(conf):
+                        self.readConfig(conf, slot=idx+1)
+                    else:
+                        print('Config file not found. Please run THL equalization first. Using standard values.')
 
         self.initDPX()
 
         # If no THL calibration file is present
         if self.thl_calib_files is None:
-            print 'Warning: No THL calibration file set! Functions using the THL edges won\'t be usuable'
+            print('Warning: No THL calibration file set! Functions using THL edges won\'t be usuable')
             return
 
         # Load THL calibration data
         for thl_calib_file in self.thl_calib_files:
             if thl_calib_file is None or not os.path.isfile(thl_calib_file):
-                print 'Need the specified THL Calibration file %s!' % thl_calib_file
-                self.THLEdgesLow.append( None ) # [   0,  662, 1175, 1686, 2193, 2703, 3215, 3728, 4241, 4751, 5263, 5777, 6284, 6784, 7312]
-                self.THLEdgesHigh.append( None ) # [ 388,  889, 1397, 1904, 2416, 2927, 3440, 3952, 4464, 4976, 5488, 5991, 6488, 7009, 8190]
+                print('Need the specified THL Calibration file %s!' % thl_calib_file)
+                self.THLEdgesLow.append( None ) 
+                self.THLEdgesHigh.append( None )
                 self.THLEdges.append( None )
                 self.THLFitParams.append( None )
 
             else:
-                if thl_calib_file.endswith('.p'):
-                    d = cPickle.load(open(thl_calib_file, 'rb'))
-                else:
+                if thl_calib_file.endswith('.hck'):
                     d = hickle.load(thl_calib_file)
+                elif thl_calib_file.endswith('.json'):
+                    # JSON
+                    with open(thl_calib_file, 'r') as f:
+                        d = json.load(f)
+                else:
+                    print('Cannot open THL calibration file with extension %s' % thl_calib_file.split('.')[-1])
+                    self.THLEdgesLow.append( None ) 
+                    self.THLEdgesHigh.append( None )
+                    self.THLEdges.append( None )
+                    self.THLFitParams.append( None )
 
                 self.voltCalib.append( np.asarray(d['Volt']) / max(d['Volt']) )
                 self.THLCalib.append( np.asarray(d['ADC']) )
@@ -63,7 +85,7 @@ class Config(object):
                 THLHigh = np.floor(THLHigh)
 
                 self.THLEdgesLow.append(THLLow), self.THLEdgesHigh.append(THLHigh), self.THLFitParams.append(THLFitParams)
-                print self.THLEdgesLow[-1], self.THLEdgesHigh[-1]
+                print(self.THLEdgesLow[-1], self.THLEdgesHigh[-1])
                 
                 # Combine
                 THLEdges = []
@@ -71,7 +93,7 @@ class Config(object):
                     THLEdges += list( np.arange(self.THLEdgesLow[-1][i], self.THLEdgesHigh[-1][i] + 1) )
                 self.THLEdges.append( THLEdges ) 
 
-    def splitPerihperyDACs(self, code, perc=True):
+    def splitPerihperyDACs(self, code, perc=False, show=False):
         if perc:
             percEightBit = float( 2**8 )
             percNineBit = float( 2**9 )
@@ -79,9 +101,11 @@ class Config(object):
         else:
             percEightBit, percNineBit, percThirteenBit = 1, 1, 1
 
-
-        code = bin(int(code, 16)).split('0b')[-1]
-        print code
+        if show:
+            print(code)
+        code = format(int(code, 16), 'b')
+        if show:
+            print(code)
         d = {'V_ThA': int(code[115:], 2) / percThirteenBit,
             'V_tpref_fine': int(code[103:112], 2) / percNineBit,
             'V_tpref_coarse': int(code[88:96], 2) / percEightBit, 
@@ -97,17 +121,18 @@ class Config(object):
             'I_pixeldac': int(code[8:16], 2) / percEightBit, 
             'V_casc_reset': int(code[:8], 2) / percEightBit}
 
-        print 'PeripheryDAC values in',
-        if perc:
-            print 'percent:'
-        else:
-            print 'DAC:'
-        print yaml.dump(d, indent=4, default_flow_style=False)
-        print 
+        if show:
+            print('PeripheryDAC values in', end='')
+            if perc:
+                print('percent:')
+            else:
+                print('DAC:')
+            print(yaml.dump(d, indent=4, default_flow_style=False))
+            print()
 
         return d
 
-    def periheryDACsDictToCode(self, d, perc=True):
+    def periheryDACsDictToCode(self, d, perc=False):
         if perc:
             percEightBit = float( 2**8 )
             percNineBit = float( 2**9 )
@@ -131,9 +156,83 @@ class Config(object):
         code |= (int(d['I_pixeldac'] * percEightBit) << 120 - 8)
         code |= (int(d['V_casc_reset'] * percEightBit) << 128 - 8)
 
-        return hex(code).split('0x')[-1][:-1]
+        return '%04x' % code
 
-    def readConfig(self, configFn):
+    def readConfig(self, configFn, slot=1):
+        config = configparser.ConfigParser()
+        config.read(configFn)
+
+        # Mandatory sections
+        sectionList = ['Peripherydac', 'OMR', 'Equalisation']
+
+        # Check if set, else throw error
+        for section in config.sections():
+            assert section in sectionList, 'Config: %s is a mandatory section and has to be specified' % section
+
+        # Read Peripherydac
+        if 'code' in config['Peripherydac']:
+            self.peripherys = config['Peripherydac']
+        else:
+            PeripherydacDict = {}
+            PeripherydacCodeList = ['V_ThA', 'V_tpref_fine', 'V_tpref_coarse', 'I_tpbufout', 'I_tpbufin', 'I_disc1', 'I_disc2', 'V_casc_preamp', 'V_gnd', 'I_preamp', 'V_fbk', 'I_krum', 'I_pixeldac', 'V_casc_reset']
+            for PeripherydacCode in PeripherydacCodeList:
+                assert PeripherydacCode in config['Peripherydac'], 'Config: %s has to be specified in OMR section!' % PeripherydacCode
+
+                PeripherydacDict[PeripherydacCode] = int(float( config['Peripherydac'][PeripherydacCode] ))
+            self.peripherys[slot - 1] = self.periheryDACsDictToCode(PeripherydacDict)[:-4]
+            self.THLs[slot - 1] = '%04x' % PeripherydacDict['V_ThA']
+
+        # Read OMR
+        if 'code' in config['OMR']:
+            self.OMR[slot - 1] = config['OMR']['code']
+        else:
+            OMRList = []
+
+            OMRCodeList = ['OperationMode', 'GlobalShutter', 'PLL', 'Polarity', 'AnalogOutSel', 'AnalogInSel', 'OMRDisableColClkGate']
+            for OMRCode in OMRCodeList:
+                assert OMRCode in config['OMR'], 'Config: %s has to be specified in OMR section!' % OMRCode
+
+                OMRList.append(config['OMR'][OMRCode])
+
+            self.OMR[slot - 1] = OMRList
+
+        # Equalisation
+        # confBits - optional field
+        if 'confBits' in config['Equalisation']:
+            self.confBits[slot - 1] = config['Equalisation']['confBits']
+        else:
+            # Use all pixels
+            self.confBits[slot - 1] = '00' * 256
+
+        # pixelDAC
+        assert 'pixelDAC' in config['Equalisation'], 'Config: pixelDAC has to be specified in Equalisation section!'
+        self.pixelDAC[slot - 1] = config['Equalisation']['pixelDAC']
+
+        # binEdges
+        assert 'binEdges' in config['Equalisation'], 'Config: binEdges has to be specified in Equalisation section!'
+        self.binEdges[slot - 1] = config['Equalisation']['binEdges']
+
+        return
+
+    def writeConfig(self, configFn, slot=1):
+        config = configparser.ConfigParser()
+        d = self.splitPerihperyDACs(self.peripherys[slot-1] + self.THLs[slot-1])
+        d['V_ThA'] = int(self.THLs[slot-1], 16)
+        config['Peripherydac'] = d
+
+        if not isinstance(self.OMR[slot-1], basestring):
+            OMRCodeList = ['OperationMode', 'GlobalShutter', 'PLL', 'Polarity', 'AnalogOutSel', 'AnalogInSel', 'OMRDisableColClkGate']
+            config['OMR'] = {OMRCode: self.OMR[slot-1][i] for i, OMRCode in enumerate(OMRCodeList)}
+        else:
+            config['OMR'] = {'code': self.OMR[slot-1]}
+
+        config['Equalisation'] = {'pixelDAC': self.pixelDAC[slot-1], 'binEdges': self.binEdges[slot-1], 'confBits': self.confBits[slot-1], 'binEdges': ''.join(self.binEdges[slot-1])}
+
+        with open(configFn, 'w') as configFile:
+            config.write(configFile)
+
+    '''
+    def readConfig_old(self, configFn):
         config = configparser.ConfigParser()
         config.read(configFn)
 
@@ -189,8 +288,8 @@ class Config(object):
             self.binEdges[i-1] = config['Slot%d' % i]['binEdges']
 
         return
-
-    def writeConfig(self, configFn):
+    
+    def writeConfig_old(self, configFn):
         config = configparser.ConfigParser()
         config['General'] = {'peripheryDAC': self.peripherys}
 
@@ -205,4 +304,4 @@ class Config(object):
 
         with open(configFn, 'w') as configFile:
             config.write(configFile)
-
+    '''
