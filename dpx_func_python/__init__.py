@@ -15,17 +15,28 @@ class Dosepix(config.Config, control.Control, support.Support, dpx_functions.DPX
     # === FLAGS ===
     USE_GUI = False
 
-    def __init__(self, portName, baudRate, configFn=None, thl_calib_files=None, params_file=None, bin_edges_file=None):
+    def __init__(self, portName, baudRate=2e6, configFn=None, thl_calib_files=None, params_file=None, bin_edges_file=None, Ikrum=None):
+        self.portName = portName
+        if self.portName is None:
+            # Call class without arguments to get a dummy instance. 
+            return
+
         """
         Creates instance of :class:`Dosepix`
 
         :param portName: Name of the port
         :type name: str
         """
+
+        self.bin_edges_file = bin_edges_file
+        '''
         if params_file is None:
             self.bin_edges_file = bin_edges_file
+            self.bin_edges = None
         else:
             self.bin_edges = bin_edges_file
+            self.bin_edges_file = None
+        '''
 
         self.params_file = params_file
         self.thl_calib_files = thl_calib_files
@@ -45,7 +56,7 @@ class Dosepix(config.Config, control.Control, support.Support, dpx_functions.DPX
         else:
             self.unsetGUI()
 
-        self.getConfigDPX(self.portName, self.baudRate, self.configFn)
+        self.getConfigDPX(self.portName, self.baudRate, self.configFn, Ikrum)
 
     def __del__(self):
         self.close()
@@ -63,6 +74,9 @@ class Dosepix(config.Config, control.Control, support.Support, dpx_functions.DPX
         self.USE_GUI = False
 
     def close(self):
+        if self.portName is None:
+            return
+
         # = Shut down =
         self.HVDeactivate()
         print('Check if HV is deactivated...'),

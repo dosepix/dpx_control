@@ -5,6 +5,7 @@ import time
 from collections import namedtuple
 # import cPickle
 import hickle
+import json
 
 DEBUG = False
 import dpx_func_python.dpx_settings as ds
@@ -68,45 +69,59 @@ class Control():
         for i in range(1, 3 + 1):
             self.DPXReadToTDataDosiModeCommand(i)
 
-        # = Bin Edges =
-        if not self.params_file and self.bin_edges_file is not None:
-            print(self.bin_edges_file)
-            if self.bin_edges_file.endswith('.p'):
-                binEdgesDict = cPickle.load(open(self.bin_edges_file, 'rb'))
-            else:
-                binEdgesDict = hickle.load(self.bin_edges_file)
-
+        # = Calibration parameters =
+        if self.params_file is not None:
+            self.paramsDict = {}
             for slot in range(1, 3 + 1):
-                for idx in range(16):
-                    self.DPXWriteSingleThresholdCommand(slot, binEdgesDict['Slot%d' % slot][idx])
+                if self.params_file[slot - 1] is None:
+                    self.paramsDict['Slot%d' % slot] = None
+                    continue
 
-        else:
-            if self.params_file is None:
-                print('Warning: No parameters for the bin edges specified. Using default values.')
-
-                gray = [0, 1, 3, 2, 6, 4, 5, 7, 15, 13, 12, 14, 10, 11, 9, 8]
-                for i in range(1, 3 + 1):
-                    for binEdge in range(16):
-                        gc = gray[binEdge]
-                        binEdges = ('%01x' % gc + '%03x' % (20*binEdge + 15)) * 256
-                        self.DPXWriteSingleThresholdCommand(i, binEdges)
-
-            else:
-                # TODO: Add energy bins to config file
-                if self.params_file.endswith('.p'):
-                    self.paramsDict = cPickle.load(open(self.params_file, 'rb'))
+                if self.params_file[slot - 1].endswith('.p'):
+                    self.paramsDict['Slot%d' % slot] = cPickle.load(open(self.params_file[slot - 1], 'rb'))
+                elif self.params_file[slot - 1].endswith('.json'):
+                    with open(self.params_file[slot - 1], 'r') as f:
+                        paramsDict = json.load(f)
+                        paramsDict = {int(key): paramsDict[key] for key in paramsDict.keys()}
+                        self.paramsDict['Slot%d' % slot] = paramsDict
                 else:
-                    self.paramsDict = hickle.load(self.params_file)
+                    self.paramsDict['Slot%d' % slot] = hickle.load(self.params_file[slot - 1])
+        else:
+            print('Warning: No parameters for the bin edges specified. Using default values.')
+            self.paramsDict = None
 
-                self.binEdges = {'Slot%d' % slot: [] for slot in range(1, 3 + 1)}
-                for slot in range(1, 3 + 1):
-                    if len(np.asarray(self.bin_edges['Slot%d' % slot]).shape) > 2:
-                        # bin edges are specified for a shifted dose measurement
-                        for idx in reversed(range(len(self.bin_edges['Slot%d' % slot]))):
-                            binEdgesList = self.setBinEdges(slot, self.paramsDict['Slot%d' % slot], self.bin_edges['Slot%d' % slot][idx])
-                            self.binEdges['Slot%d' % slot].insert(0, binEdgesList)
-                    else:
-                        self.setBinEdges(slot, self.paramsDict['Slot%d' % slot], self.bin_edges['Slot%d' % slot])
+        # = Bin Edges =
+        # if not self.params_file and self.bin_edges_file is not None:
+        if self.bin_edges_file is not None:
+            self.binEdges = {'Slot%d' % slot: [] for slot in range(1, 3 + 1)}
+            for slot in range(1, 3 + 1):
+                be_fn = self.bin_edges_file[slot - 1]
+                if be_fn is None:
+                    continue
+
+                if be_fn.endswith('.p'):
+                    binEdges = cPickle.load(open(be_fn, 'rb'))
+                elif be_fn.endswith('.json'):
+                    with open(be_fn, 'r') as f:
+                        binEdges = json.load(f)
+                else:
+                    binEdges = hickle.load(be_fn)
+
+                if len(np.asarray(binEdges).shape) > 2:
+                    # bin edges are specified for a shifted dose measurement
+                    # for idx in reversed(range(len(binEdges))):
+                    idx = 0
+                    binEdgesList = self.setBinEdges(slot, self.paramsDict['Slot%d' % slot], binEdges[idx])
+                    self.binEdges['Slot%d' % slot].insert(0, binEdgesList)
+                else:
+                    self.setBinEdges(slot, binEdges, self.bin_edges['Slot%d' % slot])
+        else:
+            gray = [0, 1, 3, 2, 6, 4, 5, 7, 15, 13, 12, 14, 10, 11, 9, 8]
+            for i in range(1, 3 + 1):
+                for binEdge in range(16):
+                    gc = gray[binEdge]
+                    binEdges = ('%01x' % gc + '%03x' % (20*binEdge + 15)) * 256
+                    self.DPXWriteSingleThresholdCommand(i, binEdges)
 
         # = Empty Bins =
         for i in range(1, 3 + 1):
@@ -161,7 +176,7 @@ class Control():
 
         # Check if paramDict was made using THL calibration.
         # If so, additional parameters h and k are present in the dict
-        if 'h' in paramDict[paramDict.keys()[0]].keys():
+        if 'h' in paramDict[list(paramDict.keys())[0]].keys():
             fEnergyConv = True
         else:
             fEnergyConv = False
@@ -189,6 +204,7 @@ class Control():
             #     binEdgesToT = self.energyToToTFitHyp(beEnergy, a, b, c, t)
             # else:
             binEdgesToT = self.EnergyToToTSimple(beEnergy, a, b, c, t, h, k)
+            print( binEdgesToT )
 
             # Round the values - do not use floor function as this leads to bias
             binEdgesToT = np.around( binEdgesToT )
@@ -213,7 +229,7 @@ class Control():
         cmdTotal = ''
         for idx, gc in enumerate(gray):
             # Construct command
-            cmd = ''.join( [('%01x' % gc) + ('%03x' % be) for be in binEdgesList[idx]] )
+            cmd = ''.join( [('%01x' % gc) + ('%03x' % be) for be in np.asarray(binEdgesList[idx], dtype=int)] )
             self.DPXWriteSingleThresholdCommand(slot, cmd)
             cmdTotal += cmd
 
@@ -398,7 +414,8 @@ class Control():
     def DPXReadBinDataDosiModeCommand(self, slot):
         self.sendCmd([self.getReceiverFromSlot(slot), ds._subReceiverNone, ds._senderPC, ds._DPXreadBinDataDosiModeCommand, ds._commandNoneLength, ds._commandNone, ds._CRC])
 
-        return self.convertToDecimal(self.getDPXResponse())
+        res = self.getDPXResponse()
+        return self.convertToDecimal( res )
 
     def DPXReadToTDataDosiModeCommand(self, slot):
         self.sendCmd([self.getReceiverFromSlot(slot), ds._subReceiverNone, ds._senderPC, ds._DPXreadToTDataDosiModeCommand, ds._commandNoneLength, ds._commandNone, ds._CRC])

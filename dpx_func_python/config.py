@@ -16,17 +16,26 @@ except NameError:
   basestring = str
 
 class Config(object):
-    def getConfigDPX(self, portName, baudRate, configFn):
+    def getConfigDPX(self, portName, baudRate, configFn, Ikrum=None):
         self.ser = serial.Serial(self.portName, self.baudRate)
         assert self.ser.is_open, 'Error: Could not establish serial connection!'
 
         # Read config
+        # Standard values
         self.peripherys = ['dc310bc864508230768080ff0064'] * 3
         self.OMR = ['39ffc0'] * 3
         self.THLs = ['153b'] * 3
         self.confBits = ['0' * 512] * 3
         self.pixelDAC = ['0' * 512] * 3
         self.binEdges = ['0' * 1024] * 3
+
+        # Set standard Ikrum
+        if Ikrum is not None:
+            for p_idx, p in enumerate( self.peripherys ):
+                d = self.splitPerihperyDACs(p + self.THLs[p_idx], perc=False, show=False)
+                d['I_krum'] = Ikrum[p_idx]
+                code = self.periheryDACsDictToCode(d, perc=False)
+                self.peripherys[p_idx] = code[:-4]
 
         if self.configFn is None:
             print('Config file not found. Please run THL equalization first. Using standard values.')
@@ -37,13 +46,14 @@ class Config(object):
                 else:
                     print('Only one config file specified. Using same file for all slots.')
                     for slot in range(1, 3 + 1):
-                        self.readConfig(self.configFn, slot=idx+1)
+                        self.readConfig(self.configFn, slot=slot)
             else:
                 for idx, conf in enumerate(self.configFn):
-                    if os.path.isfile(conf):
-                        self.readConfig(conf, slot=idx+1)
-                    else:
-                        print('Config file not found. Please run THL equalization first. Using standard values.')
+                    if conf is not None:
+                        if os.path.isfile(conf):
+                            self.readConfig(conf, slot=idx+1)
+                        else:
+                            print('Config file not found. Please run THL equalization first. Using standard values.')
 
         self.initDPX()
 
@@ -60,12 +70,12 @@ class Config(object):
                 self.THLEdgesHigh.append( None )
                 self.THLEdges.append( None )
                 self.THLFitParams.append( None )
-
             else:
                 if thl_calib_file.endswith('.hck'):
                     d = hickle.load(thl_calib_file)
                 elif thl_calib_file.endswith('.json'):
                     # JSON
+                    print(thl_calib_file)
                     with open(thl_calib_file, 'r') as f:
                         d = json.load(f)
                 else:
@@ -305,3 +315,4 @@ class Config(object):
         with open(configFn, 'w') as configFile:
             config.write(configFile)
     '''
+

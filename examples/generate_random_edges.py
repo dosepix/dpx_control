@@ -1,25 +1,39 @@
 #!/usr/bin/env python
 import numpy as np
 import hickle
+import json
+import argparse
 import sys
 sys.path.insert(0, '../dpx_func_python/')
 import bin_edges_random as ber
 
-CONFIG_DIR = 'config/'
-BIN_EDGES_RANDOM_FN = CONFIG_DIR + 'binEdgesUniform_DPX22_6_109_Ikrum_10_150.hck'
-GEN_BIN_EDGES_RANDOM = False
-ENERGY_START, ENERGY_RANGE = 10, 150 # 40
+def main():
+    out, shifted, minenergy, maxenergy = parse_args()
 
-binEdgesDict = {}
-for slot in range(1, 3 + 1):
-    if GEN_BIN_EDGES_RANDOM:
-        binEdges = ber.getBinEdgesRandom(NPixels=256, edgeMin=12, edgeMax=100, edgeOvfw=430, uniform=False)
+    # Generate edges
+    if not shifted:
+        binEdges = ber.getBinEdgesRandom(NPixels=256, edgeMin=minenergy, edgeMax=maxenergy, edgeOvfw=430, uniform=False)
+        binEdges = [list(e) for e in binEdges]
     else:
         # Generate edges for multiple energy regions
         binEdges = []
         for idx in range(4):
-            edges = ber.getBinEdgesUniform(NPixels=256, edgeMin=ENERGY_START + idx*ENERGY_RANGE, edgeMax=ENERGY_START + (idx + 1)*ENERGY_RANGE, edgeOvfw=430)
-            binEdges.append( edges )
-    binEdgesDict['Slot%d' % slot] = binEdges
-hickle.dump(binEdgesDict, BIN_EDGES_RANDOM_FN)
+            edges = ber.getBinEdgesUniform(NPixels=256, edgeMin=minenergy + idx*(maxenergy - minenergy), edgeMax=minenergy + (idx + 1)*(maxenergy - minenergy), edgeOvfw=430)
+            binEdges.append( [list(e) for e in edges] )
+
+    # hickle.dump(binEdgesDict, BIN_EDGES_RANDOM_FN)
+    with open(out, 'w') as f:
+        json.dump(binEdges, f)
+
+def parse_args():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-out', '--outfile', action='store', required=True, help='output-file')
+    parser.add_argument('-sh', '--shifted', action='store_true', required=False, help='Create shifted edges')
+    parser.add_argument('-min_e', '--minenergy', action='store', type=int, required=True, help='Minimum energy')
+    parser.add_argument('-max_e', '--maxenergy', action='store', type=int, required=True, help='Maximum energy')
+    args = parser.parse_args()
+    return args.outfile, args.shifted, args.minenergy, args.maxenergy
+
+if __name__ == '__main__':
+    main()
 
