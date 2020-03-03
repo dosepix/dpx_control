@@ -284,7 +284,7 @@ class DPX_functions():
         # Set Dosi Mode in OMR
         # If OMR code is list
         for sl in slot:
-            OMRCode = self.OMR[sl-1]
+            OMRCode = self.OMR[sl - 1]
             if not isinstance(OMRCode, basestring):
                 OMRCode[0] = 'DosiMode'
             else:
@@ -294,23 +294,24 @@ class DPX_functions():
             if not isinstance(slot, (list,)):
                 slot = [slot]
 
-            # Set ADC out to temperature if requested
-            if logTemp:
-                tempDict = {'temp': [], 'time': []}
-
-                if type(self.OMR[sl-1]) is list:
-                    OMRCode_ = self.OMRListToHex(self.OMR[sl-1])
-                else:
-                    OMRCode_ = self.OMR[sl-1]
-                OMRCode_ = int(OMRCode_, 16)
-
-                OMRCode_ &= ~(0b11111 << 12)
-                OMRCode_ |= getattr(ds._OMRAnalogOutSel, 'Temperature')
-                self.DPXWriteOMRCommand(1, hex(OMRCode_).split('0x')[-1])
-
             # Set OMR
+            self.OMR[sl - 1] = OMRCode
             self.DPXWriteOMRCommand(sl, OMRCode)
             self.DPXDataResetCommand(sl)
+
+        # Set ADC out to temperature if requested
+        if logTemp:
+            tempDict = {'temp': [], 'time': []}
+
+            if type(self.OMR[0]) is list:
+                OMRCode_ = self.OMRListToHex(self.OMR[0])
+            else:
+                OMRCode_ = self.OMR[0]
+            # OMRCode_ = int(OMRCode_, 16)
+
+            OMRCode_ &= ~(0b11111 << 12)
+            OMRCode_ |= getattr(ds._OMRAnalogOutSel, 'Temperature')
+            self.DPXWriteOMRCommand(1, hex(OMRCode_).split('0x')[-1])
 
         # Initial reset
         self.clearBins(slot)
@@ -326,7 +327,7 @@ class DPX_functions():
             if not fast:
                 region_stack = {sl: [0] for sl in slot}
             else:
-                region_stack = {sl: range(regions) for sl in slot}
+                region_stack = {sl: list(range(1, regions)) for sl in slot}
 
             region_idx = {sl: 0 for sl in slot}
             last_region_idx = {sl: None for sl in slot}
@@ -335,7 +336,7 @@ class DPX_functions():
             startTime = {sl: time.time() for sl in slot}
             stack_size = 10
 
-            for c in range(frames):
+            for c in range(frames * regions):
                 # Measure temperature?
                 if logTemp:
                     temp = float(int(self.MCGetADCvalue(), 16))
@@ -362,7 +363,7 @@ class DPX_functions():
 
                     # Loop over columns
                     for col in range(16):
-                        self.DPXWriteColSelCommand(sl, 16 - col)
+                        self.DPXWriteColSelCommand(sl, 15 - col)
                         out = np.asarray( self.DPXReadBinDataDosiModeCommand(sl), dtype=float )
                         print(np.nanmean(out), np.nanstd(out), np.nansum(out))
                         outList.append( out )
@@ -376,18 +377,19 @@ class DPX_functions():
 
                     # Append to outDict
                     data = np.asarray(outList)
+                    print('Append to region:', region_idx[sl])
                     outDict['Slot%d' % sl]['Region%d' % region_idx[sl]].append( data )
 
                     # = Measurement time handler =
                     # If stack is empty, start from beginning
-                    if len(region_stack[sl]) == 0:
+                    if not len(region_stack[sl]):
                         region_idx[sl] = 0
                     else:
                         # Get current energy region
                         last_region_idx[sl] = region_idx[sl]
                         region_idx[sl] = region_stack[sl].pop(0)
 
-                    if len(region_stack[sl]) == 1 or (region_idx[sl] != last_region_idx[sl] and region_idx[sl] != region_stack[sl][-1]):
+                    if not fast and (len(region_stack[sl]) == 1 or (region_idx[sl] != last_region_idx[sl] and region_idx[sl] != region_stack[sl][-1])):
                         STACK_APPEND[sl] = True
 
                     # Get number of counts in frame and overflow bins
@@ -396,9 +398,10 @@ class DPX_functions():
                         N_frame = np.sum(sum_frame[1:])
                         N_ovfw = sum_frame[0] 
 
-                        if N_ovfw == 0 or N_frame == 0:
-                            # region_stack[sl].append( region_idx )
-                            continue
+                        if not fast:
+                            if N_ovfw == 0 or N_frame == 0:
+                                # region_stack[sl].append( region_idx )
+                                continue
 
                         # Calculate fraction
                         p_next = N_ovfw / N_frame
@@ -417,10 +420,10 @@ class DPX_functions():
 
                         # Select next region
                         if STACK_APPEND[sl]:
-                            if region_idx[sl] == 0 or region_idx[sl] + 1 > 3:
+                            if region_idx[sl] == 0 or region_idx[sl] + 1 > regions:
                                 stack_size = 10. / p_next
 
-                            if region_idx[sl] + 1 > 3:
+                            if region_idx[sl] + 1 > regions:
                                 region_stack[sl] += 0
                             else:
                                 next_region = region_idx[sl] + 1
@@ -464,6 +467,7 @@ class DPX_functions():
         # Reset OMR
         for sl in slot:
             self.DPXWriteOMRCommand(sl, self.OMR[sl-1])
+        return outDict, timeDict
 
     def measureIntegration(self, slot=1, measurement_time=10, frames=10, outFn='integrationMeasurement.json'):
         """Perform measurement in Integration Mode.
@@ -831,6 +835,9 @@ class DPX_functions():
                             break
 
                     for slot in slotList:
+                        # d = self.DPXReadPeripheryDACCommand(slot=2)
+                        # print( d )
+
                         # Read data
                         data = self.DPXReadToTDataDosiModeCommand(slot)
 
@@ -874,7 +881,11 @@ class DPX_functions():
                         # data[data >= 4096] -= 4096
 
                         if intPlot or self.USE_GUI:
-                            data_ = np.asarray(data[[self.isLarge(pixel) for pixel in range(256)]])
+                            if self.paramsDict is not None:
+                                data_ = np.asarray(energyData).flatten()
+                            else:
+                                data_ = data
+                            data_ = np.asarray(data_[[self.isLarge(pixel) for pixel in range(256)]])
                             data_ = data_[~np.isnan(data_)]
                             dataPlot[slot] += data_.tolist()
 

@@ -32,20 +32,22 @@ def getBinEdgesRandomEvenSpace(edgeMin, edgeMax, edgeOvfw):
 
     return binEdges
 
-def getBinEdgesUniform(NPixels, edgeMin, edgeMax, edgeOvfw):
-	edgeList = []
-	xInit = np.linspace(edgeMin, edgeMax, 16)
-	bw = xInit[1] - xInit[0]
-	pixelIdx = 0
-	for pixel in range(NPixels):
-		if not isLarge(pixel):
-			edgeList.append(np.append(xInit, edgeOvfw))
-			continue
+def getBinEdgesUniform(pixels, edgeMin, edgeMax, edgeOvfw):
+    edgeList = []
+    xInit = np.linspace(edgeMin, edgeMax, 16)
+    bw = xInit[1] - xInit[0]
+    pixelIdx = 0
 
-		offset = bw / 192. * pixelIdx
-		edgeList.append(np.append(xInit + offset, edgeOvfw))
-		pixelIdx += 1
-	return edgeList
+    pixels_filt = [pixel for pixel in pixels if isLarge(pixel)]
+    for pixel in pixels:
+        if not isLarge(pixel):
+            edgeList.append(np.append(xInit, edgeOvfw))
+            continue
+
+        offset = bw / float(len(pixels_filt)) * pixelIdx
+        edgeList.append(np.append(xInit + offset, edgeOvfw))
+        pixelIdx += 1
+    return edgeList
 
 def isLarge(pixel):
 	if pixel % 16 in [0, 1, 14, 15]:

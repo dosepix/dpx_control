@@ -11,8 +11,9 @@ PORT = '/dev/ttyUSB0'
 CONFIG_DIR = 'config/'
 # CHIP_NUMS = [None, 154, None]
 # CHIP_NUMS = [101, None, None]
-CHIP_NUMS = [22, 6, 109]
-IKRUMS = [10, 20, 30, 40, 50]
+CHIP_NUMS = [22, 101, 109]
+CHIP_NUMS = [None, 101, None]
+IKRUMS = [20] # [10, 20, 30, 40, 50]
 
 # Set to large value if using for dose measurement (>= 20)
 THL_OFFSET = 5

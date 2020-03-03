@@ -233,3 +233,4 @@ class Support(object):
     def megalix_xray_off(self, mlx):
         mlx.write('SWROFF\n')
         mlx.write('PREP 0\n')
+

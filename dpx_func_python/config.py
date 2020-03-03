@@ -236,83 +236,8 @@ class Config(object):
         else:
             config['OMR'] = {'code': self.OMR[slot-1]}
 
-        config['Equalisation'] = {'pixelDAC': self.pixelDAC[slot-1], 'binEdges': self.binEdges[slot-1], 'confBits': self.confBits[slot-1], 'binEdges': ''.join(self.binEdges[slot-1])}
+        config['Equalisation'] = {'pixelDAC': self.pixelDAC[slot-1], 'confBits': self.confBits[slot-1], 'binEdges': ''.join(self.binEdges['Slot%d' % slot])}
 
         with open(configFn, 'w') as configFile:
             config.write(configFile)
-
-    '''
-    def readConfig_old(self, configFn):
-        config = configparser.ConfigParser()
-        config.read(configFn)
-
-        # Mandatory sections
-        sectionList = ['General', 'OMR', 'Slot1', 'Slot2', 'Slot3']
-
-        # Check if set, else throw error
-        for section in config.sections():
-            assert section in sectionList, 'Config: %s is a mandatory section and has to be specified' % section
-
-        # Read General
-        if 'peripheryDAC' in config['General']:
-            self.peripherys = config['General']['peripheryDAC']
-        else:
-            for i in range(1, 3 + 1):
-                assert 'peripheryDAC' in config['Slot%d' % i], 'Config: peripheryDAC has to be set in either General or the Slots!'
-
-        # Read OMR
-        if 'code' in config['OMR']:
-            self.OMR = config['OMR']['code']
-        else:
-            OMRList = []
-
-            OMRCodeList = ['OperationMode', 'GlobalShutter', 'PLL', 'Polarity', 'AnalogOutSel', 'AnalogInSel', 'OMRDisableColClkGate']
-            for OMRCode in OMRCodeList:
-                assert OMRCode in config['OMR'], 'Config: %s has to be specified in OMR section!' % OMRCode
-
-                OMRList.append(config['OMR'][OMRCode])
-
-            self.OMR = OMRList
-
-        # Read slot specific data
-        for i in range(1, 3 + 1):
-            assert 'Slot%d' % i in config.sections(), 'Config: Slot %d is a mandatory section!' % i
-
-            # THL
-            assert 'THL' in config['Slot%d' % i], 'Config: THL has to be specified in Slot%d section!' % i
-            self.THLs[i-1] = config['Slot%d' % i]['THL']
-
-            # confBits - optional field
-            if 'confBits' in config['Slot%d' % i]:
-                self.confBits[i-1] = config['Slot%d' % i]['confBits']
-            else:
-                # Use all pixels
-                self.confBits[i-1] = '00' * 256
-
-            # pixelDAC
-            assert 'pixelDAC' in config['Slot%d' % i], 'Config: pixelDAC has to be specified in Slot%d section!' % i
-            self.pixelDAC[i-1] = config['Slot%d' % i]['pixelDAC']
-
-            # binEdges
-            assert 'binEdges' in config['Slot%d' % i], 'Config: binEdges has to be specified in Slot%d section!' % i
-            self.binEdges[i-1] = config['Slot%d' % i]['binEdges']
-
-        return
-    
-    def writeConfig_old(self, configFn):
-        config = configparser.ConfigParser()
-        config['General'] = {'peripheryDAC': self.peripherys}
-
-        if not isinstance(self.OMR, basestring):
-            OMRCodeList = ['OperationMode', 'GlobalShutter', 'PLL', 'Polarity', 'AnalogOutSel', 'AnalogInSel', 'OMRDisableColClkGate']
-            config['OMR'] = {OMRCode: self.OMR[i] for i, OMRCode in enumerate(OMRCodeList)}
-        else:
-            config['OMR'] = {'code': self.OMR}
-
-        for i in range(1, 3 + 1):
-            config['Slot%d' % i] = {'pixelDAC': self.pixelDAC[i-1], 'binEdges': self.binEdges[i-1], 'confBits': self.confBits[i-1], 'binEdges': ''.join(self.binEdges[i-1]), 'THL': self.THLs[i-1]}
-
-        with open(configFn, 'w') as configFile:
-            config.write(configFile)
-    '''
 

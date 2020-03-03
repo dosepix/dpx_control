@@ -14,9 +14,8 @@ def main():
     thl_calib_files = None 
     dpx = dpx_func_python.Dosepix(PORT, 2e6, CONFIG_FN, thl_calib_files=thl_calib_files,
             params_file=PARAMS_FILES, bin_edges_file=BIN_EDGES_FILES)
-
-    # Measure Dose
-    dpx.measureDose(slot=[1], intPlot=False, frames=1, logTemp=True, frame_time=10)
+    # dpx.measureADC(slot=1, AnalogOut='I_krum', perc=False, ADChigh=4096, ADClow=0, ADCstep=1, N=1, fn='Ikrum_meas.json', plot=True)
+    dpx.ADCWatch(slot=1, OMRAnalogOutList=['I_krum'], cnt=0, fn='ADCWatch.json')
 
     # Close connection
     dpx.close()

@@ -91,30 +91,53 @@ class Control():
             self.paramsDict = None
 
         # = Bin Edges =
-        # if not self.params_file and self.bin_edges_file is not None:
+        # Check if bin edges are given as dictionary or file
+        self.binEdges = {'Slot%d' % slot: [] for slot in range(1, 3 + 1)}
         if self.bin_edges_file is not None:
-            self.binEdges = {'Slot%d' % slot: [] for slot in range(1, 3 + 1)}
-            for slot in range(1, 3 + 1):
-                be_fn = self.bin_edges_file[slot - 1]
-                if be_fn is None:
-                    continue
-
-                if be_fn.endswith('.p'):
-                    binEdges = cPickle.load(open(be_fn, 'rb'))
-                elif be_fn.endswith('.json'):
-                    with open(be_fn, 'r') as f:
-                        binEdges = json.load(f)
+            # Dictionary
+            if isinstance(self.bin_edges_file, dict):
+                # Using ToT values
+                if self.paramsDict is None:
+                    self.binEdges = self.bin_edges_file
+                    for slot in range(1, 3 + 1):
+                        self.setBinEdgesToT(slot, self.binEdges['Slot%d' % slot])
+                # Convert to energy
                 else:
-                    binEdges = hickle.load(be_fn)
+                    for slot in range(1, 3 + 1):
+                        binEdgesList = self.setBinEdges(slot, self.paramsDict['Slot%d' % slot], self.bin_edges_file['Slot%d' % slot])
+                        self.binEdges['Slot%d' % slot].insert(0, binEdgesList)
+            
+            # File
+            else:
+                for slot in range(1, 3 + 1):
+                    be_fn = self.bin_edges_file[slot - 1]
+                    if be_fn is None:
+                        continue
 
-                if len(np.asarray(binEdges).shape) > 2:
+                    if be_fn.endswith('.p'):
+                        binEdges = cPickle.load(open(be_fn, 'rb'))
+                    elif be_fn.endswith('.json'):
+                        with open(be_fn, 'r') as f:
+                            binEdges = json.load(f)
+                    else:
+                        binEdges = hickle.load(be_fn)
+
+                    # If shape is larger than 2, bin edges are used for shifted
+                    # bin edges with more than one region!
+                    if len(np.asarray(binEdges).shape) <= 2:
+                        binEdges = np.asarray([binEdges])
+
                     # bin edges are specified for a shifted dose measurement
-                    # for idx in reversed(range(len(binEdges))):
-                    idx = 0
-                    binEdgesList = self.setBinEdges(slot, self.paramsDict['Slot%d' % slot], binEdges[idx])
-                    self.binEdges['Slot%d' % slot].insert(0, binEdgesList)
-                else:
-                    self.setBinEdges(slot, binEdges, self.bin_edges['Slot%d' % slot])
+                    # idx = 0
+                    for idx in reversed(range(len(binEdges))):
+                        # Convert to energy
+                        if self.paramsDict['Slot%d' % slot] is not None:
+                            binEdgesList = self.setBinEdges(slot, self.paramsDict['Slot%d' % slot], binEdges[idx])
+                            self.binEdges['Slot%d' % slot].insert(0, binEdgesList)
+                        # Using ToT values
+                        else:
+                            self.binEdges['Slot%d' % slot] = binEdges['Slot%d' % slot]
+                            self.setBinEdgesToT(slot, self.binEdges['Slot%d' % slot])
         else:
             gray = [0, 1, 3, 2, 6, 4, 5, 7, 15, 13, 12, 14, 10, 11, 9, 8]
             for i in range(1, 3 + 1):

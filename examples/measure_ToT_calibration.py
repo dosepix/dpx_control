@@ -1,23 +1,47 @@
 #!/usr/bin/env python
 import dpx_func_python
+import numpy as np
 
+REUSE_CONFIG = False
 PORT = '/dev/ttyUSB0'
 CONFIG_DIR = 'config/'
-CHIP_NUMS = [22, 6, 109]
-IKRUMS = [10, 20, 30, 40, 50]
+CHIP_NUMS = [22, 101, 109]
+
+if REUSE_CONFIG:
+    IKRUMS = np.arange(37, 51) 
+else:
+    IKRUMS = [20] # [10, 20, 30, 40, 50]
+
 PARAMS_FILES = None
 BIN_EDGES_FILES = None
 MEAS_TIME = 30 * 60
 
 def main():
+    if REUSE_CONFIG:
+        CONFIG_FN = [CONFIG_DIR + '%d/DPXConfig_%d_Ikrum%d.conf' % (CHIP, CHIP, 20) if CHIP is not None else None for CHIP in CHIP_NUMS]
+
     # Loop over different Ikrum values and perform measurements
     for Ikrum in IKRUMS:
+        if not REUSE_CONFIG:
+            CONFIG_FN = [CONFIG_DIR + '%d/DPXConfig_%d_Ikrum%d.conf' % (CHIP, CHIP, Ikrum) if CHIP is not None else None for CHIP in CHIP_NUMS]
+
         print('=== Starting ToT Measurement for Ikrum %d ===' % Ikrum)
-        CONFIG_FN = [CONFIG_DIR + '%d/DPXConfig_%d_Ikrum%d.conf' % (CHIP, CHIP, Ikrum) if CHIP is not None else None for CHIP in CHIP_NUMS]
         # Establish connection
         thl_calib_files = None 
         dpx = dpx_func_python.Dosepix(PORT, 2e6, CONFIG_FN, thl_calib_files=thl_calib_files, 
                 params_file=PARAMS_FILES, bin_edges_file=BIN_EDGES_FILES)
+        
+        # Change Ikrum
+        if REUSE_CONFIG:
+            # Ikrum is changed in this section, else it is changed via configuration file
+            for chip_idx in range(3):
+                d = dpx.splitPerihperyDACs(dpx.peripherys[chip_idx] + dpx.THLs[chip_idx], perc=False, show=True)
+                d['I_krum'] = Ikrum
+                code = dpx.periheryDACsDictToCode(d, perc=False)
+                code = code[:-4] + '%04x' % (int(dpx.THLs[chip_idx], 16))
+
+                dpx.peripherys[chip_idx] = code[:-4]
+                dpx.DPXWritePeripheryDACCommand(chip_idx + 1, code)
 
         # Measure ToT
         dpx.measureToT(slot=[1, 2, 3], intPlot=False, cnt=10000, storeEmpty=False, logTemp=True, meas_time=MEAS_TIME,
