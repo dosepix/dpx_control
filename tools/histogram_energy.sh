@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-IKRUM="20"
-INDIR="../examples/THLShift_Ikrum${IKRUM}_fine/"
-OUTDIR="./THLShift_Ikrum${IKRUM}_fine/"
+IKRUM="50"
+INDIR="../examples/THLShift_Ikrum_${IKRUM}_det_22/"
+OUTDIR="./THLShift_Ikrum_${IKRUM}_det_22/"
 CALIB_DIR="../examples/calibration_parameters/"
 P1="${CALIB_DIR}params_22_Ikrum${IKRUM}.json"
 P2="${CALIB_DIR}params_6_Ikrum${IKRUM}.json"

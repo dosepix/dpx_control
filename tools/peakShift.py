@@ -20,7 +20,7 @@ plotFn = 'peakShift_22_5_109'
 THLRange = [-100, -90, -80, -70, -60, -50, -40, -30, -20, -10, 0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100]
 
 def main():
-    directory, PLOT, shift_index= parse_args()
+    directory, PLOT, shift_index = parse_args()
     
     # Get THL range from files
     THLRange = []
@@ -56,7 +56,7 @@ def main():
     for THL_idx, THL in enumerate(THLRange):
         x = json.load(open(directory + '/' + files[THL_idx], 'r'))
         bins = np.asarray(x['bins'])
-        for slot in range(1, 3 + 1):
+        for slot in [1]: # range(1, 3 + 1):
             # Sum over pixels
             hist = np.sum(x['Slot%d' % slot], axis=0)
 
@@ -88,7 +88,7 @@ def main():
         plt.savefig(plotFn + '_spectra.svg')
         plt.show()
 
-    for slot in range(1, 3 + 1):
+    for slot in [1]: # range(1, 3 + 1):
         diff = abs( np.diff(muDict['Slot%d' % slot] - np.max(muDict['Slot%d' % slot])) )
         try:
             xlim = np.argwhere(diff > 10).flatten()[0]

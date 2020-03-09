@@ -23,9 +23,10 @@ def main():
 
     # Measure Dose
     outFn = 'doseMeasurementShift_AmMo'
-    doseDict, timeDict = dpx.measureDoseEnergyShift(slot=[1, 2, 3], measurement_time=30., freq=False, frames=10, logTemp=True, intPlot=False,
+    doseDict, timeDict = dpx.measureDoseEnergyShift(slot=[1, 2, 3], measurement_time=30., freq=False, frames=1, logTemp=True, intPlot=False,
                                                     fast=True, mlx=None, regions=1, outFn=outFn + '.json')
-    besh.histogram_data(doseDict, timeDict, PARAMS_FILES, BIN_EDGES_FILES, rb=300, bw=0.2, multi=True, split=4, out=outFn + '_hist.json')
+    bin_width = (120 - 10) / (15. * 4)
+    besh.histogram_data(doseDict, timeDict, PARAMS_FILES, BIN_EDGES_FILES, rb=100, bw=bin_width, multi=True, split=4, out=outFn + '_hist.json')
     dpx.close()
 
 if __name__ == '__main__':

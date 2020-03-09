@@ -22,11 +22,12 @@ def main():
             edgeMin = minenergy + idx * energyWidth
             edgeMax = minenergy + (idx + 1) * energyWidth
             edgeWidth = (edgeMax - edgeMin) / float(split)
+            edgeMax += edgeWidth
 
             split_edges = []
             for s in range(split):
                 splitMin = edgeMin + s * edgeWidth
-                splitMax = edgeMin + (s + 1) * edgeWidth
+                splitMax = edgeMin + (s + 1) * edgeWidth # + edgeWidth / 15.
 
                 # Generate edges
                 pixels = np.arange(256 // split * s, 256 // split * (1 + s))

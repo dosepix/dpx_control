@@ -5,16 +5,16 @@ import numpy as np
 REUSE_CONFIG = False
 PORT = '/dev/ttyUSB0'
 CONFIG_DIR = 'config/'
-CHIP_NUMS = [22, 101, 109]
+CHIP_NUMS = [22, None, None] # 101, 109]
 
 if REUSE_CONFIG:
     IKRUMS = np.arange(37, 51) 
 else:
-    IKRUMS = [20] # [10, 20, 30, 40, 50]
+    IKRUMS = [20, 40, 50] # [10, 20, 30, 40, 50]
 
 PARAMS_FILES = None
 BIN_EDGES_FILES = None
-MEAS_TIME = 30 * 60
+MEAS_TIME = 60 * 30
 
 def main():
     if REUSE_CONFIG:

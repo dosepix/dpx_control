@@ -283,6 +283,7 @@ class DPX_functions():
     def measureDoseEnergyShift(self, slot=1, measurement_time=120, frames=10, regions=3, freq=False, outFn='doseMeasurementShift.json', logTemp=False, intPlot=False, fast=False, mlx=None):
         # Set Dosi Mode in OMR
         # If OMR code is list
+        print(self.OMR)
         for sl in slot:
             OMRCode = self.OMR[sl - 1]
             if not isinstance(OMRCode, basestring):
@@ -295,7 +296,7 @@ class DPX_functions():
                 slot = [slot]
 
             # Set OMR
-            self.OMR[sl - 1] = OMRCode
+            self.OMR[sl - 1] = '%06x' % OMRCode
             self.DPXWriteOMRCommand(sl, OMRCode)
             self.DPXDataResetCommand(sl)
 
@@ -306,7 +307,7 @@ class DPX_functions():
             if type(self.OMR[0]) is list:
                 OMRCode_ = self.OMRListToHex(self.OMR[0])
             else:
-                OMRCode_ = self.OMR[0]
+                OMRCode_ = int(self.OMR[0], 16)
             # OMRCode_ = int(OMRCode_, 16)
 
             OMRCode_ &= ~(0b11111 << 12)
@@ -345,9 +346,11 @@ class DPX_functions():
 
                 # Wait
                 if mlx is not None:
-                    self.megalix_xray_on(mlx)
+                    mlx(measurement_time * 1000)
                     time.sleep(measurement_time)
-                    self.megalix_xray_off(mlx)
+                    # self.megalix_xray_on(mlx)
+                    # time.sleep(measurement_time)
+                    # self.megalix_xray_off(mlx)
                 else:
                     time.sleep(measurement_time)
 
@@ -447,8 +450,8 @@ class DPX_functions():
             if logTemp:
                 self.pickleDump(tempDict, '%s_temp' % outFn_split[0] + '.%s' % outFn_split[1], overwrite=True)
 
-            self.pickleDump(timeDict, '%s_time' % outFn_split[0] + '.%s' % outFn_split[1])
-            self.pickleDump(outDict, outFn)
+            self.pickleDump(timeDict, '%s_time' % outFn_split[0] + '.%s' % outFn_split[1], overwrite=True)
+            self.pickleDump(outDict, outFn, overwrite=True)
             # self.pickleDump(self.binEdges, '%s_binEdges' % outFn.split('.hck')[0] + '.hck')
 
         except (KeyboardInterrupt, SystemExit):
@@ -459,8 +462,8 @@ class DPX_functions():
             if logTemp:
                 self.pickleDump(tempDict, '%s_temp' % outFn_split[0] + '.%s' % outFn_split[1], overwrite=True)
 
-            self.pickleDump(timeDict, '%s_time' % outFn_split[0] + '.%s' % outFn_split[1])
-            self.pickleDump(outDict, outFn)
+            self.pickleDump(timeDict, '%s_time' % outFn_split[0] + '.%s' % outFn_split[1], overwrite=True)
+            self.pickleDump(outDict, outFn, overwrite=True)
             # self.pickleDump(self.binEdges, '%s_binEdges' % outFn.split('.p')[0] + '.p')
             raise
 

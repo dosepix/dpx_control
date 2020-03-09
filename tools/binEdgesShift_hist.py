@@ -19,7 +19,7 @@ def main():
 
     histogram_data(doseDict, timeDict, (p1, p2, p3), (b1, b2, b3), rb, bw, multi, split, out)
 
-def histogram_data(doseDict, timeDict, p, b, rb, bw, multi=False, split=1, out=''):
+def histogram_data(doseDict, timeDict, p, b, rb, bw, multi=False, split=1, out='', plot=''):
     p1, p2, p3 = p
     b1, b2, b3 = b
 
@@ -65,27 +65,42 @@ def histogram_data(doseDict, timeDict, p, b, rb, bw, multi=False, split=1, out='
             paramsDict['Slot%d' % (p_idx + 1)] = json.load(f)
 
     # Plot data distribution
-    fig, ax = plt.subplots(len(SLOT), 1, figsize=(16, 5), sharex=True)
-    largePixels = np.asarray([pixel for pixel in np.arange(256) if pixel % 16 not in [0, 1, 14, 15]])
-    if type(ax) != np.ndarray:
-        ax = [ax]
+    if plot is not None:
+        fig, ax = plt.subplots(len(SLOT), 1, figsize=(16, 5), sharex=True)
+        largePixels = np.asarray([pixel for pixel in np.arange(256) if pixel % 16 not in [0, 1, 14, 15]])
+        if type(ax) != np.ndarray:
+            ax = [ax]
 
-    for idx, slot in enumerate( SLOT ):
-        ax[idx].imshow( np.reshape(np.sum(doseDict['Slot%d' % slot], axis=0), (256, -1))[largePixels].T, aspect='auto' )
-    ax[-1].set_xlabel('Pixel')
-    if len(ax) > 1:
-        ax[1].set_ylabel('Energy bin index')
-    else:
-        ax[0].set_ylabel('Energy bin index')
-    plt.show()
+        for idx, slot in enumerate( SLOT ):
+            ax[idx].imshow( np.reshape(np.sum(doseDict['Slot%d' % slot], axis=0), (256, -1))[largePixels].T, aspect='auto' )
+        ax[-1].set_xlabel('Pixel')
+        if len(ax) > 1:
+            ax[1].set_ylabel('Energy bin index')
+        else:
+            ax[0].set_ylabel('Energy bin index')
+        if plot:
+            plt.savefig(plot)
+            plt.clf()
+        else:
+            plt.show()
 
     # Rebinning
     if out:
         save_data = True
     else:
         save_data = False
-    slotList, save_data_dict = dhs.rebinSpectrum(SLOT, doseDict, binEdgesDict, bw, save_data=save_data, save_data_fn=out)
-    plt.show()
+
+    if plot is not None:
+        if plot:
+            plot_split = plot.split('.')
+            plot_fn = plot_split[0] + '_spectrum.' + plot_split[-1]
+        else:
+            plot_fn = None
+    else:
+        plot_fn = None
+    slotList, save_data_dict = dhs.rebinSpectrum(SLOT, doseDict, binEdgesDict, bw, rb, save_data=save_data, save_data_fn=out, plot_fn=plot_fn)
+    if plot is not None:
+        plt.show()
 
 # === ETC ===
 class NumpyEncoder(json.JSONEncoder):

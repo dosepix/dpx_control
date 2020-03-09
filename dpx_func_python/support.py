@@ -218,19 +218,19 @@ class Support(object):
         import serial
         return serial.Serial(port, stopbits=2)
 
-    def megalix_set_kvpmA(self, mlx, voltage, current):
+    def megalix_set_kvpmA(self, mlx, voltage, current, dt=1):
         import time
         focus_size = 's'
-        cmd = 'ei %s %s 1 %s\n' % (voltage, current, focus_size)
-        mlx.write(cmd)
+        cmd = 'ei %s %s %d %s\n' % (voltage, current, dt, focus_size)
+        mlx.write(cmd.encode('utf-8'))
         print('Sent command %s to megalix' % cmd)
         time.sleep( 1 )
 
     def megalix_xray_on(self, mlx):
-        mlx.write('PREP 1\n')
-        mlx.write('SWRON\n')
+        mlx.write('PREP 1\n'.encode('utf-8'))
+        mlx.write('SWRON\n'.encode('utf-8'))
 
     def megalix_xray_off(self, mlx):
-        mlx.write('SWROFF\n')
-        mlx.write('PREP 0\n')
+        mlx.write('SWROFF\n'.encode('utf-8'))
+        mlx.write('PREP 0\n'.encode('utf-8'))
 

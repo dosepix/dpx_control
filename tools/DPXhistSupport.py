@@ -66,11 +66,11 @@ def loadMultiRegionSingle(doseDict_, timeDict_, binEdgesRandomDict, split=1):
             newEdgesDict[slot] = None
             continue
 
-        newEdges = np.hstack(np.asarray(binEdgesRandomDict[slot][:len(regionRange)])[:,:,:-1])
+        newEdges = np.hstack(np.asarray(binEdgesRandomDict[slot][:len(regionRange)])[:,:,:-2])
         if split > 1:
             edge_split_sum = []
             for s in range(split):
-                edge_split = newEdges[256 // split * s: 256 // split * (s + 1)][:,:-1]
+                edge_split = newEdges[256 // split * s: 256 // split * (s + 1)]
                 edge_split_sum.append( edge_split )
             newEdgesSplit = np.hstack( edge_split_sum )
             newEdges = np.vstack([newEdgesSplit] * split)
@@ -168,7 +168,7 @@ def rebinEnergyHistExec(binsList, histList):
 
     return binsNew, histNew
 
-def rebinSpectrum(slots, doseDict, binEdgesCorrDict, bin_width, save_data, save_data_fn=None, plot_dir=None):
+def rebinSpectrum(slots, doseDict, binEdgesCorrDict, bin_width, rebin, save_data, save_data_fn=None, plot_fn=None):
     save_data_dict = {}
     titles = ['Slot%d' % slot for slot in range(1, 3 + 1)] # ['vac', 'al', 'sn']
     
@@ -187,7 +187,10 @@ def rebinSpectrum(slots, doseDict, binEdgesCorrDict, bin_width, save_data, save_
         # Rebin data
         # print binEdgesCorrDict['Slot%d' % slot].shape
         binsNew, histNew = rebinEnergyData(binEdgesCorrDict['Slot%d' % slot], dose)
-        xNew = np.arange(minE, maxE + bin_width, bin_width) # np.linspace(minE, maxE, REBINS)
+        # xNew = np.arange(minE, maxE + bin_width, bin_width) 
+        binsNew = np.asarray(binsNew) - bin_width
+        minE, maxE = 10, 120
+        xNew = np.linspace(minE, maxE, rebin + 1)
         yNew = np.nan_to_num(rb.rebin(binsNew, histNew, xNew, interp_kind='piecewise_constant'))
 
         if len(slots) > 1 and slot == 1:
@@ -198,6 +201,7 @@ def rebinSpectrum(slots, doseDict, binEdgesCorrDict, bin_width, save_data, save_
         x = xNew[:-1][np.logical_and(xNew[:-1] >= 10, xNew[:-1] < energy_max)]
         y = yNew[np.logical_and(xNew[:-1] >= 10, xNew[:-1] < energy_max)]
         # x, y = xNew[:-1], yNew
+        print( yNew.shape )
         print( x.shape, y.shape )
         y /= slot1max
 
@@ -221,8 +225,9 @@ def rebinSpectrum(slots, doseDict, binEdgesCorrDict, bin_width, save_data, save_
     _ = plt.xlabel('Energy (keV)')
     plt.grid()
     plt.ylabel('Normalized counts')
-    if plot_dir is not None:
-        plt.savefig(plot_dir + 'spectrum_meas.svg')
+    if plot_fn is not None:
+        plt.savefig(plot_fn)
+        plt.clf()
     
     return slotList, save_data_dict
 
