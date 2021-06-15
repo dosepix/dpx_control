@@ -12,43 +12,45 @@ import dpx_func_python.dpx_settings as ds
 
 class Control():
     def initDPX(self):
-        # Start HV
-        self.HVSetDac('0000')
-        print('HV DAC set to %s' % self.HVGetDac())
+        # Not required for eye lens dosimetry hardware
+        if not self.eye_lens:
+            # Start HV
+            self.HVSetDac('0000')
+            print('HV DAC set to %s' % self.HVGetDac())
 
-        self.HVActivate()
-        # Set voltage to 3.3V
-        self.VCVoltageSet3V3()
+            self.HVActivate()
+            # Set voltage to 3.3V
+            self.VCVoltageSet3V3()
 
-        # Check if HV is enabled
-        print('Check if HV is activated...', end='')
-        # Try five times
-        for i in range(5):
-            if self.HVGetState():
-                print('done!')
-                break
+            # Check if HV is enabled
+            print('Check if HV is activated...', end='')
+            # Try five times
+            for i in range(5):
+                if self.HVGetState():
+                    print('done!')
+                    break
+                else:
+                    self.HVActivate()
             else:
-                self.HVActivate()
-        else:
-            assert 'HV could not be activated!'
+                assert 'HV could not be activated!'
 
-        print('Voltage set to %s' % self.VCGetVoltage())
+            print('Voltage set to %s' % self.VCGetVoltage())
 
-        # Disable LED
-        self.MCLEDdisable()
+            # Disable LED
+            self.MCLEDdisable()
 
         # Wait
         time.sleep(0.5)
 
         # Global reset
-        for i in range(1, 3 + 1):
+        for i in self.slot_range:
             # Do three times
             for j in range(3):
                 self.DPXGlobalReset(i)
         time.sleep(0.5)
 
         # = Write Settings =
-        for i in range(1, 3 + 1):
+        for i in self.slot_range:
             self.DPXWriteConfigurationCommand(i, self.confBits[i-1])
             self.DPXWriteOMRCommand(i, self.OMR[i-1])
 
@@ -62,17 +64,17 @@ class Control():
         time.sleep(0.5)
 
         # = Data Reset =
-        for i in range(1, 3 + 1):
+        for i in self.slot_range:
             self.DPXDataResetCommand(i)
 
         # = Dummy Readout =
-        for i in range(1, 3 + 1):
+        for i in self.slot_range:
             self.DPXReadToTDataDosiModeCommand(i)
 
         # = Calibration parameters =
         if self.params_file is not None:
             self.paramsDict = {}
-            for slot in range(1, 3 + 1):
+            for slot in self.slot_range:
                 if self.params_file[slot - 1] is None:
                     self.paramsDict['Slot%d' % slot] = None
                     continue
@@ -92,24 +94,24 @@ class Control():
 
         # = Bin Edges =
         # Check if bin edges are given as dictionary or file
-        self.binEdges = {'Slot%d' % slot: [] for slot in range(1, 3 + 1)}
+        self.binEdges = {'Slot%d' % slot: [] for slot in self.slot_range}
         if self.bin_edges_file is not None:
             # Dictionary
             if isinstance(self.bin_edges_file, dict):
                 # Using ToT values
                 if self.paramsDict is None:
                     self.binEdges = self.bin_edges_file
-                    for slot in range(1, 3 + 1):
+                    for slot in self.slot_range:
                         self.setBinEdgesToT(slot, self.binEdges['Slot%d' % slot])
                 # Convert to energy
                 else:
-                    for slot in range(1, 3 + 1):
+                    for slot in self.slot_range:
                         binEdgesList = self.setBinEdges(slot, self.paramsDict['Slot%d' % slot], self.bin_edges_file['Slot%d' % slot])
                         self.binEdges['Slot%d' % slot].insert(0, binEdgesList)
             
             # File
             else:
-                for slot in range(1, 3 + 1):
+                for slot in self.slot_range:
                     be_fn = self.bin_edges_file[slot - 1]
                     if be_fn is None:
                         continue
@@ -140,14 +142,14 @@ class Control():
                             self.setBinEdgesToT(slot, self.binEdges['Slot%d' % slot])
         else:
             gray = [0, 1, 3, 2, 6, 4, 5, 7, 15, 13, 12, 14, 10, 11, 9, 8]
-            for i in range(1, 3 + 1):
+            for i in self.slot_range:
                 for binEdge in range(16):
                     gc = gray[binEdge]
                     binEdges = ('%01x' % gc + '%03x' % (20*binEdge + 15)) * 256
                     self.DPXWriteSingleThresholdCommand(i, binEdges)
 
         # = Empty Bins =
-        for i in range(1, 3 + 1):
+        for i in self.slot_range:
             # Loop over bins
             for col in range(1, 16 + 1):
                 self.DPXWriteColSelCommand(i, 16 - col)

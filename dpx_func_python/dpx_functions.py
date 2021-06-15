@@ -478,8 +478,8 @@ class DPX_functions():
         Parameters
         ----------
         slot : int or list
-            Use the specified slots on the read-out board. Can be either a 
-            single detector or multiple ones. If using the latter, specify 
+            Use the specified slots on the read-out board. Can be either a
+            single detector or multiple ones. If using the latter, specify
             the slots via a list.
         measurement_time : float
             Duration for wich the measured ToT values are integrated per frame.
@@ -488,8 +488,8 @@ class DPX_functions():
         outFn : str or None
             Output file in which the measurement data is stored. If `None`,
             no data is written to files. Otherwise the extension of the file
-            must be '.p' or '.hck' in order to use either 'cPickle' or 
-            'hickle' for storage. If file already exists, a number is 
+            must be '.p' or '.hck' in order to use either 'cPickle' or
+            'hickle' for storage. If file already exists, a number is
             appended to the file and incremented if necessary.
 
         Returns
@@ -498,19 +498,13 @@ class DPX_functions():
         """
 
         # Set Integration Mode in OMR
-        # If OMR code is list
         for sl in slot:
             OMRCode = self.OMR[sl-1]
-            if not isinstance(OMRCode, basestring):
-                OMRCode[0] = 'IntegrationMode'
-            else:
-                OMRCode = int(OMRCode, 16) & ((0b11) << 22)
+            OMRCode = 'f9ffc0'
+            print(int(OMRCode, 16))
+            self.DPXWriteOMRCommand(sl, int(OMRCode, 16))
+            print( self.DPXReadOMRCommand(sl) )
 
-            # If slot is no list, transform it into one
-            if not isinstance(slot, (list,)):
-                slot = [slot]
-
-            self.DPXWriteOMRCommand(sl, OMRCode)
 
         outDict = {'Slot%d' % sl: [] for sl in slot}
 
@@ -518,23 +512,19 @@ class DPX_functions():
         print('Starting ToT Integral Measurement!')
         print('==================================')
         for c in range(frames):
-            # Start frame 
-            OMRCode[1] = 'ClosedShutter'
+            # Start frame
             for sl in slot:
                 # Reset data registers
                 self.DPXDataResetCommand(sl)
-                self.DPXWriteOMRCommand(slot, OMRCode)
 
             # Wait specified time
             time.sleep(measurement_time)
 
             # Read data and end frame
-            OMRCode[1] = 'OpenShutter'
             for sl in slot:
                 data = self.DPXReadToTDataIntegrationModeCommand(sl)
-                # print(data)
+                print(data)
                 outDict['Slot%d' % sl].append( data.flatten() )
-                self.DPXWriteOMRCommand(sl, OMRCode)
 
         if outFn:
             self.pickleDump(outDict, outFn)

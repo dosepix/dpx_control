@@ -58,20 +58,11 @@ class DPX_support(object):
         else:
             return self.linearFit(THL, *params)
 
-    def ToTtoEnergySimple(self, x, a, b, c, t, h=1, k=0):
-        return h * (b + 1./(4 * a) * (2*x + np.pi*c + np.sqrt(16 * a * c * t + (2 * x + np.pi * c)**2))) + k
-
     def EnergyToToTSimple(self, x, a, b, c, t, h=1, k=0):
-        res = np.where(x >= b, a*((x - k)/h - b) - c * (np.pi / 2 + t / ((x - k)/h - b)), 0)
-        res[res <= 0] = 0
-        return res
-        
-        # Old?
-        '''
-        res = np.where(x < b*h + k, a*((x - k)/h - b) - c * (np.pi / 2 + t / ((x - k)/h - b)), 0)
-        res[res < 0] = 0
-        return res
-        '''
+        return np.where(x >= self.getTHL(a, b, c, t), a*x + b + float(c)/(x - t), 0)
+
+    def ToTtoEnergySimple(self, x, a, b, c, t, h=1, k=0):
+        return 1./(2*a) * ( t*a + x - b + np.sqrt((b + t*a - x)**2 - 4*a*c) )
 
     def energyToToTFitAtan(self, x, a, b, c, d):
         return np.where(x > b, a*(x - b) + c*np.arctan((x - b)/d), 0)

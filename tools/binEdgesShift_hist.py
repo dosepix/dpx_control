@@ -45,6 +45,7 @@ def histogram_data(doseDict, timeDict, p, b, rb, bw, multi=False, split=1, out='
         doseDict, binEdgesDict = dhs.loadMultiRegionSingle(doseDict, timeDict, binEdgesDict, split=split)
 
     # Filter noisy pixels
+    '''
     for slot in doseDict.keys():
         dd = doseDict[slot].reshape((256, -1))
         doseSum = np.sum(dd, axis=0)
@@ -52,6 +53,7 @@ def histogram_data(doseDict, timeDict, p, b, rb, bw, multi=False, split=1, out='
         noiseFilt = np.argwhere(abs(dd - doseMedian) > 3 * doseStd)
         dd[noiseFilt] = np.zeros(dd.shape[-1])
         doseDict[slot] = dd.reshape(doseDict[slot].shape)
+    '''
 
     # Get energy calibration parameters
     paramsDict = {}

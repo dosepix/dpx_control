@@ -64,12 +64,13 @@ Important parameters are:
 
 | Parameter | Function |
 | :-------- | :------- |
-| `portName`          | Name of the used com-port of the PC. For Linux, it usually is `/dev/ttyUSB0`. For Windows, the port name has the form of 'COMX'. |
-| `baudRate`          | Used baud rate of the connection between DPX test board and PC. This is set to 2e6 in the board's current firmware and shouldn't be modified here. |
-| `configFn`          | Configuration file containing important parameters of the used Dosepix detectors. |
-| `thl_calib_files` | The DAC value and corresponding voltage of the threshold (THL) show a dependency of a sloped sawtooth. By measuring this dependency, a corrected threshold value can be used. Only important for certain tasks like threshold equalization or threshold scan measurements. |
-| `params_file`      | File containing the calibration curve parameters (a, b, c, t) for each detector and pixel. Only needed for dose measurements as it is used to specify the bin edges in DosiMode. |
-| `bin_edges_file`  | File containing the bin edges used in DosiMode. If `params_file` is set, the file should contain the bin edges in energy. Else, it should contain the bin edges in ToT. |
+| `portName`           | Name of the used com-port of the PC. For Linux, it usually is `/dev/ttyUSB0`. For Windows, the port name has the form of 'COMX'. |
+| `baudRate`           | Used baud rate of the connection between DPX test board and PC. This is set to 2e6 in the board's current firmware and shouldn't be modified here. |
+| `configFn`           | Configuration file containing important parameters of the used Dosepix detectors. |
+| `thl_calib_files`    | The DAC value and corresponding voltage of the threshold (THL) show a dependency of a sloped sawtooth. By measuring this dependency, a corrected threshold value can be used. Only important for certain tasks like threshold equalization or threshold scan measurements. |
+| `params_file`        | File containing the calibration curve parameters (a, b, c, t) for each detector and pixel. Only needed for dose measurements as it is used to specify the bin edges in DosiMode. |
+| `bin_edges_file`     | File containing the bin edges used in DosiMode. If `params_file` is set, the file should contain the bin edges in energy. Else, it should contain the bin edges in ToT. |
+| `eye_lens`           | Set to `True` if hardware for eye lens dosimetry is used, as it only utilizes a single slot. Standard value is `False` |
 
 A measurement can be started by using the `dpx` object. For example a ToT-measurement:
 ```python

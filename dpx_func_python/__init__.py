@@ -15,7 +15,7 @@ class Dosepix(config.Config, control.Control, support.Support, dpx_functions.DPX
     # === FLAGS ===
     USE_GUI = False
 
-    def __init__(self, portName, baudRate=2e6, configFn=None, thl_calib_files=None, params_file=None, bin_edges_file=None, Ikrum=None):
+    def __init__(self, portName, baudRate=2e6, configFn=None, thl_calib_files=None, params_file=None, bin_edges_file=None, Ikrum=None, eye_lens=False):
         self.portName = portName
         if self.portName is None:
             # Call class without arguments to get a dummy instance. 
@@ -49,6 +49,15 @@ class Dosepix(config.Config, control.Control, support.Support, dpx_functions.DPX
         self.THLEdgesLow, self.THLEdgesHigh = [], []
         self.THLFitParams = []
         self.THLEdges = []
+
+        # Is eye lens dosimetry hardware used?
+        self.eye_lens = eye_lens
+
+        # Eye lens board only uses slot1
+        if self.eye_lens:
+            self.slot_range = [1]
+        else:
+            self.slot_range = [1, 2, 3]
         
         if GUI:
             self.getSettingsGUI()
@@ -77,17 +86,18 @@ class Dosepix(config.Config, control.Control, support.Support, dpx_functions.DPX
         if self.portName is None:
             return
 
-        # = Shut down =
-        self.HVDeactivate()
-        print('Check if HV is deactivated...'),
-        for i in range(5):
-            if not self.HVGetState():
-                print('done!')
-                break
+        if not self.eye_lens:
+            # = Shut down =
+            self.HVDeactivate()
+            print('Check if HV is deactivated...'),
+            for i in range(5):
+                if not self.HVGetState():
+                    print('done!')
+                    break
+                else:
+                    self.HVDeactivate()
             else:
-                self.HVDeactivate()
-        else:
-            assert 'HV could not be deactivated'
+                assert 'HV could not be deactivated'
 
         print('Measurement finished.')
 

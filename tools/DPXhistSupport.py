@@ -182,10 +182,9 @@ def rebinSpectrum(slots, doseDict, binEdgesCorrDict, bin_width, rebin, save_data
 
         # Sum over frames and flatten
         dose = np.flip( np.reshape( np.sum(np.asarray(doseDict['Slot%d' % slot]), axis=0), (256, -1) ), axis=1)
-        print( dose.shape )
 
         # Rebin data
-        # print binEdgesCorrDict['Slot%d' % slot].shape
+        print( binEdgesCorrDict['Slot%d' % slot].shape )
         binsNew, histNew = rebinEnergyData(binEdgesCorrDict['Slot%d' % slot], dose)
         # xNew = np.arange(minE, maxE + bin_width, bin_width) 
         binsNew = np.asarray(binsNew) - bin_width
@@ -194,9 +193,9 @@ def rebinSpectrum(slots, doseDict, binEdgesCorrDict, bin_width, rebin, save_data
         yNew = np.nan_to_num(rb.rebin(binsNew, histNew, xNew, interp_kind='piecewise_constant'))
 
         if len(slots) > 1 and slot == 1:
-            slot1max = np.max(yNew)
+            slot1max = np.nanmax(yNew)
         elif len(slots) == 1:
-            slot1max = np.max(yNew)
+            slot1max = np.nanmax(yNew)
 
         x = xNew[:-1][np.logical_and(xNew[:-1] >= 10, xNew[:-1] < energy_max)]
         y = yNew[np.logical_and(xNew[:-1] >= 10, xNew[:-1] < energy_max)]

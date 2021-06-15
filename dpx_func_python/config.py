@@ -16,7 +16,7 @@ except NameError:
   basestring = str
 
 class Config(object):
-    def getConfigDPX(self, portName, baudRate, configFn, Ikrum=None):
+    def getConfigDPX(self, portName, baudRate, configFn, Ikrum=None, eye_lens=False):
         self.ser = serial.Serial(self.portName, self.baudRate)
         assert self.ser.is_open, 'Error: Could not establish serial connection!'
 
@@ -45,7 +45,7 @@ class Config(object):
                     print('Config file not found. Please run THL equalization first. Using standard values.')
                 else:
                     print('Only one config file specified. Using same file for all slots.')
-                    for slot in range(1, 3 + 1):
+                    for slot in self.slot_range:
                         self.readConfig(self.configFn, slot=slot)
             else:
                 for idx, conf in enumerate(self.configFn):

@@ -24,6 +24,7 @@ class DosepixMulti(object):
     def __init__(self, dpxObjects, slotList):
         self.dpxObjects = np.asarray( dpxObjects )
         print( self.dpxObjects )
+        print(slotList)
         self.slotList = slotList
         self.N_board = len(self.dpxObjects)
 
@@ -53,10 +54,12 @@ class DosepixMulti(object):
         func = self.readFrameDosi_multi
         start = time.time()
         print('=== Starting Dose measurement ===')
+        frame_shape = (16, 16, 16)
+        print(frame_shape)
         if sync:
-            out, timeLog = self.measureSync(func, frames, (16, 16, 16))
+            out, timeLog = self.measureSync(func, frames, frame_shape)
         else:
-            out = self.measureAsync(func, frames, (16, 16, 16))
+            out = self.measureAsync(func, frames, frame_shape)
         self.dpxObjects[0].pickleDump(out, 'doseMeasurementMulti.json')
 
         print('Done!')
