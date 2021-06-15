@@ -64,6 +64,9 @@ class DPX_support(object):
     def ToTtoEnergySimple(self, x, a, b, c, t, h=1, k=0):
         return 1./(2*a) * ( t*a + x - b + np.sqrt((b + t*a - x)**2 - 4*a*c) )
 
+    def getTHL(self, a, b, c, t):
+        return 1./(2*a) * ( t*a - b + np.sqrt((b + t*a)**2 - 4*a*c) )
+
     def energyToToTFitAtan(self, x, a, b, c, d):
         return np.where(x > b, a*(x - b) + c*np.arctan((x - b)/d), 0)
 
