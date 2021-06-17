@@ -1627,7 +1627,7 @@ class DPX_functions():
         print('Execution time: %.2f min' % ((time.time() - startTime)/60.))
 
     def thresholdEqualizationConfig(self, configFn, reps=1, THL_offset=20, I_pixeldac=0.21, intPlot=False, resPlot=True):
-        for slot in range(1, 3 + 1):
+        for slot in self.slot_range:
             if configFn[slot - 1] is None:
                  continue
             pixelDAC, THL, confMask = self.thresholdEqualization(slot=slot, reps=reps, THL_offset=THL_offset, 
