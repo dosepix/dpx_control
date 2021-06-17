@@ -21,13 +21,18 @@ class Config(object):
         assert self.ser.is_open, 'Error: Could not establish serial connection!'
 
         # Read config
+        if self.eye_lens:
+            slot_fac = 1
+        else:
+            slot_fac = 3
+        
         # Standard values
-        self.peripherys = ['dc310bc864508230768080ff0064'] * 3
-        self.OMR = ['39ffc0'] * 3
-        self.THLs = ['153b'] * 3
-        self.confBits = ['0' * 512] * 3
-        self.pixelDAC = ['0' * 512] * 3
-        self.binEdges = ['0' * 1024] * 3
+        self.peripherys = ['dc310bc864508230768080ff0064'] * slot_fac
+        self.OMR = ['39ffc0'] * slot_fac
+        self.THLs = ['153b'] * slot_fac
+        self.confBits = ['0' * 512] * slot_fac
+        self.pixelDAC = ['0' * 512] * slot_fac
+        self.binEdges = ['0' * 1024] * slot_fac
 
         # Set standard Ikrum
         if Ikrum is not None:
