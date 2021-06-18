@@ -79,8 +79,13 @@ class DPX_support(object):
         # Sort by THL
         thl, volt = zip(*sorted(zip(thl, volt)))
 
+        # Find edges by taking derivative
         diff = abs(np.diff(volt))
-        edges = np.argwhere(diff > 200).flatten() + 1
+        if self.eye_lens:
+            thres = 100
+        else:
+            thres = 200
+        edges = np.argwhere(diff > thres).flatten() + 1
 
         # Store fit results in dict
         d = {}
