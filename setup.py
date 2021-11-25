@@ -1,7 +1,7 @@
 from setuptools import setup
 
 setup(name='dpx_func_python',
-    version='0.2',
+    version='0.3',
     description='DPX control software',
     author='Sebastian Schmidt',
     author_email='schm.seb@gmail.com',

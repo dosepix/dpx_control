@@ -143,7 +143,11 @@ class DPX_support(object):
 
         return meanDict, noiseTHL
 
-    def getTHLLevel(self, slot, THLRange, pixelDACs=['00', '3f'], reps=1, intPlot=False):
+    def getTHLLevel(self, slot, THLRange, pixelDACs=['00', '3f'], reps=1, intPlot=False, use_gui=False):
+        # Force no plot if GUI is used
+        if use_gui:
+            intPlot = False
+
         countsDict = {}
 
         # Interactive plot showing pixel noise
@@ -200,10 +204,18 @@ class DPX_support(object):
             THLRangeFast = [ THLRangeFast[item[0][0]] if np.any(item) else np.nan for item in [np.argwhere(counts > 3) for counts in countsList] ]
 
             # Precise loop
+            if use_gui:
+                yield {'DAC': pixelDAC}
+
             THLRangeSlow = np.around(THLRange[np.logical_and(THLRange >= (np.nanmin(THLRangeFast) - 10), THLRange <= np.nanmax(THLRangeFast))])
 
             NTHL = len(THLRangeSlow)
-            for cnt, THL in enumerate( tqdm(THLRangeSlow) ):
+            # Do not use tqdm with GUI
+            if use_gui:
+                loop_range = THLRangeSlow
+            else:
+                loop_range = tqdm(THLRangeSlow)
+            for cnt, THL in enumerate( loop_range ):
                 # Repeat multiple times since data is noisy
                 counts = np.zeros((16, 16))
                 for lp in range(reps):
@@ -221,8 +233,15 @@ class DPX_support(object):
 
                 counts /= float(reps)
                 countsDict[pixelDAC][int(THL)] = counts
+
+                # Return status as generator when using GUI
+                if use_gui:
+                    yield {'status': float(cnt) / len(loop_range)}
             print()
-        return countsDict
+        if use_gui:
+            yield {'countsDict': countsDict}
+        else:
+            return countsDict
 
     def getNoiseLevel(self, countsDict, THLRange, pixelDACs=['00', '3f'], noiseLimit=3):
         if isinstance(pixelDACs, basestring):

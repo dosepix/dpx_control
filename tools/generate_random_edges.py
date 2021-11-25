@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 import numpy as np
-import hickle
 import json
 import argparse
 import sys
@@ -9,7 +8,9 @@ import bin_edges_random as ber
 
 def main():
     out, shifted, minenergy, maxenergy, regions, split = parse_args()
+    generate_bin_edges(out, shifted, minenergy, maxenergy, regions, split)
 
+def generate_bin_edges(out=None, shifted=False, minenergy=10, maxenergy=120, regions=1, split=4):
     # Generate edges
     if not shifted:
         binEdges = ber.getBinEdgesRandom(NPixels=256, edgeMin=minenergy, edgeMax=maxenergy, edgeOvfw=430, uniform=False)
@@ -39,8 +40,11 @@ def main():
             # edges = ber.getBinEdgesUniform(pixels=np.arange(256), edgeMin=minenergy + idx*(maxenergy - minenergy), edgeMax=minenergy + (idx + 1) * (maxenergy - minenergy), edgeOvfw=430)
             # binEdges.append( [list(e) for e in edges] )
 
-    with open(out, 'w') as f:
-        json.dump(binEdges, f)
+    if out is not None:
+        with open(out, 'w') as f:
+            json.dump(binEdges, f)
+    
+    return binEdges
 
 def parse_args():
     parser = argparse.ArgumentParser()
@@ -55,4 +59,3 @@ def parse_args():
 
 if __name__ == '__main__':
     main()
-

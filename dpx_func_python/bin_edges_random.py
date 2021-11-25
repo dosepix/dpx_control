@@ -64,4 +64,3 @@ def EnergyToToTSimple(x, a, b, c, t, h=1, k=0):
     res = np.where(x < b, a*((x - k)/h - b) - c * (np.pi / 2 + t / ((x - k)/h - b)), 0)
     res[res < 0] = 0
     return res
-

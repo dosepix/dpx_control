@@ -48,7 +48,7 @@ class Dosepix(config.Config, control.Control, support.Support, dpx_functions.DPX
         self.voltCalib, self.THLCalib = [], []
         self.THLEdgesLow, self.THLEdgesHigh = [], []
         self.THLFitParams = []
-        self.THLEdges = []
+        self.THLEdges = [] * 3
 
         # Is eye lens dosimetry hardware used?
         self.eye_lens = eye_lens
@@ -57,11 +57,17 @@ class Dosepix(config.Config, control.Control, support.Support, dpx_functions.DPX
         if self.eye_lens:
             self.slot_range = [1]
         else:
-            self.slot_range = [1, 2, 3]
-        
+            if configFn is None:
+                self.slot_range = [1, 2, 3]
+            else:
+                self.slot_range = [idx for idx in range(1, len(self.configFn) + 1) if self.configFn[idx-1] is not None]
+
+        print('Slots')
+        print(self.slot_range)
+
         if GUI:
             self.getSettingsGUI()
-            self.portName, self.baudRate, self.configFn = setSettingsGUI()
+            self.portName, self.baudRate, self.configFn = self.setSettingsGUI()
         else:
             self.unsetGUI()
 
@@ -69,9 +75,9 @@ class Dosepix(config.Config, control.Control, support.Support, dpx_functions.DPX
 
     def __del__(self):
         self.close()
-        
+
     def getSettingsGUI(self):
-        serialPorts = getSerialPorts(self)
+        serialPorts = self.getSerialPorts(self)
 
     def setSettingsGUI(self):
         return None, None, None
@@ -102,4 +108,3 @@ class Dosepix(config.Config, control.Control, support.Support, dpx_functions.DPX
         print('Measurement finished.')
 
         self.ser.close()
-        

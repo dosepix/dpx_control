@@ -19,9 +19,8 @@ class BoundedUnivariateSpline(UnivariateSpline):
     def __call__(self, x):
         outside = self.is_outside_domain(x)
 
-        return np.where(outside, self.fill_value, 
-                                 UnivariateSpline.__call__(self, x))
-        
+        return np.where(outside, self.fill_value, UnivariateSpline.__call__(self, x))
+
     def integral(self, a, b):
         # capturing contributions outside domain of interpolation
         below_dx = np.max([0., self.bnds[0]-a])
@@ -36,9 +35,7 @@ class BoundedUnivariateSpline(UnivariateSpline):
         if a_f >= b_f:
             return outside_contribution
         else:
-            return (outside_contribution +
-                      UnivariateSpline.integral(self, a_f, b_f) )
-
+            return (outside_contribution + UnivariateSpline.integral(self, a_f, b_f) )
 
 class BoundedRectBivariateSpline(RectBivariateSpline):
     """
@@ -51,6 +48,7 @@ class BoundedRectBivariateSpline(RectBivariateSpline):
       z : array_like, m by n, values of function to fit spline
 
     """
+
     def __init__(self, x, y, z, fill_value=0.0, **kwargs):
         self.xbnds = [x[0], x[-1]]
         self.ybnds = [y[0], y[-1]]
@@ -92,5 +90,3 @@ class BoundedRectBivariateSpline(RectBivariateSpline):
             outside_contribution = (total_area - spline_area) * self.fill_value
             return (outside_contribution +
                       RectBivariateSpline.integral(self, xa_f, xb_f, ya_f, yb_f) )
-
-
