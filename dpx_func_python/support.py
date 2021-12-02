@@ -7,8 +7,6 @@ import sys
 import matplotlib.pyplot as plt
 import matplotlib as mpl
 import scipy.special
-# import cPickle
-import hickle
 
 class Support(object):
     def normal(self, x, A, mu, sigma):
@@ -89,8 +87,6 @@ class Support(object):
     def meanSigmaLinePlot(self, fn, pIpixeldac, pPixelDAC):
         if fn.endswith('.p'):
             d = cPickle.load( open(fn, 'rb') )
-        else:
-            d = hickle.load(fn)
         meanMatrix, sigmaMatrix = d['mean'], d['sigma']
         meanMatrix, sigmaMatrix = meanMatrix, sigmaMatrix
 
@@ -151,8 +147,6 @@ class Support(object):
 
         if fn.endswith('.p'):
             d = cPickle.load( open(fn, 'rb') )
-        else:
-            d = hickle.load(fn)
         meanMatrix = d['mean']
         print(meanMatrix)
         sigmaMatrix = d['sigma']

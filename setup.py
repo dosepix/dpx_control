@@ -1,7 +1,7 @@
 from setuptools import setup
 
 setup(name='dpx_func_python',
-    version='0.3',
+    version='0.3.1',
     description='DPX control software',
     author='Sebastian Schmidt',
     author_email='schm.seb@gmail.com',
@@ -14,7 +14,6 @@ setup(name='dpx_func_python',
     },
     install_requires=[
         'matplotlib',
-        'hickle',
         'pandas',
         'numpy',
         'scipy',

@@ -5,7 +5,6 @@ import os
 import os.path
 import yaml
 import numpy as np
-import hickle
 import json
 # import cPickle
 import configparser
@@ -76,9 +75,7 @@ class Config(object):
                 self.THLEdges.append( None )
                 self.THLFitParams.append( None )
             else:
-                if thl_calib_file.endswith('.hck'):
-                    d = hickle.load(thl_calib_file)
-                elif thl_calib_file.endswith('.json'):
+                if thl_calib_file.endswith('.json'):
                     # JSON
                     print(thl_calib_file)
                     with open(thl_calib_file, 'r') as f:

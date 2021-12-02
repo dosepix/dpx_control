@@ -13,10 +13,10 @@ def main():
     # Establish connection
     thl_calib_files = None 
     dpx = dpx_func_python.Dosepix(PORT, 2e6, CONFIG_FN, thl_calib_files=thl_calib_files,
-            params_file=PARAMS_FILES, bin_edges_file=BIN_EDGES_FILES)
+            params_file=PARAMS_FILES, bin_edges_file=BIN_EDGES_FILES, eye_lens=False)
 
     # Measure Dose
-    dpx.measureDose(slot=[1], intPlot=False, frames=1, logTemp=True, frame_time=10)
+    dpx.measureDose(slot=[1, 2, 3], intPlot=False, frames=1, logTemp=True, frame_time=10)
 
     # Close connection
     dpx.close()

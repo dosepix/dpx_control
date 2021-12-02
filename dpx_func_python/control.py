@@ -4,7 +4,6 @@ import numpy as np
 import time
 from collections import namedtuple
 # import cPickle
-import hickle
 import json
 
 DEBUG = False
@@ -86,8 +85,6 @@ class Control():
                         paramsDict = json.load(f)
                         paramsDict = {int(key): paramsDict[key] for key in paramsDict.keys()}
                         self.paramsDict['Slot%d' % slot] = paramsDict
-                else:
-                    self.paramsDict['Slot%d' % slot] = hickle.load(self.params_file[slot - 1])
         else:
             print('Warning: No parameters for the bin edges specified. Using default values.')
             self.paramsDict = None
@@ -121,8 +118,6 @@ class Control():
                     elif be_fn.endswith('.json'):
                         with open(be_fn, 'r') as f:
                             binEdges = json.load(f)
-                    else:
-                        binEdges = hickle.load(be_fn)
 
                     # If shape is larger than 2, bin edges are used for shifted
                     # bin edges with more than one region!

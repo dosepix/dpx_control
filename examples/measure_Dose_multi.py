@@ -19,7 +19,7 @@ def main():
         print(CONFIG_FN[idx])
         dpxObjects.append( dpx_func_python.Dosepix(PORT[idx], 2e6, CONFIG_FN[idx], thl_calib_files=thl_calib_files) )
 
-    dpx_multi = mu.DosepixMulti(dpxObjects, [[1, 2, 3], [1, 2]])
+    dpx_multi = mu.DosepixMulti(dpxObjects, [[1]])
     dpx_multi.measureDose(frames=10000, sync=True)
 
     # Close connection

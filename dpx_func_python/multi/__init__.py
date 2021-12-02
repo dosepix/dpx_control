@@ -8,7 +8,6 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import scipy.signal
 import scipy.optimize
-import hickle
 import tqdm
 import multiprocessing as mp
 import itertools

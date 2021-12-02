@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 import dpx_func_python
+import json
 
 # Important files
 THL_CALIB_FILES = ['THLCalibration/THLCalib_%d.p' % slot for slot in [22, 6, 109]]
@@ -17,8 +18,6 @@ if GEN_BIN_EDGES:
 
     if PARAMS_FILE.endswith('.p'):
         paramsDict = cPickle.load(open(PARAMS_FILE, 'rb'))
-    else:
-        paramsDict = hickle.load(PARAMS_FILE)
 
     binEdgesDict = {}
     for slot in range(1, 3 + 1):
@@ -32,9 +31,8 @@ if GEN_BIN_EDGES:
 	    	edges = ber.getBinEdgesUniform(NPixels=256, edgeMin=energy_start + idx*energy_range, edgeMax=energy_start + (idx + 1)*energy_range, edgeOvfw=430)
 		binEdges.append( edges )
         binEdgesDict['Slot%d' % slot] = binEdges
-    hickle.dump(binEdgesDict, BIN_EDGES_RANDOM_FN)
+    json.dump(binEdgesDict, BIN_EDGES_RANDOM_FN)
 
-# BIN_EDGES = hickle.load(BIN_EDGES_RANDOM_FN)
 BIN_EDGES = {'Slot1': [12, 18, 21, 24.5, 33.5, 43, 53.5, 66.5, 81.5, 97, 113, 131.5, 151.5, 173, 200.5, 236, 430],
                 'Slot2': [12, 17, 31, 40, 45.5, 50.5, 60.5, 68, 91, 102.5, 133, 148, 163, 196, 220, 257, 430],
                 'Slot3': [32, 37, 47, 57.6, 68.5, 80, 91.5, 104, 117, 131, 145, 163.5, 183.5, 207.5, 234.5, 269.5, 430]}

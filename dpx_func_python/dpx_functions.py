@@ -8,7 +8,6 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import scipy.signal
 import scipy.optimize
-import hickle
 from tqdm import tqdm
     
 import dpx_func_python.dpx_settings as ds
@@ -44,11 +43,8 @@ class DPX_functions():
             Store the count frequency by normalization via the measurement
             time for each frame.
         outFn : str or None
-            Output file in which the measurement data is stored. If `None`,
-            no data is written to files. Otherwise the extension of the file
-            must be '.p' or '.hck' in order to use either 'cPickle' or 
-            'hickle' for storage. If file already exists, a number is 
-            appended to the file and incremented if necessary.
+            Output file in which the measurement data is stored in json-format. If `None`,
+            no data is written to files
         logTemp : bool
             Log the temperature and time for each frame. If `outFn` is set, 
             the data is stored to a file which is named according to `outFn`
@@ -486,11 +482,8 @@ class DPX_functions():
         frames : int
             Number of frames to measure.
         outFn : str or None
-            Output file in which the measurement data is stored. If `None`,
-            no data is written to files. Otherwise the extension of the file
-            must be '.p' or '.hck' in order to use either 'cPickle' or
-            'hickle' for storage. If file already exists, a number is
-            appended to the file and incremented if necessary.
+            Output file in which the measurement data is stored in json-format. If `None`,
+            no data is written to files
 
         Returns
         -------
@@ -544,10 +537,8 @@ class DPX_functions():
             Number of frames to measure. If set to None, an infinite loop
             is used.
         outFn : str or None
-            Output file in which the measurement data is stored. If `None`,
-            no data is written to files. Otherwise the extension of the file
-            must be '.p' or '.hck' in order to use either 'cPickle' or 
-            'hickle' for storage. If file already exists, a number is 
+            Output file in which the measurement data is stored in json-format. If `None`,
+            no data is written to files. If file already exists, a number is 
             appended to the file and incremented if necessary.
 
         Returns
@@ -990,8 +981,6 @@ class DPX_functions():
             if os.path.isfile(slopeFn):
                 if slopeFn.endswith('.p'):
                     slopeDict = cPickle.load( open(slopeFn, 'rb') )
-                else:
-                    slopeDict = hickle.load(slopeFn)
 
                 slopes = np.reshape(slopeDict['slope'], (16, 16))
                 # Remove values with large slope...

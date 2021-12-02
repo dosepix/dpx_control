@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 import numpy as np
-import hickle as hck
 import matplotlib.pyplot as plt
 import scipy.signal
 import scipy.optimize

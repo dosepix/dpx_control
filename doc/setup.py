@@ -14,7 +14,6 @@ setup(name='dpx_func_python',
     },
     install_requires=[
         'matplotlib',
-        'hickle',
         'pandas',
         'numpy',
         'scipy',

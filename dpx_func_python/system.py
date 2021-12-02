@@ -4,7 +4,6 @@ import os.path
 import sys
 import numpy as np
 # import cPickle
-import hickle
 import json
 
 class System(object):
@@ -40,12 +39,7 @@ class System(object):
                     outFn = '/'.join(directory + [outFn])
 
         with open(outFn, 'w') as f:
-            if method=='hck':
-                hickle.dump(outDict, f, compression='lzf')
-            elif method=='pickle':
-                cPickle.dump(outDict, f)
-            else:
-                json.dump(outDict, f, cls=self.NumpyEncoder)
+            json.dump(outDict, f, cls=self.NumpyEncoder)
 
     # Convert every array in dictionary to list
     class NumpyEncoder(json.JSONEncoder):
