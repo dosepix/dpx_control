@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-import dpx_func_python
+import dpx_control
 import time
 import sys
 sys.path.insert(0, '../tools/')
@@ -26,7 +26,7 @@ BIN_EDGES_FILES = ['bin_edges/bin_edges_uniform_energy_10_120_4splits.json'] * 3
 def main():
     # Establish connection
     thl_calib_files = None 
-    dpx = dpx_func_python.Dosepix(PORT, 2e6, CONFIG_FN, thl_calib_files=thl_calib_files,
+    dpx = dpx_control.Dosepix(PORT, 2e6, CONFIG_FN, thl_calib_files=thl_calib_files,
             params_file=PARAMS_FILES, bin_edges_file=BIN_EDGES_FILES)
 
     mlx = dpx.megalix_connect('/dev/ttyUSB1')

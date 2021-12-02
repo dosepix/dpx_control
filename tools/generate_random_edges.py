@@ -3,7 +3,7 @@ import numpy as np
 import json
 import argparse
 import sys
-sys.path.insert(0, '../dpx_func_python/')
+sys.path.insert(0, '../dpx_control/')
 import bin_edges_random as ber
 
 def main():

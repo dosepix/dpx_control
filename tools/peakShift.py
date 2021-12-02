@@ -13,7 +13,7 @@ import os
 import json
 import argparse
 import re
-import dpx_func_python.support as dfps
+import dpx_control.support as dfps
 sup = dfps.Support()
 
 plotFn = 'peakShift_22_5_109'

@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-import dpx_func_python
+import dpx_control
 import numpy as np
 
 REUSE_CONFIG = False
@@ -28,7 +28,7 @@ def main():
         print('=== Starting ToT Measurement for Ikrum %d ===' % Ikrum)
         # Establish connection
         thl_calib_files = None 
-        dpx = dpx_func_python.Dosepix(PORT, 2e6, CONFIG_FN, thl_calib_files=thl_calib_files, 
+        dpx = dpx_control.Dosepix(PORT, 2e6, CONFIG_FN, thl_calib_files=thl_calib_files, 
                 params_file=PARAMS_FILES, bin_edges_file=BIN_EDGES_FILES)
         
         # Change Ikrum

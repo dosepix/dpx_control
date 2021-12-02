@@ -11,7 +11,7 @@ import scipy.optimize
 import json
 from tqdm import tqdm
     
-import dpx_func_python.dpx_settings as ds
+import dpx_control.dpx_settings as ds
 
 try:
     raw_input = input

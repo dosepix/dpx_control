@@ -12,7 +12,7 @@ import tqdm
 import multiprocessing as mp
 import itertools
     
-import dpx_func_python.dpx_settings as ds
+import dpx_control.dpx_settings as ds
 
 try:
   basestring

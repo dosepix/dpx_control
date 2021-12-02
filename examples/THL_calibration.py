@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-import dpx_func_python
+import dpx_control
 import os
 
 PORT = '/dev/ttyUSB0'
@@ -17,7 +17,7 @@ def main():
     raw_input('Press any key to proceed')
     for chip_idx in range(len(CHIP_NUMS)):
         print 'Measuring THL of chip %d' % CHIP_NUMS[chip_idx]
-        dpx = dpx_func_python.Dosepix(PORT, 2e6, CONFIG_DIR + CONFIG_FN)
+        dpx = dpx_control.Dosepix(PORT, 2e6, CONFIG_DIR + CONFIG_FN)
         dpx.measureTHL(1, fn=CONFIG_DIR + 'THLCalib_%d.hck' % CHIP_NUMS[chip_idx], plot=False)
         dpx.close()
 

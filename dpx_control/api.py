@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 from __future__ import print_function
-import dpx_func_python as dpx
+import dpx_control as dpx
 import sys
 import zerorpc
 import numpy as np

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 from __future__ import print_function
-import dpx_func_python
+import dpx_control
 
 PORT = '/dev/ttyUSB0'
 PORT = '/dev/ttyUSB0'
@@ -13,7 +13,7 @@ THL_SHIFT = 0
 def main():
     # Establish connection
     thl_calib_files = [CONFIG_DIR + '/THLCalib_%d.hck' % CHIP for CHIP in CHIP_NUMS] 
-    dpx = dpx_func_python.Dosepix(PORT, 2e6, CONFIG_FN, thl_calib_files=thl_calib_files)
+    dpx = dpx_control.Dosepix(PORT, 2e6, CONFIG_FN, thl_calib_files=thl_calib_files)
 
     # Change Ikrum values
     new_peripherys = []

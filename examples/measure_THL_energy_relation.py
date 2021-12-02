@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-import dpx_func_python
+import dpx_control
 import numpy as np
 
 PORT = '/dev/ttyUSB0'
@@ -13,7 +13,7 @@ BIN_EDGES_FILES = None
 
 def main():
     # Establish connection
-    dpx = dpx_func_python.Dosepix(PORT, 2e6, CONFIG_FN, thl_calib_files=THL_CALIB_FILES, 
+    dpx = dpx_control.Dosepix(PORT, 2e6, CONFIG_FN, thl_calib_files=THL_CALIB_FILES, 
             params_file=PARAMS_FILES, bin_edges_file=BIN_EDGES_FILES)
 
     peripherys = []

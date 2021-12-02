@@ -1,6 +1,6 @@
 #!/usr/bin/env python
-import dpx_func_python
-import dpx_func_python.multi as mu
+import dpx_control
+import dpx_control.multi as mu
 
 PORT = ['/dev/ttyUSB0']
 CONFIG_DIR = ['config/']
@@ -17,7 +17,7 @@ def main():
     dpxObjects = []
     for idx in range(N_DET): 
         print(CONFIG_FN[idx])
-        dpxObjects.append( dpx_func_python.Dosepix(PORT[idx], 2e6, CONFIG_FN[idx], thl_calib_files=thl_calib_files) )
+        dpxObjects.append( dpx_control.Dosepix(PORT[idx], 2e6, CONFIG_FN[idx], thl_calib_files=thl_calib_files) )
 
     dpx_multi = mu.DosepixMulti(dpxObjects, [[1, 2, 3], [1, 2]])
     dpx_multi.measureToT(frames=None, sync=True)

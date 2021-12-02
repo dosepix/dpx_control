@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-import dpx_func_python
+import dpx_control
 import os
 
 try: 
@@ -32,7 +32,7 @@ def main():
         if CHIP_NUMS[chip_idx] is None:
             continue
         print('Measuring THL of chip %d' % CHIP_NUMS[chip_idx])
-        dpx = dpx_func_python.Dosepix(PORT, 2e6)
+        dpx = dpx_control.Dosepix(PORT, 2e6)
         dpx.measureTHL(1, fn=CONFIG_DIR + 'THLCalib_%d.json' % CHIP_NUMS[chip_idx], plot=False)
         dpx.close()
 
@@ -48,7 +48,7 @@ def main():
     for Ikrum in IKRUMS:
         CONFIG_FN = [CONFIG_DIR + '%d/DPXConfig_%d_Ikrum%d.conf' % (CHIP, CHIP, Ikrum) if CHIP is not None else None for CHIP in CHIP_NUMS]
         thl_calib_files = [CONFIG_DIR + '%d/THLCalib_%d.json' % (CHIP, CHIP) if CHIP is not None else None for CHIP in CHIP_NUMS] 
-        dpx = dpx_func_python.Dosepix(PORT, 2e6, thl_calib_files=thl_calib_files, Ikrum=[Ikrum] * 3)
+        dpx = dpx_control.Dosepix(PORT, 2e6, thl_calib_files=thl_calib_files, Ikrum=[Ikrum] * 3)
         dpx.thresholdEqualizationConfig(CONFIG_FN, I_pixeldac=None, reps=1, intPlot=False, resPlot=True, THL_offset=THL_OFFSET)
         dpx.close()
 

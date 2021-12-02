@@ -51,12 +51,12 @@ Documentation can be found [here](doc/_build/html/index.html)
 ### Dosepix initialization
 First, import the module.
 ```python
-import dpx_func_python
+import dpx_control
 ```
 
 The connection to the Dosepix test board is established via:
 ```python
-dpx = dpx_func_python.Dosepix(portName, baudRate=2e6, configFN=None, thl_calib_files=None, params_file=None, bin_edges_file=None)
+dpx = dpx_control.Dosepix(portName, baudRate=2e6, configFN=None, thl_calib_files=None, params_file=None, bin_edges_file=None)
 ```
 
 This creates an object `dpx` of the class `Dosepix`.  

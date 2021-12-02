@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-import dpx_func_python
+import dpx_control
 import json
 
 # Important files
@@ -40,7 +40,7 @@ PORT = '/dev/tty.usbserial-A907PD5F'
 CONFIG_FN = 'DPXConfig.conf'
 
 def main():
-    dpx = dpx_func_python.Dosepix(PORT, 2e6, CONFIG_FN, bin_edges_file=BIN_EDGES, params_file=PARAMS_FILE, thl_calib_files=THL_CALIB_FILES)
+    dpx = dpx_control.Dosepix(PORT, 2e6, CONFIG_FN, bin_edges_file=BIN_EDGES, params_file=PARAMS_FILE, thl_calib_files=THL_CALIB_FILES)
     dpx.measureDose(slot=1, measurement_time=0, freq=False, frames=1000, logTemp=False, intPlot=True, conversion_factors=None)
     dpx.close()
 

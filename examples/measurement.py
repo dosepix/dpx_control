@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-import dpx_func_python
+import dpx_control
 
 PORT = '/dev/tty.usbserial-A907PD5F'
 CONFIG_FN = 'DPXConfig.conf'
@@ -8,7 +8,7 @@ CHIP_NUMS = [22, 6, 109]
 
 def main():
     thl_calib_files = [CONFIG_DIR + '/THLCalib_%d.hck' % CHIP for CHIP in CHIP_NUMS] 
-    dpx = dpx_func_python.Dosepix(PORT, 2e6, CONFIG_DIR + '/' + CONFIG_FN, thl_calib_files=thl_calib_files)
+    dpx = dpx_control.Dosepix(PORT, 2e6, CONFIG_DIR + '/' + CONFIG_FN, thl_calib_files=thl_calib_files)
     dpx.measureToT(slot=[1, 2, 3], intPlot=True, storeEmpty=False, logTemp=False)
 
     # dpx.TPtoToT(slot=1, column='all')

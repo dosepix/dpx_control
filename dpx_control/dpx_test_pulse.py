@@ -4,7 +4,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import scipy.optimize
 
-import dpx_func_python.dpx_settings as ds
+import dpx_control.dpx_settings as ds
 
 class DPX_test_pulse(object):
     def testPulseInit(self, slot, column=0):

@@ -2,14 +2,14 @@ from __future__ import print_function
 
 GUI = False
 # === Imports ===
-import dpx_func_python.config
-import dpx_func_python.control
-import dpx_func_python.support
-import dpx_func_python.dpx_functions
-import dpx_func_python.dpx_support
-import dpx_func_python.system
-import dpx_func_python.dpx_settings
-import dpx_func_python.dpx_test_pulse
+import dpx_control.config
+import dpx_control.control
+import dpx_control.support
+import dpx_control.dpx_functions
+import dpx_control.dpx_support
+import dpx_control.system
+import dpx_control.dpx_settings
+import dpx_control.dpx_test_pulse
 
 class Dosepix(config.Config, control.Control, support.Support, dpx_functions.DPX_functions, dpx_support.DPX_support, system.System, dpx_test_pulse.DPX_test_pulse):
     # === FLAGS ===
