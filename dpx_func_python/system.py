@@ -3,7 +3,6 @@ import os
 import os.path
 import sys
 import numpy as np
-# import cPickle
 import json
 
 class System(object):

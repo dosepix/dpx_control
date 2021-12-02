@@ -17,7 +17,7 @@ if GEN_BIN_EDGES:
     import bin_edges_random as ber
 
     if PARAMS_FILE.endswith('.p'):
-        paramsDict = cPickle.load(open(PARAMS_FILE, 'rb'))
+        paramsDict = json.load(open(PARAMS_FILE, 'rb'))
 
     binEdgesDict = {}
     for slot in range(1, 3 + 1):

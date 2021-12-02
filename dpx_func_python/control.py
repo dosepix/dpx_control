@@ -3,7 +3,6 @@ from __future__ import print_function
 import numpy as np
 import time
 from collections import namedtuple
-# import cPickle
 import json
 
 DEBUG = False
@@ -78,13 +77,14 @@ class Control():
                     self.paramsDict['Slot%d' % slot] = None
                     continue
 
-                if self.params_file[slot - 1].endswith('.p'):
-                    self.paramsDict['Slot%d' % slot] = cPickle.load(open(self.params_file[slot - 1], 'rb'))
-                elif self.params_file[slot - 1].endswith('.json'):
+                if self.params_file[slot - 1].endswith('.json'):
                     with open(self.params_file[slot - 1], 'r') as f:
                         paramsDict = json.load(f)
                         paramsDict = {int(key): paramsDict[key] for key in paramsDict.keys()}
                         self.paramsDict['Slot%d' % slot] = paramsDict
+                else:
+                    print('Warning: No parameters for the bin edges specified. Using default values.')
+                    self.paramsDict = None
         else:
             print('Warning: No parameters for the bin edges specified. Using default values.')
             self.paramsDict = None
@@ -113,11 +113,11 @@ class Control():
                     if be_fn is None:
                         continue
 
-                    if be_fn.endswith('.p'):
-                        binEdges = cPickle.load(open(be_fn, 'rb'))
-                    elif be_fn.endswith('.json'):
+                    if be_fn.endswith('.json'):
                         with open(be_fn, 'r') as f:
                             binEdges = json.load(f)
+                    else:
+                        continue
 
                     # If shape is larger than 2, bin edges are used for shifted
                     # bin edges with more than one region!

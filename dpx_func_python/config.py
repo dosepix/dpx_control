@@ -6,7 +6,6 @@ import os.path
 import yaml
 import numpy as np
 import json
-# import cPickle
 import configparser
 
 try:

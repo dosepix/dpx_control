@@ -1,4 +1,5 @@
 from __future__ import print_function
+import json
 import numpy as np
 import matplotlib.pyplot as plt
 import scipy.optimize
@@ -744,7 +745,7 @@ class DPX_test_pulse(object):
 
         # Dump to file
         if paramOutFn:
-            cPickle.dump(outDict, open(paramOutFn, 'wb'))
+            json.dump(outDict, open(paramOutFn, 'wb'))
         return
 
         # Plot

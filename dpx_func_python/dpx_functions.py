@@ -8,6 +8,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import scipy.signal
 import scipy.optimize
+import json
 from tqdm import tqdm
     
 import dpx_func_python.dpx_settings as ds
@@ -980,7 +981,7 @@ class DPX_functions():
         if slopeFn and THLstep == 1:
             if os.path.isfile(slopeFn):
                 if slopeFn.endswith('.p'):
-                    slopeDict = cPickle.load( open(slopeFn, 'rb') )
+                    slopeDict = json.load( open(slopeFn, 'rb') )
 
                 slopes = np.reshape(slopeDict['slope'], (16, 16))
                 # Remove values with large slope...

@@ -1,4 +1,5 @@
 from __future__ import print_function
+import json
 import numpy as np
 import textwrap
 import serial
@@ -85,8 +86,7 @@ class Support(object):
         return a * (scipy.special.erf((x - b)/c) + 1) + d
 
     def meanSigmaLinePlot(self, fn, pIpixeldac, pPixelDAC):
-        if fn.endswith('.p'):
-            d = cPickle.load( open(fn, 'rb') )
+        d = json.load( open(fn, 'rb') )
         meanMatrix, sigmaMatrix = d['mean'], d['sigma']
         meanMatrix, sigmaMatrix = meanMatrix, sigmaMatrix
 
@@ -145,8 +145,7 @@ class Support(object):
     def meanSigmaMatrixPlot(self, fn, pIpixeldac, pPixelDAC):
         from mpl_toolkits.axes_grid1 import make_axes_locatable
 
-        if fn.endswith('.p'):
-            d = cPickle.load( open(fn, 'rb') )
+        d = json.load( open(fn, 'rb') )
         meanMatrix = d['mean']
         print(meanMatrix)
         sigmaMatrix = d['sigma']
