@@ -1819,7 +1819,9 @@ class DPX_functions():
             countsDict_gen = self.getTHLLevel(slot, THLRange, pixelDACNew, reps, intPlot=False, use_gui=True)
             for res in countsDict_gen:
                 if 'status' in res.keys():
-                    yield {'stage': 'THL', 'status': np.round(res['status'], 4)}
+                    yield {'stage': 'THL_pre', 'status': np.round(res['status'], 4)}
+                elif 'DAC' in res.keys():
+                    yield {'stage': 'THL_loop_start', 'status': res['DAC']}
                 else:
                     countsDictNew = res['countsDict']
         else:

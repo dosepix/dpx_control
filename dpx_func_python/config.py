@@ -90,23 +90,26 @@ class Config(object):
                     self.THLEdges.append( None )
                     self.THLFitParams.append( None )
 
-                self.voltCalib.append( np.asarray(d['Volt']) / max(d['Volt']) )
-                self.THLCalib.append( np.asarray(d['ADC']) )
+                self.load_THLEdges(d)
+    
+    def load_THLEdges(self, d):
+        self.voltCalib.append( np.asarray(d['Volt']) / max(d['Volt']) )
+        self.THLCalib.append( np.asarray(d['ADC']) )
 
-                THLLow, THLHigh, THLFitParams = self.THLCalibToEdges(d)
+        THLLow, THLHigh, THLFitParams = self.THLCalibToEdges(d)
 
-                # Rounding
-                THLLow = np.ceil(THLLow)
-                THLHigh = np.floor(THLHigh)
+        # Rounding
+        THLLow = np.ceil(THLLow)
+        THLHigh = np.floor(THLHigh)
 
-                self.THLEdgesLow.append(THLLow), self.THLEdgesHigh.append(THLHigh), self.THLFitParams.append(THLFitParams)
-                print(self.THLEdgesLow[-1], self.THLEdgesHigh[-1])
-                
-                # Combine
-                THLEdges = []
-                for i in range(len(self.THLEdgesLow[-1])):
-                    THLEdges += list( np.arange(self.THLEdgesLow[-1][i], self.THLEdgesHigh[-1][i] + 1) )
-                self.THLEdges.append( THLEdges ) 
+        self.THLEdgesLow.append(THLLow), self.THLEdgesHigh.append(THLHigh), self.THLFitParams.append(THLFitParams)
+        print(self.THLEdgesLow[-1], self.THLEdgesHigh[-1])
+        
+        # Combine
+        THLEdges = []
+        for i in range(len(self.THLEdgesLow[-1])):
+            THLEdges += list( np.arange(self.THLEdgesLow[-1][i], self.THLEdgesHigh[-1][i] + 1) )
+        self.THLEdges.append( THLEdges ) 
 
     def splitPerihperyDACs(self, code, perc=False, show=False):
         if perc:
