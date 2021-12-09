@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 import dpx_control
 
-PORT = '/dev/tty.usbserial-A907PD5F'
+PORT = '/dev/ttyUSB0'
 CONFIG_FN = 'DPXConfig.conf'
 CONFIG_DIR = 'config/'
-CHIP_NUMS = [22, 6, 109]
+CHIP_NUMS = [10, 15, 20]
 
 def main():
     thl_calib_files = [CONFIG_DIR + '/THLCalib_%d.hck' % CHIP for CHIP in CHIP_NUMS] 

@@ -4,7 +4,7 @@
 # You can set these variables from the command line.
 SPHINXOPTS    =
 SPHINXBUILD   = sphinx-build
-SPHINXPROJ    = dpx_func_python
+SPHINXPROJ    = dpx_control
 SOURCEDIR     = .
 BUILDDIR      = _build
 

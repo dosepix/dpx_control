@@ -7,7 +7,7 @@ import tqdm
 import argparse
 
 def main():
-    indir, outDir, p1, p2, p3, bins_min, bins_max, bins, multi = parse_args()
+    inDir, outDir, p1, p2, p3, bins_min, bins_max, bins, multi = parse_args()
     if not outDir:
         outDir = inDir
     bins = np.linspace(bins_min, bins_max, bins + 1)

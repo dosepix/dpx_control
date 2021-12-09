@@ -4,7 +4,6 @@ import time
 import numpy as np
 import os
 import os.path
-import pandas as pd
 import matplotlib.pyplot as plt
 import scipy.signal
 import scipy.optimize
@@ -116,7 +115,7 @@ class DPX_functions():
         if conversion_factors is not None:
             if len(slot) < 3:
                 print('WARNING: Need three detectors to determine total dose!')
-            cvLarge, cvSmall = np.asarray( pd.read_csv(conversion_factors[0], header=None) ), np.asarray( pd.read_csv(conversion_factors[1], header=None) )
+            cvLarge, cvSmall = np.genfromtxt(conversion_factors[0]), np.genfromtxt(conversion_factors[1])
             doseDict = {'Slot%d' % sl: [] for sl in slot}
             isLarge = np.asarray([self.isLarge(pixel) for pixel in range(256)])
 
@@ -449,7 +448,6 @@ class DPX_functions():
 
             self.pickleDump(timeDict, '%s_time' % outFn_split[0] + '.%s' % outFn_split[1], overwrite=True)
             self.pickleDump(outDict, outFn, overwrite=True)
-            # self.pickleDump(self.binEdges, '%s_binEdges' % outFn.split('.hck')[0] + '.hck')
 
         except (KeyboardInterrupt, SystemExit):
             # Store data and plot in files
@@ -1666,6 +1664,8 @@ class DPX_functions():
         noiseLimit = 3
 
         print('== Threshold equalization of detector %d ==' % slot)
+        if use_gui:
+            yield {'stage': 'Init'}
 
         # Set PC Mode in OMR in order to read kVp values
         # If OMR code is list
@@ -1806,10 +1806,11 @@ class DPX_functions():
 
         # Repeat procedure to get noise levels
         if use_gui:
+            yield {'stage': 'THL_start'}
             countsDict_gen = self.getTHLLevel(slot, THLRange, pixelDACNew, reps, intPlot=False, use_gui=True)
             for res in countsDict_gen:
                 if 'status' in res.keys():
-                    yield {'stage': 'THL_pre', 'status': np.round(res['status'], 4)}
+                    yield {'stage': 'THL', 'status': np.round(res['status'], 4)}
                 elif 'DAC' in res.keys():
                     yield {'stage': 'THL_loop_start', 'status': res['DAC']}
                 else:

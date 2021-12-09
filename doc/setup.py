@@ -14,13 +14,9 @@ setup(name='dpx_control',
     },
     install_requires=[
         'matplotlib',
-        'pandas',
         'numpy',
         'scipy',
         'pyserial',
-        'pyyaml',
         'configparser',
         'tqdm'
-        # 'sphinx',
-        # 'sphinx_rtd_theme'
     ])

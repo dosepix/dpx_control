@@ -1,26 +1,40 @@
-from setuptools import setup
+import setuptools
 
-setup(name='dpx_control',
+with open("README.md", "r", encoding="utf-8") as fh:
+    long_description = fh.read()
+
+setuptools.setup(name='dpx_control',
     version='0.3.1',
     description='DPX control software',
+    long_description=long_description,
+    long_description_content_type="text/markdown",
     author='Sebastian Schmidt',
     author_email='schm.seb@gmail.com',
-    license='MIT',
-    packages=['dpx_control'],
+    url="https://github.com/dosepix/dpx_control",
+    project_urls={
+        "Bug Tracker": "https://github.com/dosepix/dpx_control/issues",
+    },
+    classifiers=[
+        "Programming Language :: Python :: 3",
+        "License :: OSI Approved :: GNU GPLv3",
+        "Operating System :: OS Independent",
+    ],
+    license='GNU GPLv3',
     entry_points={
         'console_scripts' : [
             'dpx_control = dpx_control.dpx_control:main',
         ]
     },
+    package_dir={
+        "": "dpx_control",
+        "examples": "examples"
+        },
+    packages=setuptools.find_packages(where="dpx_control"),
     install_requires=[
         'matplotlib',
-        'pandas',
         'numpy',
         'scipy',
         'pyserial',
-        'pyyaml',
         'configparser',
         'tqdm'
-        # 'sphinx',
-        # 'sphinx_rtd_theme'
     ])

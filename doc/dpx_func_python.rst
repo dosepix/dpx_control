@@ -7,7 +7,7 @@ Submodules
 dpx\_func\_python.config module
 -------------------------------
 
-.. automodule:: dpx_func_python.config
+.. automodule:: dpx_control.config
     :members:
     :undoc-members:
     :show-inheritance:
@@ -15,7 +15,7 @@ dpx\_func\_python.config module
 dpx\_func\_python.control module
 --------------------------------
 
-.. automodule:: dpx_func_python.control
+.. automodule:: dpx_control.control
     :members:
     :undoc-members:
     :show-inheritance:
@@ -23,7 +23,7 @@ dpx\_func\_python.control module
 dpx\_func\_python.dpx\_functions module
 ---------------------------------------
 
-.. automodule:: dpx_func_python.dpx_functions
+.. automodule:: dpx_control.dpx_functions
     :members:
     :undoc-members:
     :show-inheritance:
@@ -31,7 +31,7 @@ dpx\_func\_python.dpx\_functions module
 dpx\_func\_python.dpx\_settings module
 --------------------------------------
 
-.. automodule:: dpx_func_python.dpx_settings
+.. automodule:: dpx_control.dpx_settings
     :members:
     :undoc-members:
     :show-inheritance:
@@ -39,7 +39,7 @@ dpx\_func\_python.dpx\_settings module
 dpx\_func\_python.dpx\_support module
 -------------------------------------
 
-.. automodule:: dpx_func_python.dpx_support
+.. automodule:: dpx_control.dpx_support
     :members:
     :undoc-members:
     :show-inheritance:
@@ -47,7 +47,7 @@ dpx\_func\_python.dpx\_support module
 dpx\_func\_python.dpx\_test\_pulse module
 -----------------------------------------
 
-.. automodule:: dpx_func_python.dpx_test_pulse
+.. automodule:: dpx_control.dpx_test_pulse
     :members:
     :undoc-members:
     :show-inheritance:
@@ -55,7 +55,7 @@ dpx\_func\_python.dpx\_test\_pulse module
 dpx\_func\_python.support module
 --------------------------------
 
-.. automodule:: dpx_func_python.support
+.. automodule:: dpx_control.support
     :members:
     :undoc-members:
     :show-inheritance:
@@ -63,7 +63,7 @@ dpx\_func\_python.support module
 dpx\_func\_python.system module
 -------------------------------
 
-.. automodule:: dpx_func_python.system
+.. automodule:: dpx_control.system
     :members:
     :undoc-members:
     :show-inheritance:
@@ -72,7 +72,7 @@ dpx\_func\_python.system module
 Module contents
 ---------------
 
-.. automodule:: dpx_func_python
+.. automodule:: dpx_control
     :members:
     :undoc-members:
     :show-inheritance:

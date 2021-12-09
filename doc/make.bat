@@ -9,7 +9,7 @@ if "%SPHINXBUILD%" == "" (
 )
 set SOURCEDIR=.
 set BUILDDIR=_build
-set SPHINXPROJ=dpx_func_python
+set SPHINXPROJ=dpx_control
 
 if "%1" == "" goto help
 

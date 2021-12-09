@@ -476,10 +476,10 @@ class DPX_test_pulse(object):
             print('Time:', (time.time() - start_time))
         resDict = [{'ToT': np.asarray(ToTListTotal)[:,column,:], 'ToTErr': np.asarray(ToTErrListTotal)[:,column,:], 'volt': TPvoltageRange} for column in range(16)]
 
-        outFn = outFn.split('.')[0] + '.hck' % T
+        outFn = outFn.split('.')[0] + '.json' % T
         self.pickleDump(resDict, outFn)
 
-    def TPTime(self, slot=1, column=0, voltage=100, timeRange=np.logspace(1, 3, 10), outFn='TPTime.hck'):
+    def TPTime(self, slot=1, column=0, voltage=100, timeRange=np.logspace(1, 3, 10), outFn='TPTime.json'):
         NToT = 10
         columnRange = self.testPulseInit(slot, column=column)
         DACval = self.getTestPulseVoltageDAC(slot, voltage, energy=False)

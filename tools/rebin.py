@@ -363,9 +363,6 @@ def rebin2d(x1, y1, z1, x2, y2, interp_kind=3):
 
     return np.array(z2)
 
-
-
-
 if __name__ == '__main__':
     # demo rebin() ---------------------------------------------------
 

@@ -2,28 +2,19 @@ import numpy as np
 import scipy.optimize
 import matplotlib.pyplot as plt
 import json
-import sys
 import rebin as rb
 
 # === Load Data ===
 def loadSingleRegion(dataDir, doseFile, binEdgesFile):
-    if doseFile.endswith('.hck'):
-        doseDict = hck.load(dataDir + doseFile)
-    elif doseFile.endswith('.json'):
-        doseDict = json.load(open(dataDir + doseFile, 'r'))
+    assert doseFile.endswith('.json'), "doseFile has to be a json-file!"
+    doseDict = json.load(open(dataDir + doseFile, 'r'))
     doseDict = {slot: np.asarray(doseDict[slot])[:,:,:,1:] for slot in doseDict.keys()}
     
-    if binEdgesFile.endswith('.hck'):
-        binEdgesRandomDict = hck.load(binEdgesFile)
-    elif binEdgesFile.endswith('.json'):
-        binEdgesRandomDict = json.load(open(binEdgesFile, 'r'))
+    assert binEdgesFile.endswith('.json'), "binEdgesFile has to be a json-file!"
+    binEdgesRandomDict = json.load(open(binEdgesFile, 'r'))
         
     if len(np.asarray(binEdgesRandomDict).shape) > 2:
         binEdgesRandomDict = binEdgesRandomDict[0]
-    '''
-    if paramsDictFile.endswith('.hck'):
-        paramsDict = hck.load(paramsDictFile)
-    '''
 
     binEdgesCorrDict = {'Slot%d' % slot: binEdgesRandomDict['Slot%d' % slot][0] for slot in range(1, 3 + 1)}
     return doseDict, binEdgesCorrDict
@@ -251,52 +242,6 @@ def water_level_decon(y_meas, window, eps=0.1):
     return np.fft.ifft(newfreq)
 
 # === Bin edges generation ===
-def getBinEdgesRandom(NPixels, edgeMin, edgeMax, edgeOvfw, uniform=False, paramDict=None):
-    edgeList = []
-    for pixel in range(NPixels):
-        if uniform:
-            # Calculate bin edges
-            binEdges = np.sort(np.random.uniform(edgeMin, edgeMax, 15))
-            binEdges = np.insert(binEdges, 0, edgeMin)
-            binEdges = np.append(binEdges, edgeOvfw)
-        else:
-            pixelOffset = 2
-            if paramDict is not None:
-                while pixel + pixelOffset not in paramDict.keys():
-                    pixelOffset += 4
-                params = paramDict[pixel + pixelOffset]
-
-                a, b, c, t = params['a'], params['b'], params['c'], params['t']
-                if 'h' in params.keys():
-                    h, k = params['h'], params['k']
-                else:
-                    h, k = 1, 0
-
-                # print( a, b, c, t, h, k )
-                # Get min, max and overflow edges
-                edgeMin_ = EnergyToToTSimple(edgeMin, a, b, c, t, h, k)
-                edgeMax_ = EnergyToToTSimple(edgeMax, a, b, c, t, h, k)
-                edgeOvfw_ = EnergyToToTSimple(edgeOvfw, a, b, c, t, h, k)
-                if edgeMin_ > edgeMax_:
-                    edgeMin_, edgeMax_ = edgeMax_, edgeMin_
-                # print (edgeMin_, edgeMax_, edgeOvfw_)
-
-                # Get bin edges with noisy evenly spaced distances
-                binEdges = np.around(getBinEdgesRandomEvenSpace(edgeMin_, edgeMax_, edgeOvfw_))
-
-                # Convert back to energy
-                binEdges = ToTtoEnergySimple(np.asarray(binEdges), a, b, c, t, h, k)
-                if any(np.isnan(binEdges)):
-                    binEdges = getBinEdgesRandomEvenSpace(edgeMin, edgeMax, edgeOvfw)
-                # print( binEdges )
-                # print
-
-            else:
-                binEdges = getBinEdgesRandomEvenSpace(edgeMin, edgeMax, edgeOvfw)
-
-        edgeList.append( binEdges )
-    return edgeList
-
 def getBinEdgesRandomEvenSpace(edgeMin, edgeMax, edgeOvfw):
     # Mean difference 
     diff = float(edgeMax - edgeMin) / 15
@@ -377,30 +322,6 @@ def expWindow(x, A, mu, tau):
 
 def triangleWindow(x, A, mu, tau):
     return np.where(np.logical_or(x < (mu - tau), x > (mu + tau)), 0, A * (1 - np.abs(x - mu) / float(tau)))
-
-# === Temperature Correction ===
-def correctTemperature(binEdgesDict, tempDict, tempCalibDict, slot=1):
-    T = np.mean(tempDict['temp'])
-    Toffset = tempCalibDict['Toffset']
-    slope, offset = tempCalibDict['slope'], tempCalibDict['offset']
-
-    tempCalibDict.keys()
-    binEdgesCorrDict = {'Slot%d' % slot: []}
-    for pixel in range(256):
-        b = binEdgesRandomDict['Slot%d' % slot][pixel]
-        if pixel not in paramsDict.keys():
-            binEdgesDict['Slot%d' % slot].append( b )
-            continue
-
-        p = paramsDict[pixel]
-        bToT = tte.EnergyToToT(b, p['a'], p['b'], p['c'], p['t'], p['h'], p['k'])
-        b_new = pttt.getDataAtTSingle(bToT, T, slope[pixel], offset[pixel], Toffset, paramsDict[pixel], energy=True)
-        if np.any(np.isnan(b_new)):
-            binEdgesDict['Slot%d' % slot].append( b )
-        else:
-            binEdgesDict['Slot%d' % slot].append( b_new )
-            
-    return binEdgesCorrDict
 
 # === Support ===
 def getColor(c, N, idx):

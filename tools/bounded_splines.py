@@ -1,5 +1,4 @@
-#!/usr/bin/env
-
+#!/usr/bin/env python
 import numpy as np
 from scipy.interpolate import UnivariateSpline, RectBivariateSpline
 

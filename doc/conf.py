@@ -19,7 +19,7 @@
 
 # -- Project information -----------------------------------------------------
 
-project = u'dpx_func_python'
+project = u'dpx_control'
 copyright = u'2019, Sebastian Schmidt'
 author = u'Sebastian Schmidt'
 
@@ -111,7 +111,7 @@ html_theme_path = [sphinx_rtd_theme.get_html_theme_path()]
 # -- Options for HTMLHelp output ---------------------------------------------
 
 # Output file base name for HTML help builder.
-htmlhelp_basename = 'dpx_func_pythondoc'
+htmlhelp_basename = 'dpx_controldoc'
 
 
 # -- Options for LaTeX output ------------------------------------------------
@@ -138,7 +138,7 @@ latex_elements = {
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-    (master_doc, 'dpx_func_python.tex', u'dpx\\_func\\_python Documentation',
+    (master_doc, 'dpx_control.tex', u'dpx\\_func\\_python Documentation',
      u'Sebastian Schmidt', 'manual'),
 ]
 
@@ -148,7 +148,7 @@ latex_documents = [
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    (master_doc, 'dpx_func_python', u'dpx_func_python Documentation',
+    (master_doc, 'dpx_control', u'dpx_control Documentation',
      [author], 1)
 ]
 
@@ -159,8 +159,8 @@ man_pages = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-    (master_doc, 'dpx_func_python', u'dpx_func_python Documentation',
-     author, 'dpx_func_python', 'One line description of project.',
+    (master_doc, 'dpx_control', u'dpx_control Documentation',
+     author, 'dpx_control', 'One line description of project.',
      'Miscellaneous'),
 ]
 

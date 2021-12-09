@@ -1,7 +1,7 @@
 Config
 ======
 
-.. automodule:: dpx_func_python.config
+.. automodule:: dpx_control.config
     :members:
     :show-inheritance:
 

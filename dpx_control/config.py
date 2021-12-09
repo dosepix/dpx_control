@@ -3,7 +3,6 @@ from __future__ import print_function
 import serial
 import os
 import os.path
-import yaml
 import numpy as np
 import json
 import configparser
@@ -141,8 +140,6 @@ class Config(object):
                 print('percent:')
             else:
                 print('DAC:')
-            print(yaml.dump(d, indent=4, default_flow_style=False))
-            print()
 
         return d
 

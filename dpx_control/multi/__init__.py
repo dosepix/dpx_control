@@ -4,7 +4,6 @@ import time
 import numpy as np
 import os
 import os.path
-import pandas as pd
 import matplotlib.pyplot as plt
 import scipy.signal
 import scipy.optimize
