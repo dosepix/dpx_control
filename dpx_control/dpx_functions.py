@@ -24,7 +24,7 @@ except NameError:
 
 class DPX_functions():
     # TODO: Correction factor of 16/15 necessary?
-    def measureDose(self, slot=1, frame_time=10, frames=10, freq=False, outFn='doseMeasurement.json', logTemp=False, intPlot=False, conversion_factors=None):
+    def measureDose(self, slot=1, frame_time=10, frames=10, freq=False, outFn='doseMeasurement.json', logTemp=False, intPlot=False, conversion_factors=None, use_gui=False):
         """Perform measurement in DosiMode.
 
         Parameters
@@ -38,7 +38,8 @@ class DPX_functions():
             over the specified time and a frame is read out over 16 columns
             via rolling shutter.
         frames : int
-            Number of frames to record.
+            Number of frames to record. If set to None, an infinite measurement
+            is started
         freq : bool
             Store the count frequency by normalization via the measurement
             time for each frame.
@@ -196,8 +197,10 @@ class DPX_functions():
                         showList.append( np.nansum(out, axis=1)[2:-2] )
 
                     # Append to outDict
-                    data = np.asarray(outList)
+                    data = np.asarray( outList )
                     outDict['Slot%d' % sl].append( data )
+                    if use_gui:
+                        yield( data )
 
                     # plt.imshow(showList)
                     # plt.show()
@@ -240,8 +243,9 @@ class DPX_functions():
                 if conversion_factors:
                     self.pickleDump(doseDict, '%s_dose' % outFn_split[0] + '.%s' % outFn_split[1])
             returnDict = {'data': outDict}
+
             if logTemp:
-            	returnDict['temp'] = tempDict
+                returnDict['temp'] = tempDict
             if conversion_factors:
                 returnDict['dose'] = doseDict
             return returnDict
@@ -729,7 +733,8 @@ class DPX_functions():
             else:
                 bins = np.arange(0, 400, 1)
             histData = {slot: np.zeros(len(bins)-1) for slot in slotList}
-            yield bins, histData
+            if use_gui:
+                yield bins, histData
 
         # Init plot
         if intPlot:
@@ -2073,4 +2078,3 @@ class DPX_functions():
             return slopeList[0]
         else:
             return slopeList
-

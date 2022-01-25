@@ -231,7 +231,7 @@ def wiener_deconvolution(signal, kernel, lambd):
 
 def water_level_decon(y_meas, window, eps=0.1):
     padded = np.zeros_like(y_meas)
-    padded[:window.size] = window
+    padded[:Renderer.size] = window
 
     yfreq = np.fft.fft(y_meas)
     winfreq = np.fft.fft(padded)

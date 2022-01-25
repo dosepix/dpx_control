@@ -225,6 +225,12 @@ class Config(object):
 
         return
 
+    def setConfig_gui(self, config):
+        self.THLs[0] = config['v_tha']
+        self.confBits[0] = config['confbits']
+        self.pixelDAC[0] = config['pixeldac']
+        return
+
     def writeConfig(self, configFn, slot=1):
         config = configparser.ConfigParser()
         d = self.splitPerihperyDACs(self.peripherys[slot-1] + self.THLs[slot-1])

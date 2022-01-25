@@ -60,10 +60,6 @@ python3 setup.py develop
 
 instead.
 
-## Documentation
-
-Documentation can be found [here](doc/_build/html/index.html)
-
 ## Examples
 
 ### Dosepix initialization

@@ -4,7 +4,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
     long_description = fh.read()
 
 setuptools.setup(name='dpx_control',
-    version='0.3.1',
+    version='0.3.2',
     description='DPX control software',
     long_description=long_description,
     long_description_content_type="text/markdown",
@@ -16,7 +16,7 @@ setuptools.setup(name='dpx_control',
     },
     classifiers=[
         "Programming Language :: Python :: 3",
-        "License :: OSI Approved :: GNU GPLv3",
+        "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
         "Operating System :: OS Independent",
     ],
     license='GNU GPLv3',
@@ -25,11 +25,7 @@ setuptools.setup(name='dpx_control',
             'dpx_control = dpx_control.dpx_control:main',
         ]
     },
-    package_dir={
-        "": "dpx_control",
-        "examples": "examples"
-        },
-    packages=setuptools.find_packages(where="dpx_control"),
+    packages=["dpx_control"],
     install_requires=[
         'matplotlib',
         'numpy',
@@ -37,4 +33,5 @@ setuptools.setup(name='dpx_control',
         'pyserial',
         'configparser',
         'tqdm'
-    ])
+    ]
+)
