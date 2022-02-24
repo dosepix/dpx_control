@@ -10,12 +10,14 @@ import time
 import gevent
 import serial.tools.list_ports
 
+
 def main():
     addr = 'tcp://127.0.0.1:' + parse_port()
     s = zerorpc.Server(DPXapi())
     s.bind(addr)
     print('start running on {}'.format(addr))
     s.run()
+
 
 def parse_port():
     port = 4242
@@ -25,6 +27,7 @@ def parse_port():
         pass
     return '{}'.format(port)
 
+
 class DPXapi(object):
     # Function to check if server is ready
     def echo(self, text):
@@ -33,12 +36,11 @@ class DPXapi(object):
 
     def connectDPX(self):
         self.dpxObj = dpx.Dosepix('/dev/ttyUSB0', 2e6, 'DPXConfig.conf')
-        self.dpxObj.setGUI()
+        self.dpxObj.set_GUI()
         return str('Success!')
 
     def disconnectDPX(self):
         del self.dpxObj
-
 
     def findDPX(self):
         ports = list(serial.tools.list_ports.comports())
@@ -63,10 +65,12 @@ class DPXapi(object):
         for f in np.arange(int(cnt)):
             gevent.sleep(0)
             d = np.random.normal(30, 10, 1000)
-            rand += list( d )
+            rand += list(d)
             h, b = np.histogram(rand, bins=bins)
 
-            data = json.dumps({'frame': f / 100., 'data': [{'ToT': b[:-1][i], 'Counts': h[i]} for i in range(len(h))]})
+            data = json.dumps({'frame': f / 100.,
+                               'data': [{'ToT': b[:-1][i],
+                                         'Counts': h[i]} for i in range(len(h))]})
             yield data
             time.sleep(0.1)
         # return str('Not implemented!')
@@ -74,22 +78,29 @@ class DPXapi(object):
 
         # Settings
         slot = 1
-        cnt = int( cnt )    # Ensure cnt is given as int
+        cnt = int(cnt)    # Ensure cnt is given as int
         # cnt = 10000
         # out = 'ToTMeasurement/'
 
         # Get generator object
-        ToTgen = self.dpxObj.measureToT(slot=slot, outDir=out, cnt=cnt, storeEmpty=False, logTemp=False, paramsDict=None, intPlot=False)
+        ToTgen = self.dpxObj.measureToT(
+            slot=slot,
+            outDir=out,
+            cnt=cnt,
+            storeEmpty=False,
+            logTemp=False,
+            params_dict=None,
+            intPlot=False)
         for b, h in ToTgen:
             gevent.sleep(0)     # Required for heartbeats
-            data = json.dumps({'frame': 1., 'data': [{'ToT': b[:-1][i], 'Counts': h[i]} for i in range(len(h))]})
+            data = json.dumps({'frame': 1., 'data': [
+                              {'ToT': b[:-1][i], 'Counts': h[i]} for i in range(len(h))]})
             yield data
         return
 
     @zerorpc.stream
     def testPlot(self):
         # Processing example
-
         '''
         for x in np.arange(100):
             # Do some calculations
@@ -99,14 +110,16 @@ class DPXapi(object):
         xStart = np.arange(10000)
         for x_ in xStart:
             gevent.sleep(0)     # Required for heartbeats
-            x = np.linspace(x_, x_+10, 100).tolist()
+            x = np.linspace(x_, x_ + 10, 100).tolist()
             y = np.sin(x).tolist()
             # data = pd.DataFrame({'status': x_, 'data': {'x': x.tolist(), 'y': y.tolist()}})
-            data = json.dumps({'status': x_ / 10000., 'data': [{'x': x[i], 'y': y[i]} for i in range(len(x))]})
+            data = json.dumps(
+                {'status': x_ / 10000., 'data': [{'x': x[i], 'y': y[i]} for i in range(len(x))]})
             # print( data )
-            yield data # pd.DataFrame({'x': x.tolist(), 'y': y.tolist()}).to_json(orient='records')
+            # pd.DataFrame({'x': x.tolist(), 'y': y.tolist()}).to_json(orient='records')
+            yield data
             time.sleep(.1)
+
 
 if __name__ == '__main__':
     main()
-

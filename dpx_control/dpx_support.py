@@ -5,83 +5,91 @@ import time
 import matplotlib.pyplot as plt
 import scipy.optimize
 from tqdm import tqdm
+from support import Support as supp
 
 try:
-  basestring
+    basestring
 except NameError:
-  basestring = str
+    basestring = str
 
-class DPX_support(object):
-    def fillParamDict(self, paramDict):
+class DPXsupport(object):
+    def __init__(self):
+        return
+
+    @classmethod
+    def fill_param_dict(cls, param_dict):
         # Get mean factors
-        meanDict = {}
+        mean_dict = {}
 
-        if 'h' in paramDict[paramDict.keys()[0]].keys():
-            keyList = ['a', 'c', 'b', 'h', 'k', 't']
+        if 'h' in param_dict[param_dict.keys()[0]].keys():
+            key_list = ['a', 'c', 'b', 'h', 'k', 't']
         else:
-            keyList = ['a', 'c', 'b', 't']
+            key_list = ['a', 'c', 'b', 't']
 
-        for val in keyList:
-            valList = []
-            for idx in paramDict.keys():
-                valList.append( paramDict[idx][val] )
-            valList = np.asarray(valList)
-            valList[abs(valList) == np.inf] = np.nan
-            meanDict[val] = np.nanmean(valList)
+        for val in key_list:
+            val_list = []
+            for idx in param_dict.keys():
+                val_list.append(param_dict[idx][val])
+            val_list = np.asarray(val_list)
+            val_list[abs(val_list) == np.inf] = np.nan
+            mean_dict[val] = np.nanmean(val_list)
 
         # Find non existent entries and loop
-        for pixel in set(np.arange(256)) - set(paramDict.keys()):
-            paramDict[pixel] = {val: meanDict[val] for val in keyList}
+        for pixel in set(np.arange(256)) - set(param_dict.keys()):
+            param_dict[pixel] = {val: mean_dict[val] for val in key_list}
 
-        return paramDict
+        return param_dict
 
-    def getTHLfromVolt(self, V, slot):
-        return self.THLCalib[slot - 1][abs(V - self.voltCalib).argmin()]
+    def get_THL_from_volt(self, V, slot):
+        return self.THL_calib[slot - 1][abs(V - self.volt_calib).argmin()]
 
     def getVoltFromTHL(self, THL, slot):
-        return self.voltCalib[slot - 1][np.argwhere(self.THLCalib == THL)]
+        return self.volt_calib[slot - 1][np.argwhere(self.THL_calib == THL)]
 
     def getVoltFromTHLFit(self, THL, slot):
-        if len(self.THLEdgesLow) == 0 or self.THLEdgesLow[slot - 1] is None:
+        if len(self.THL_edges_low) == 0 or self.THL_edges_low[slot - 1] is None:
             return THL
 
-        edges = zip(self.THLEdgesLow[slot - 1], self.THLEdgesHigh[slot - 1])
+        edges = zip(self.THL_edges_low[slot - 1], self.THL_edges_high[slot - 1])
         for i, edge in enumerate(edges):
             if THL >= edge[0] and THL <= edge[1]:
                 break
         # else:
         #     return None
 
-        params = self.THLFitParams[slot - 1][i]
+        params = self.THL_fit_params[slot - 1][i]
         if i == 0:
-            return self.erfStdFit(THL, *params)
+            return supp.erfStdFit(THL, *params)
         else:
-            return self.linearFit(THL, *params)
+            return supp.linear_fit(THL, *params)
 
-    def EnergyToToTSimple(self, x, a, b, c, t, h=1, k=0):
-        return np.where(x >= self.getTHL(a, b, c, t), a*x + b + float(c)/(x - t), 0)
+    def energy_to_ToT_simple(self, x, a, b, c, t):
+        return np.where(x >= self.getTHL(a, b, c, t),
+                        a * x + b + float(c) / (x - t), 0)
 
-    def ToTtoEnergySimple(self, x, a, b, c, t, h=1, k=0):
-        return 1./(2*a) * ( t*a + x - b + np.sqrt((b + t*a - x)**2 - 4*a*c) )
+    def ToT_to_energy_simple(self, x, a, b, c, t):
+        return 1. / (2 * a) * (t * a + x - b +
+                               np.sqrt((b + t * a - x)**2 - 4 * a * c))
 
     def getTHL(self, a, b, c, t):
-        return 1./(2*a) * ( t*a - b + np.sqrt((b + t*a)**2 - 4*a*c) )
+        return 1. / (2 * a) * (t * a - b + np.sqrt((b + t * a)**2 - 4 * a * c))
 
     def energyToToTFitAtan(self, x, a, b, c, d):
-        return np.where(x > b, a*(x - b) + c*np.arctan((x - b)/d), 0)
+        return np.where(x > b, a * (x - b) + c * np.arctan((x - b) / d), 0)
 
     def energyToToTFitHyp(self, x, a, b, c, d):
-        return np.where(x > d, a*x + b + float(c)/(x - d), 0)
+        return np.where(x > d, a * x + b + float(c) / (x - d), 0)
 
-    def THLCalibToEdges(self, THLDict):
-        volt, thl = THLDict['Volt'], THLDict['ADC']
+    @classmethod
+    def THL_calib_to_edges(cls, THL_dict, eye_lens=False):
+        volt, thl = THL_dict['Volt'], THL_dict['ADC']
 
         # Sort by THL
         thl, volt = zip(*sorted(zip(thl, volt)))
 
         # Find edges by taking derivative
         diff = abs(np.diff(volt))
-        if self.eye_lens:
+        if eye_lens:
             thres = 100
         else:
             thres = 200
@@ -92,58 +100,74 @@ class DPX_support(object):
 
         edges = list(edges)
         edges.insert(0, 0)
-        edges.append( 8190 )
+        edges.append(8190)
 
-        THLEdgesLow, THLEdgesHigh = [0], []
+        THL_edges_low, THL_edges_high = [0], []
 
-        x1 = np.asarray( thl[edges[0]:edges[1]] )
-        y1 = np.asarray( volt[edges[0]:edges[1]] )
-        popt1, pcov1 = scipy.optimize.curve_fit(self.erfStdFit, x1, y1)
+        x1 = np.asarray(thl[edges[0]:edges[1]])
+        y1 = np.asarray(volt[edges[0]:edges[1]])
+        popt1, pcov1 = scipy.optimize.curve_fit(supp.erfStdFit, x1, y1)
         d[0] = popt1
 
         for i in range(1, len(edges) - 2):
             # Succeeding section
-            x2 = np.asarray( thl[edges[i]:edges[i+1]] )
-            y2 = np.asarray( volt[edges[i]:edges[i+1]] )
+            x2 = np.asarray(thl[edges[i]:edges[i + 1]])
+            y2 = np.asarray(volt[edges[i]:edges[i + 1]])
 
-            popt2, pcov2 = scipy.optimize.curve_fit(self.linearFit, x2, y2)
+            popt2, pcov2 = scipy.optimize.curve_fit(supp.linear_fit, x2, y2)
             m1, m2, t1, t2 = popt1[0], popt2[0], popt1[1], popt2[1]
             d[i] = popt2
 
             # Get central position
             # Calculate intersection to get edges
             if i == 1:
-                    Vcenter = 0.5*(self.erfStdFit(edges[i], *popt1) + self.linearFit(edges[i], m2, t2))
-                    THLEdgesHigh.append( scipy.optimize.fsolve(lambda x: self.erfStdFit(x, *popt1) - Vcenter, 100)[0] )
+                Vcenter = 0.5 * \
+                    (supp.erfStdFit(edges[i], *popt1) + supp.linear_fit(edges[i], m2, t2))
+                THL_edges_high.append(
+                    scipy.optimize.fsolve(
+                        lambda x: supp.erfStdFit(
+                            x, *popt1) - Vcenter, 100)[0])
             else:
-                    Vcenter = 1./(m1 + m2) * (2*edges[i]*m1*m2 + t1*m1 + t2*m2)
-                    THLEdgesHigh.append( (Vcenter - t1)/m1 )
+                Vcenter = 1. / (m1 + m2) * \
+                    (2 * edges[i] * m1 * m2 + t1 * m1 + t2 * m2)
+                THL_edges_high.append((Vcenter - t1) / m1)
 
-            THLEdgesLow.append( (Vcenter - t2)/m2 )
+            THL_edges_low.append((Vcenter - t2) / m2)
             popt1, pcov1 = popt2, pcov2
 
-        THLEdgesHigh.append( 8190 )
+        THL_edges_high.append(8190)
 
-        return THLEdgesLow, THLEdgesHigh, d
+        return THL_edges_low, THL_edges_high, d
 
-    def valToIdx(self, slot, pixelDACs, THLRange, gaussDict, noiseTHL):
+    def valToIdx(self, slot, pixel_DACs, THLRange, gaussDict, noiseTHL):
         # Transform values to indices
-        meanDict = {}
-        for pixelDAC in pixelDACs:
-            d = np.asarray([self.getVoltFromTHLFit(elm, slot) if elm else np.nan for elm in gaussDict[pixelDAC] ], dtype=np.float)
-            meanDict[pixelDAC] = np.nanmean(d)
+        mean_dict = {}
+        for pixel_DAC in pixel_DACs:
+            d = np.asarray([self.getVoltFromTHLFit(
+                elm, slot) if elm else np.nan for elm in gaussDict[pixel_DAC]], dtype=np.float)
+            mean_dict[pixel_DAC] = np.nanmean(d)
 
             for pixelX in range(16):
                 for pixelY in range(16):
-                    elm = noiseTHL[pixelDAC][pixelX, pixelY]
+                    elm = noiseTHL[pixel_DAC][pixelX, pixelY]
                     if elm:
-                        noiseTHL[pixelDAC][pixelX, pixelY] = self.getVoltFromTHLFit(elm, slot)
+                        noiseTHL[pixel_DAC][pixelX,
+                                           pixelY] = self.getVoltFromTHLFit(elm, slot)
                     else:
-                        noiseTHL[pixelDAC][pixelX, pixelY] = np.nan
+                        noiseTHL[pixel_DAC][pixelX, pixelY] = np.nan
 
-        return meanDict, noiseTHL
+        return mean_dict, noiseTHL
 
-    def getTHLLevel(self, slot, THLRange, pixelDACs=['00', '3f'], reps=1, intPlot=False, use_gui=False):
+    def getTHLLevel(
+            self,
+            slot,
+            THLRange,
+            pixel_DACs=[
+                '00',
+                '3f'],
+            reps=1,
+            intPlot=False,
+            use_gui=False):
         # Force no plot if GUI is used
         if use_gui:
             intPlot = False
@@ -159,26 +183,26 @@ class DPX_support(object):
             plt.ylabel('y (pixel)')
             im = ax.imshow(np.zeros((16, 16)), vmin=0, vmax=255)
 
-        if isinstance(pixelDACs, basestring):
-            pixelDACs = [pixelDACs]
+        if isinstance(pixel_DACs, basestring):
+            pixel_DACs = [pixel_DACs]
 
-        # Loop over pixelDAC values
-        for pixelDAC in pixelDACs:
-            countsDict[pixelDAC] = {}
-            print('Set pixel DACs to %s' % pixelDAC)
-            
+        # Loop over pixel_DAC values
+        for pixel_DAC in pixel_DACs:
+            countsDict[pixel_DAC] = {}
+            print('Set pixel DACs to %s' % pixel_DAC)
+
             # Set pixel DAC values
-            if len(pixelDAC) > 2:
-                pixelCode = pixelDAC
+            if len(pixel_DAC) > 2:
+                pixelCode = pixel_DAC
             else:
-                pixelCode = pixelDAC*256
-            self.DPXWritePixelDACCommand(slot, pixelCode, file=False)
+                pixelCode = pixel_DAC * 256
+            self.DPX_write_pixel_DAC_command(slot, pixelCode, file=False)
 
             '''
             resp = ''
             while resp != pixelCode:
-                resp = self.DPXReadPixelDACCommand(slot)
-            ''' 
+                resp = self.DPX_read_pixel_DAC_command(slot)
+            '''
 
             # Dummy readout
             for j in range(3):
@@ -193,21 +217,25 @@ class DPX_support(object):
             countsList = []
             THLRangeFast = THLRange[::10]
             for cnt, THL in enumerate(THLRangeFast):
-                self.DPXWritePeripheryDACCommand(slot, self.peripherys[slot-1] + ('%04x' % int(THL)))
-                self.DPXDataResetCommand(slot)
+                self.DPX_write_periphery_DAC_command(
+                    slot, self.peripherys[slot - 1] + ('%04x' % int(THL)))
+                self.DPX_data_reset_command(slot)
                 time.sleep(0.001)
 
                 # Read ToT values into matrix
-                countsList.append( self.DPXReadToTDatakVpModeCommand(slot).flatten() )
+                countsList.append(
+                    self.DPXReadToTDatakVpModeCommand(slot).flatten())
 
-            countsList = np.asarray( countsList ).T
-            THLRangeFast = [ THLRangeFast[item[0][0]] if np.any(item) else np.nan for item in [np.argwhere(counts > 3) for counts in countsList] ]
+            countsList = np.asarray(countsList).T
+            THLRangeFast = [THLRangeFast[item[0][0]] if np.any(item) else np.nan for item in [
+                np.argwhere(counts > 3) for counts in countsList]]
 
             # Precise loop
             if use_gui:
-                yield {'DAC': pixelDAC}
+                yield {'DAC': pixel_DAC}
 
-            THLRangeSlow = np.around(THLRange[np.logical_and(THLRange >= (np.nanmin(THLRangeFast) - 10), THLRange <= np.nanmax(THLRangeFast))])
+            THLRangeSlow = np.around(THLRange[np.logical_and(THLRange >= (
+                np.nanmin(THLRangeFast) - 10), THLRange <= np.nanmax(THLRangeFast))])
 
             NTHL = len(THLRangeSlow)
             # Do not use tqdm with GUI
@@ -215,12 +243,13 @@ class DPX_support(object):
                 loop_range = THLRangeSlow
             else:
                 loop_range = tqdm(THLRangeSlow)
-            for cnt, THL in enumerate( loop_range ):
+            for cnt, THL in enumerate(loop_range):
                 # Repeat multiple times since data is noisy
                 counts = np.zeros((16, 16))
                 for lp in range(reps):
-                    self.DPXWritePeripheryDACCommand(slot, self.peripherys[slot-1] + ('%04x' % int(THL)))
-                    self.DPXDataResetCommand(slot)
+                    self.DPX_write_periphery_DAC_command(
+                        slot, self.peripherys[slot - 1] + ('%04x' % int(THL)))
+                    self.DPX_data_reset_command(slot)
                     time.sleep(0.001)
 
                     # Read ToT values into matrix
@@ -232,7 +261,7 @@ class DPX_support(object):
                         fig.canvas.draw()
 
                 counts /= float(reps)
-                countsDict[pixelDAC][int(THL)] = counts
+                countsDict[pixel_DAC][int(THL)] = counts
 
                 # Return status as generator when using GUI
                 if use_gui:
@@ -243,31 +272,42 @@ class DPX_support(object):
         else:
             return countsDict
 
-    def getNoiseLevel(self, countsDict, THLRange, pixelDACs=['00', '3f'], noiseLimit=3):
-        if isinstance(pixelDACs, basestring):
-            pixelDACs = [pixelDACs]
+    def getNoiseLevel(
+            self,
+            countsDict,
+            THLRange,
+            pixel_DACs=[
+                '00',
+                '3f'],
+            noiseLimit=3):
+        if isinstance(pixel_DACs, basestring):
+            pixel_DACs = [pixel_DACs]
 
         # Get noise THL for each pixel
-        noiseTHL = {key: np.zeros((16, 16)) for key in pixelDACs}
+        noiseTHL = {key: np.zeros((16, 16)) for key in pixel_DACs}
 
-        gaussDict, gaussSmallDict, gaussLargeDict = {key: [] for key in pixelDACs}, {key: [] for key in pixelDACs}, {key: [] for key in pixelDACs}
+        gaussDict, gaussSmallDict, gaussLargeDict = {
+            key: [] for key in pixel_DACs}, {
+            key: [] for key in pixel_DACs}, {
+            key: [] for key in pixel_DACs}
 
         # Loop over each pixel in countsDict
-        for pixelDAC in pixelDACs:
+        for pixel_DAC in pixel_DACs:
             for pixelX in range(16):
                 for pixelY in range(16):
                     for idx, THL in enumerate(THLRange):
-                        if not THL in countsDict[pixelDAC].keys():
+                        if THL not in countsDict[pixel_DAC].keys():
                             continue
 
-                        if countsDict[pixelDAC][THL][pixelX, pixelY] >= noiseLimit and noiseTHL[pixelDAC][pixelX, pixelY] == 0:
-                                noiseTHL[pixelDAC][pixelX, pixelY] = THL
+                        if countsDict[pixel_DAC][THL][pixelX,
+                                                     pixelY] >= noiseLimit and noiseTHL[pixel_DAC][pixelX,
+                                                                                                  pixelY] == 0:
+                            noiseTHL[pixel_DAC][pixelX, pixelY] = THL
 
-                                gaussDict[pixelDAC].append(THL)
-                                if pixelY in [0, 1, 14, 15]:
-                                    gaussSmallDict[pixelDAC].append(THL)
-                                else:
-                                    gaussLargeDict[pixelDAC].append(THL)
+                            gaussDict[pixel_DAC].append(THL)
+                            if pixelY in [0, 1, 14, 15]:
+                                gaussSmallDict[pixel_DAC].append(THL)
+                            else:
+                                gaussLargeDict[pixel_DAC].append(THL)
 
         return gaussDict, noiseTHL
-

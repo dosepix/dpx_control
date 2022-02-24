@@ -127,14 +127,14 @@ class DosepixMulti(object):
 
                     OMRCode_ &= ~(0b11111 << 12)
                     OMRCode_ |= getattr(ds._OMRAnalogOutSel, 'Temperature')
-                    dpx.DPXWriteOMRCommand(1, hex(OMRCode_).split('0x')[-1])
+                    dpx.DPX_write_OMR_command(1, hex(OMRCode_).split('0x')[-1])
 
                 # Set OMR
-                dpx.DPXWriteOMRCommand(sl, OMRCode)
-                dpx.DPXDataResetCommand(sl)
+                dpx.DPX_write_OMR_command(sl, OMRCode)
+                dpx.DPX_data_reset_command(sl)
 
             # Initial reset 
-            dpx.clearBins(slot)
+            dpx.clear_bins(slot)
 
     def initMeasureToT_multi(self, logTemp=False):
         for idx, dpx in enumerate(self.dpxObjects):
@@ -155,7 +155,7 @@ class DosepixMulti(object):
                     OMRCode = '%04x' % ((int(OMRCode, 16) & ~((0b11) << 22)))
 
                 # Set mode in slots
-                dpx.DPXWriteOMRCommand(slot, OMRCode)
+                dpx.DPX_write_OMR_command(slot, OMRCode)
 
             # Get OMR
             sl = 1
@@ -171,7 +171,7 @@ class DosepixMulti(object):
                 OMRCode_ &= ~(0b11111 << 12)
                 OMRCode_ |= getattr(ds._OMRAnalogOutSel, 'V_ThA') # 'Temperature')
                 for slot in slotList:
-                    dpx.DPXWriteOMRCommand(slot, hex(OMRCode_).split('0x')[-1])
+                    dpx.DPX_write_OMR_command(slot, hex(OMRCode_).split('0x')[-1])
     
     def readFrameDosi_multi(self, dpx_idx, output):
         dpx = self.dpxObjects[dpx_idx]
@@ -181,8 +181,8 @@ class DosepixMulti(object):
         for sl_idx, sl in enumerate( slot ):
             # Loop over columns
             for col in range(16):
-                dpx.DPXWriteColSelCommand(sl, 15 - col)
-                out = np.asarray( dpx.DPXReadBinDataDosiModeCommand(sl), dtype=float )
+                dpx.DPX_write_col_sel_command(sl, 15 - col)
+                out = np.asarray( dpx.DPX_read_bin_data_dosi_mode_command(sl), dtype=float )
                 outList[sl_idx].append( out )
                 # output.put( (dpx_idx, out) )
         output_np = np.frombuffer(output)
@@ -195,10 +195,10 @@ class DosepixMulti(object):
         outList = []
         for sl in slot:
             # Read data
-            data = dpx.DPXReadToTDataDosiModeCommand(sl)
+            data = dpx.DPX_read_ToT_data_dosimode_command(sl)
 
             # Reset data registers
-            dpx.DPXDataResetCommand(sl)
+            dpx.DPX_data_reset_command(sl)
 
             # Append to out
             data = data.flatten()

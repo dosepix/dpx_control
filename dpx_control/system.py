@@ -5,9 +5,10 @@ import sys
 import numpy as np
 import json
 
+
 class System(object):
     def pickleDump(self, outDict, outFn, overwrite=False, method='json'):
-        if not '.' in outFn:
+        if '.' not in outFn:
             ending = '.' + method
         else:
             ending = '.' + outFn.split('.')[-1]
@@ -26,8 +27,9 @@ class System(object):
                 outFnFrontSplit = outFnFront.split('_')
                 if len(outFnFrontSplit) >= 2:
                     if outFnFrontSplit[-1].isdigit():
-                        fnNum = int( outFnFrontSplit[-1] ) + 1
-                        outFn = ''.join(outFnFrontSplit[:-1]) + '_' + str(fnNum) + ending
+                        fnNum = int(outFnFrontSplit[-1]) + 1
+                        outFn = ''.join(
+                            outFnFrontSplit[:-1]) + '_' + str(fnNum) + ending
                     else:
                         outFn = outFnFront + '_1' + ending
                 else:
@@ -54,7 +56,8 @@ class System(object):
             if len(dir_front_split) >= 2:
                 if dir_front_split[-1].isdigit():
                     dir_num = int(dir_front_split[-1]) + 1
-                    directory = ''.join(dir_front_split[:-1]) + '_' + str(dir_num) + '/'
+                    directory = ''.join(
+                        dir_front_split[:-1]) + '_' + str(dir_num) + '/'
                 else:
                     directory = dir_front + '_1/'
             else:
