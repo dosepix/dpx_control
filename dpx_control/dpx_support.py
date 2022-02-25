@@ -240,8 +240,7 @@ class DPX_support(object):
             print()
         if use_gui:
             yield {'countsDict': countsDict}
-        else:
-            return countsDict
+        yield countsDict
 
     def getNoiseLevel(self, countsDict, THLRange, pixelDACs=['00', '3f'], noiseLimit=3):
         if isinstance(pixelDACs, basestring):

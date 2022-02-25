@@ -23,8 +23,27 @@ except NameError:
     basestring = str
 
 class DPX_functions():
+    def measureDose(self, slot=1, frame_time=10, frames=10, freq=False,
+        outFn='doseMeasurement.json', logTemp=False, intPlot=False,
+        conversion_factors=None, use_gui=False):
+        """Wrapper for measureDose_func
+        """
+
+        gen = self.measureDose_func(slot=slot, frame_time=frame_time,
+        frames=frames, freq=freq, outFn=outFn, logTemp=logTemp,
+        intPlot=intPlot, conversion_factors=conversion_factors,
+        use_gui=use_gui)
+
+        if use_gui:
+            *_, returnDict = gen
+            return returnDict
+        return gen
+
     # TODO: Correction factor of 16/15 necessary?
-    def measureDose(self, slot=1, frame_time=10, frames=10, freq=False, outFn='doseMeasurement.json', logTemp=False, intPlot=False, conversion_factors=None, use_gui=False):
+    def measureDose_func(self,
+        slot=1, frame_time=10, frames=10, freq=False,
+        outFn='doseMeasurement.json', logTemp=False, intPlot=False,
+        conversion_factors=None, use_gui=False):
         """Perform measurement in DosiMode.
 
         Parameters
@@ -248,7 +267,7 @@ class DPX_functions():
                 returnDict['temp'] = tempDict
             if conversion_factors:
                 returnDict['dose'] = doseDict
-            return returnDict
+            yield returnDict
 
         except (KeyboardInterrupt, SystemExit):
             # Store data and plot in files
@@ -275,7 +294,7 @@ class DPX_functions():
                 returnDict['temp'] = tempDict
             if conversion_factors:
                 returnDict['dose'] = doseDict
-            return returnDict
+            yield returnDict
 
     # If binEdgesDict is provided, perform shifting of energy regions between
     # frames. I.e. the measured region is shifted in order to increase the
@@ -635,8 +654,23 @@ class DPX_functions():
         else:
             return outDict
 
-    def measureToT(self, slot=1, cnt=10000, outDir='ToTMeasurement/', storeEmpty=False, logTemp=False, 
-        intPlot=False, meas_time=None, external_THL=False, make_hist=False, use_gui=False):
+    def measureToT(self, slot=1, cnt=10000, outDir='ToTMeasurement/', 
+        storeEmpty=False, logTemp=False, intPlot=False, meas_time=None,
+        external_THL=False, make_hist=False, use_gui=False):
+        """Wrapper for measureToT_func
+        """
+        gen = self.measureToT_func(slot=slot, cnt=cnt, outDir=outDir,
+            storeEmpty=storeEmpty, logTemp=logTemp, intPlot=intPlot,
+            meas_time=meas_time, external_THL=external_THL,
+            make_hist=make_hist, use_gui=use_gui)
+        if not use_gui:
+            *_, ToTDict = gen
+            return ToTDict
+        return gen
+
+    def measureToT_func(self, slot=1, cnt=10000, outDir='ToTMeasurement/',
+        storeEmpty=False, logTemp=False, intPlot=False, meas_time=None,
+        external_THL=False, make_hist=False, use_gui=False):
         """Perform measurement in ToTMode.
 
         Parameters
@@ -908,6 +942,7 @@ class DPX_functions():
                     print('Measurement time: %.2f min' % ((time.time() - measStart) / 60.))
                     for key in ToTDict.keys():
                         print('%s: %d events' % (key, np.count_nonzero(ToTDict[key])))
+                yield ToTDict
 
         except (KeyboardInterrupt, SystemExit):
             if not use_gui:
@@ -922,7 +957,7 @@ class DPX_functions():
                 self.pickleDump(energyDict, '%s/%s_energy' % (outDir, outFn_split[0]) + '.%s' % outFn_split[-1])
                 if logTemp:
                     self.pickleDump(tempDict, '%s/%s_temp' % (outDir, outFn_split[0]) + '.%s' % outFn_split[-1], overwrite=True)
-            raise
+            yield ToTDict
 
         # Reset OMR
         # for slot in slotList:
@@ -1532,9 +1567,23 @@ class DPX_functions():
     def measureTHL(self, slot, fn=None, plot=False, use_gui=False):
         if not fn:
             fn = self.THL_CALIB_FILE
-        self.measureADC(slot, AnalogOut='V_ThA', perc=False, ADChigh=8191, ADClow=0, ADCstep=1, N=1, fn=fn, plot=plot, use_gui=use_gui)
+        gen = self.measureADC_func(slot, AnalogOut='V_ThA', perc=False, ADChigh=8191, ADClow=0, ADCstep=1, N=1, fn=fn, plot=plot, use_gui=use_gui)
+        if use_gui:
+            return gen
+        *_, out_dict = gen
+        return out_dict
 
-    def measureADC(self, slot, AnalogOut='V_ThA', perc=False, ADChigh=8191, ADClow=0, ADCstep=1, N=1, fn=None, plot=False, use_gui=False):
+    def measureADC(self, slot, AnalogOut='V_ThA', perc=False, ADChigh=8191,
+        ADClow=0, ADCstep=1, N=1, fn=None, plot=False, use_gui=False):
+        gen = self.measureADC_func(slot=slot, AnalogOut=AnalogOut,
+            perc=perc, ADChigh=ADChigh, ADClow=ADClow, ADCstep=ADCstep,
+            N=N, fn=fn, plot=plot, use_gui=use_gui)
+        if use_gui:
+            return gen
+        *_, out_dict = gen
+        return out_dict
+
+    def measureADC_func(self, slot, AnalogOut='V_ThA', perc=False, ADChigh=8191, ADClow=0, ADCstep=1, N=1, fn=None, plot=False, use_gui=False):
         # Display execution time at the end
         startTime = time.time()
 
@@ -1594,21 +1643,23 @@ class DPX_functions():
             plt.errorbar(ADCList, ADCVoltMean, yerr=ADCVoltErr, marker='x')
             plt.show()
 
+        # Sort lists
+        ADCVoltMeanSort, ADCListSort = zip(*sorted(zip(ADCVoltMean, ADCList)))
+        out_dict = {'Volt': ADCVoltMeanSort, 'ADC': ADCListSort}
+        print(out_dict)
         if not use_gui:
-            # Sort lists
-            ADCVoltMeanSort, ADCListSort = zip(*sorted(zip(ADCVoltMean, ADCList)))
             # print THLListSort
             if plot:
                 plt.plot(ADCVoltMeanSort, ADCListSort)
                 plt.show()
 
-            d = {'Volt': ADCVoltMean, 'ADC': ADCList}
             if fn:
-                self.pickleDump(d, fn, overwrite=True)
+                self.pickleDump(out_dict, fn, overwrite=True)
             else:
-                self.pickleDump(d, 'ADCCalib.json', overwrite=True)
+                self.pickleDump(out_dict, 'ADCCalib.json', overwrite=True)
 
             print('Execution time: %.2f min' % ((time.time() - startTime)/60.))
+        yield out_dict
 
     def thresholdEqualizationConfig(self, configFn, reps=1, THL_offset=20, I_pixeldac=0.21, intPlot=False, resPlot=True):
         for slot in self.slot_range:
@@ -1625,7 +1676,17 @@ class DPX_functions():
             print(self.peripherys)
             self.writeConfig(configFn[slot - 1], slot=slot)
 
-    def thresholdEqualization(self, slot, reps=1, THL_offset=20, I_pixeldac=0.21, intPlot=False, resPlot=True, use_gui=False):
+    def thresholdEqualization(self, slot, reps=1, THL_offset=20,
+        I_pixeldac=0.21, intPlot=False, resPlot=True, use_gui=False):
+        gen = self.thresholdEqualization_func(slot=slot, reps=reps,
+            THL_offset=THL_offset, I_pixeldac=I_pixeldac, intPlot=intPlot,
+            resPlot=resPlot, use_gui=use_gui)
+        if use_gui:
+            return gen
+        *_, out_dict = gen
+        return out_dict
+
+    def thresholdEqualization_func(self, slot, reps=1, THL_offset=20, I_pixeldac=0.21, intPlot=False, resPlot=True, use_gui=False):
         """Perform threshold equalization of all pixels
         Parameters
         ----------
@@ -1713,7 +1774,8 @@ class DPX_functions():
                     countsDict = res['countsDict']
             # countsDict = self.getTHLLevel_gui(slot, THLRange, pixelDACs, reps)
         else:
-            countsDict = self.getTHLLevel(slot, THLRange, pixelDACs, reps, intPlot, use_gui=False)
+            gen = self.getTHLLevel(slot, THLRange, pixelDACs, reps, intPlot, use_gui=False)
+            *_, countsDict = gen
         gaussDict, noiseTHL = self.getNoiseLevel(countsDict, THLRange, pixelDACs, noiseLimit)
 
         # Transform values to indices and get meanDict
@@ -1821,7 +1883,8 @@ class DPX_functions():
                 else:
                     countsDictNew = res['countsDict']
         else:
-            countsDictNew = self.getTHLLevel(slot, THLRange, pixelDACNew, reps, intPlot)
+            countsDict_gen = self.getTHLLevel(slot, THLRange, pixelDACNew, reps, intPlot)
+            *_, countsDictNew = countsDict_gen
         gaussDictNew, noiseTHLNew = self.getNoiseLevel(countsDictNew, THLRange, pixelDACNew, noiseLimit)
 
         # Transform values to indices
@@ -1936,12 +1999,12 @@ class DPX_functions():
         self.DPXWriteOMRCommand(slot, self.OMR[slot-1])
 
         if use_gui:
-            return {'stage': 'finished', 
+            yield {'stage': 'finished', 
                 'pixelDAC': pixelDACNew, 
                 'THL': '%04x' % int(THLNew), 
                 'confMask': confMask}
         else:
-            return pixelDACNew, '%04x' % int(THLNew), confMask
+            yield pixelDACNew, '%04x' % int(THLNew), confMask
 
     def THSEqualization(self, slot):
         # Set PC Mode in OMR in order to read kVp values
@@ -1985,6 +2048,7 @@ class DPX_functions():
 
             # Set pixelDACs to maximum value
             # pixelDACs = ['00']
+
             countsDict = self.getTHLLevel(slot, THLRange, pixelDACs, reps, intPlot)
             gaussDict, noiseTHL = self.getNoiseLevel(countsDict, THLRange, pixelDACs, noiseLimit)
             meanDict, noiseTHL = self.valToIdx(slot, pixelDACs, THLRange, gaussDict, noiseTHL)
