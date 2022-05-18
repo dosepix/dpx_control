@@ -797,6 +797,8 @@ class DPX_functions():
             outDir = self.makeDirectory(outDir)
             if outDir.endswith('/'):
                 outDir_ = outDir[:-1]
+            else:
+                outDir_ = outDir
             if '/' in outDir_:
                 outFn = outDir_.split('/')[-1] + '.json'
             else:
