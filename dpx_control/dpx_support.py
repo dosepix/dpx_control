@@ -16,7 +16,7 @@ class DPX_support(object):
         # Get mean factors
         meanDict = {}
 
-        if 'h' in paramDict[paramDict.keys()[0]].keys():
+        if 'h' in paramDict[list(paramDict.keys())[0]].keys():
             keyList = ['a', 'c', 'b', 'h', 'k', 't']
         else:
             keyList = ['a', 'c', 'b', 't']

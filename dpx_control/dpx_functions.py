@@ -127,6 +127,9 @@ class DPX_functions():
             OMRCode_ &= ~(0b11111 << 12)
             OMRCode_ |= getattr(ds._OMRAnalogOutSel, 'Temperature')
             self.DPXWriteOMRCommand(1, hex(OMRCode_).split('0x')[-1])
+            
+        for sl in slot:
+            self.OMR[sl - 1] = '%06x' % self.OMR[sl - 1]
 
         # Initial reset 
         self.clearBins(slot)
@@ -794,6 +797,8 @@ class DPX_functions():
             outDir = self.makeDirectory(outDir)
             if outDir.endswith('/'):
                 outDir_ = outDir[:-1]
+            else:
+                outDir_ = outDir
             if '/' in outDir_:
                 outFn = outDir_.split('/')[-1] + '.json'
             else:
